@@ -37,6 +37,10 @@ class Py_FrameObject {
     // trace:
     // Stdout stream (hack!)
     outputDevice: any;
+    // block stack, for loops and such.
+    // Entries are [stackSize, startPos, endPos] tuples.
+    // TODO: type this correctly
+    blockStack: any[];
 
     constructor(back: Py_FrameObject,
                 builtins: { [name: string]: any; },
@@ -57,6 +61,7 @@ class Py_FrameObject {
         this.restricted = restricted;
         this.stack = [];
         this.outputDevice = outputDevice;
+        this.blockStack = [];
     }
 
     // Stack handling operations.
@@ -89,13 +94,19 @@ class Py_FrameObject {
 
     // exec is the Fetch-Execute-Decode loop for the interpreter.
     exec(): void {
-        var code: Py_CodeObject = this.codeObj;
+        var debug = false;  // TODO: toggle this with a debug flag
         for (var op = this.readOp(); op != undefined; op = this.readOp()) {
             var func = optable[op];
             if (func == undefined) {
-                throw new Error("Unknown op code: " + op);
+                throw new Error("Unknown opcode: " + opcodes[op] + " ("+op+")");
+            }
+            if (debug) {
+                console.log(opcodes[op]);
             }
             func(this);
+            if (debug) {
+                console.log(this.stack);
+            }
             if (op == opcodes.RETURN_VALUE) {
                 return;
             }

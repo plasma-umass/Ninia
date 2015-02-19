@@ -18,8 +18,11 @@ import gLong = require("../lib/gLong");
 // interpreter can be configured to output to any device as long as it has a
 // "write" method. The interpreter does not maintain its own stack.
 class Interpreter {
-    builtins: { [name: string]: any } = {"True": true, "False": false,
-            "None": None, "NotImplemented": NotImplementedError};
+    // TODO: move to their own module
+    builtins: { [name: string]: any } = {
+        "True": true, "False": false, "None": None,
+        "NotImplemented": NotImplementedError,
+    };
     // More formally, this should be some kind of "IOWriter" interface that
     // defines a write method. For this last-minute addition, it'll just have to
     // be 'any'.
