@@ -7,7 +7,7 @@ PYC=python2.7 -m compileall
 SDIR=src
 EDIR=examples
 # Source files:
-TSSOURCES=$(wildcard $(SDIR)/*.ts)
+TSSOURCES=$(wildcard $(SDIR)/*.ts) $(wildcard lib/*.ts)
 JSSOURCES=$(TSSOURCES:.ts=.js)
 # Example files:
 PYSOURCES=$(wildcard $(EDIR)/*.py) $(wildcard $(EDIR)/**/*.py)
@@ -31,22 +31,15 @@ main:
 test: $(TESTJS) $(EXSOURCES)
 	@echo WARNING:
 	@echo Deleting the src/\*.js files will break $(TESTJS)!
+	node $(TESTJS)
 
 $(TESTJS): $(TEST) $(TSSOURCES)
 	@echo
 	@echo Compiling $(TESTJS)
 	$(TSC) $(TSCFLAGS) $(TEST)
 
-# $(JSSOURCES): $(TSSOURCES)
-# 	$(TSC) $(TSCFLAGS) $^
-
 %.js: %.ts
 	$(TSC) $(TSCFLAGS) $^
-
-# $(EXSOURCES): $(PYSOURCES)
-# 	@echo
-# 	@echo Compiling all python sources files in $(EDIR)/
-# 	$(PYC) $?
 
 %.pyc: %.py
 	$(PYC) $^
