@@ -1,4 +1,7 @@
 import Py_CodeObject = require('./codeobject');
+import Py_FuncObject = require('./funcobject');
+import opcodes = require('./opcodes');
+import optable = require('./optable');
 
 // Frame Objects are basically stack frames for functions, except they carry
 // extra context (e.g. globals, local scope, etc.). This class is not simplified
@@ -32,6 +35,8 @@ class Py_FrameObject {
     stack: any[];
     // Tracing function for this frame
     // trace:
+    // Stdout stream (hack!)
+    outputDevice: any;
 
     constructor(back: Py_FrameObject,
                 builtins: { [name: string]: any; },
@@ -40,7 +45,8 @@ class Py_FrameObject {
                 lastInst: number,
                 lineNum: number,
                 locals: { [name: string]: any },
-                restricted: boolean) {
+                restricted: boolean,
+                outputDevice: any) {
         this.back = back;
         this.builtins = builtins;
         this.codeObj = code;
@@ -50,6 +56,7 @@ class Py_FrameObject {
         this.locals = locals;
         this.restricted = restricted;
         this.stack = [];
+        this.outputDevice = outputDevice;
     }
 
     // Stack handling operations.
@@ -80,6 +87,27 @@ class Py_FrameObject {
         return (high << 8) + low;
     }
 
+    // exec is the Fetch-Execute-Decode loop for the interpreter.
+    exec(): void {
+        var code: Py_CodeObject = this.codeObj;
+        for (var op = this.readOp(); op != undefined; op = this.readOp()) {
+            var func = optable[op];
+            if (func == undefined) {
+                throw new Error("Unknown op code: " + op);
+            }
+            func(this);
+            if (op == opcodes.RETURN_VALUE) {
+                return;
+            }
+        }
+    }
+
+    // clone a new frame off this one, for calling a child function.
+    childFrame(func: Py_FuncObject, locals: { [name: string]: any }): Py_FrameObject {
+        return new Py_FrameObject(this, this.builtins, func.code,
+            func.globals, -1, func.code.firstlineno, locals, false,
+            this.outputDevice);
+    }
 
 }
 export = Py_FrameObject;
