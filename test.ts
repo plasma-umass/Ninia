@@ -19,3 +19,4 @@ test("Complex number test", "examples/math/complexTest.pyc");
 test("Mixed Arithmetic test", "examples/math/mixedMathTest.pyc");
 test("Keyword and default arguments test","examples/functions/keywordargs.pyc");
 test("Numeric comparison test", "examples/functions/comparisonTest.pyc");
+test("Loop test", "examples/loopTest.pyc");

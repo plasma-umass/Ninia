@@ -395,7 +395,34 @@ optable[opcodes.BINARY_OR] = function(f: Py_FrameObject) {
     }
 
     f.push(res);
+}
 
+optable[opcodes.INPLACE_ADD] = function(f: Py_FrameObject) {
+    var b = f.pop();
+    var a = f.pop();
+
+    if (typeof a == 'string' && typeof b == 'string') {
+        f.push(a + b);
+        return;
+    }
+
+    var mess = "You cannot add " + a + " and " + b;
+
+    if (typeof a.iadd != 'undefined') {
+        a.iadd(b);
+        f.push(a);
+        return
+    }
+    if (typeof a.add == 'undefined') {
+        throw new Error(mess);
+    }
+
+    var res = a.add(b);
+    if (res == NotImplementedError) {
+        throw new Error(mess);
+    }
+
+    f.push(res);
 }
 
 optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject) {
@@ -430,7 +457,11 @@ optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
 optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var name: string = f.codeObj.names[i];
-    f.push(f.locals[name] || f.builtins[name]);
+    var val = f.locals[name] || f.builtins[name];
+    if (val === undefined) {
+        throw new Error('undefined name: ' + name);
+    }
+    f.push(val);
 }
 
 optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
@@ -666,7 +697,7 @@ optable[opcodes.JUMP_IF_TRUE_OR_POP] = function(f: Py_FrameObject) {
 
 optable[opcodes.JUMP_ABSOLUTE] = function(f: Py_FrameObject) {
     var target = f.readArg();
-    f.lastInst = target;
+    f.lastInst = target - 1;  // XXX: readOp increments before reading
 }
 
 optable[opcodes.POP_JUMP_IF_FALSE] = function(f: Py_FrameObject) {
@@ -846,4 +877,40 @@ optable[opcodes.BUILD_LIST] = function(f: Py_FrameObject) {
 optable[opcodes.BUILD_MAP] = function(f: Py_FrameObject) {
     throw new Error("Not implemented yet");
 }
+
+optable[opcodes.SETUP_LOOP] = function(f: Py_FrameObject) {
+    var delta = f.readArg();
+    // push a block to the block stack
+    var stackSize = f.stack.length;
+    var loopPos = f.lastInst;
+    f.blockStack.push([stackSize, loopPos, loopPos+delta]);
+}
+
+optable[opcodes.POP_BLOCK] = function(f: Py_FrameObject) {
+    // removes a block from the block stack
+    f.blockStack.pop();
+}
+
+optable[opcodes.GET_ITER] = function(f: Py_FrameObject) {
+    // replace the list at TOS with a [list, pos] tuple
+    // TODO: formalize this as an iterator object
+    var list = f.pop();
+    f.push({'list': list, 'pos': 0});
+}
+
+optable[opcodes.FOR_ITER] = function(f: Py_FrameObject) {
+    // calls next() on the iter object at TOS
+    var delta = f.readArg();
+    var iter = f.peek();
+    var pos: number = iter['pos'];
+    var list: any[] = iter['list'];
+    if (pos < list.length) {
+        f.push(list[pos]);
+        iter['pos'] = pos + 1;
+    } else {
+        f.pop();
+        f.lastInst += delta;
+    }
+}
+
 export = optable;
