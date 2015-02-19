@@ -1,16 +1,12 @@
-Systems630-Project1
+Ninia
 ===================
 
-## Dependencies
-- TypeScript version 1.1.0.1
-- Browserify (`npm install browserify`)
-- NodeJS for testing
-- Python 2.7.8 for compiling tests
-    - `python2.7` should be in $PATH
+*Ninia* is a genus of snake, commonly called *coffee snakes*. In this case, it is also an implementation of Python on top of JavaScript.
 
-**Tested on:** Google Chrome 38.0.2125.104 (64-bit)
+Ninia is currently a work-in-progress, and actively welcomes contributions!
 
 ## Features
+
 Supports a subset of Python 2.7.8 bytecode:
 - Functions (including keyword and default arguments)
 - Condition statements (`if` and comparisons of integers and booleans)
@@ -24,9 +20,18 @@ Supports a subset of Python 2.7.8 bytecode:
 - Most unary and binary op codes are defined, along with those necessary for
   loading and storing objects and executing functions.
 
-# Usage
+## Building & Running
 
-## Running the Interpreter
+### Dependencies
+
+- TypeScript version 1.1.0.1
+- Browserify (`npm install browserify`)
+- NodeJS for testing
+- Python 2.7.8 for compiling tests
+    - `python2.7` should be in $PATH
+
+### Running
+
 - Compile the main JavaScript driver:
 ```
 $ make main
@@ -35,7 +40,8 @@ $ make main
 - Click on "Choose File" and upload a .pyc file
 - Click "Process File". The output should appear in the Output area.
 
-## Running Tests
+### Testing
+
 - Compile the test.js file and the Python tests with Make
 - Run the test.js file in node
 ```
@@ -54,3 +60,9 @@ $ node test.js
 test("This is a sample test", "examples/path/to/testExample.pyc");
 ```
 - Make should be able to automatically compile the test file
+
+## History
+
+Theodore Sudol and Cibele Freire originally wrote Ninia as a class project for CMPSCI 630, a graduate-level software systems class. The [PLASMA lab](https://plasma.cs.umass.edu/) at UMass is continuing the project to experiment with bringing conventional programming languages to the web on top of JavaScript.
+
+Ninia will reuse the common infrastructure present in [Doppio and DoppioJVM](https://github.com/plasma/umass/doppio) to bring Python to the browser.
