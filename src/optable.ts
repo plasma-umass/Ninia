@@ -886,15 +886,20 @@ optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject) {
     f.push(b.splice(a,1));
 }
 
-// TODO: not sure what would be a tuple in typescript
+// XXX: for now, is exactly the same as BUILD_LIST
 optable[opcodes.BUILD_TUPLE] = function(f: Py_FrameObject) {
-    throw new Error("Not implemented yet");
+    var count = f.readArg();
+    var l = new Array(count);
+    for (var i = count-1; i >= 0; i--){
+        l[i] = f.pop();
+    }
+    f.push(l);
 }
 
 //TODO: seems to work but need more testing
 optable[opcodes.BUILD_LIST] = function(f: Py_FrameObject) {
     var count = f.readArg();
-    var l = [];
+    var l = new Array(count);
     for (var i = count-1; i >= 0; i--){
         l[i] = f.pop();
     }
@@ -902,9 +907,17 @@ optable[opcodes.BUILD_LIST] = function(f: Py_FrameObject) {
 }
 
 optable[opcodes.BUILD_MAP] = function(f: Py_FrameObject) {
-    throw new Error("Not implemented yet");
+    var count = f.readArg();
+    var d = builtins.dict([], {});
+    f.push(d);
 }
 
+optable[opcodes.STORE_MAP] = function(f: Py_FrameObject) {
+    var key = f.pop();
+    var val = f.pop();
+    var d = f.peek();
+    d.set(key, val);
+}
 optable[opcodes.SETUP_LOOP] = function(f: Py_FrameObject) {
     var delta = f.readArg();
     // push a block to the block stack

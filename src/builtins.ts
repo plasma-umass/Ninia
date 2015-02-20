@@ -28,6 +28,53 @@ function range(args: any[], kwargs: any) {
     return res;
 }
 
+// list constructor
+function list(args: any[], kwargs: any) {
+    if (kwargs.length > 0) {
+        throw new Error('TypeError: list() takes no keyword arguments')
+    }
+    // XXX: should do conversion here
+    return args[0];
+}
+
+class PyDict {
+  constructor(public map: any) {}
+  public get(key: any): any {
+    // XXX: should use hash(key)
+    return this.map[key];
+  }
+  public set(key: any, val: any): void {
+    // XXX: should use hash(key)
+    this.map[key] = val;
+  }
+  public toString(): string {
+    var s = '{';
+    for (var k in this.map) {
+      if (this.map.hasOwnProperty(k)) {
+        s += k.toString() + ': ' + this.map[k].toString() + ', ';
+      }
+    }
+    if (s.length > 1) {
+      s = s.slice(0, -2);  // trim off last ', '
+    }
+    return s + '}';
+  }
+}
+
+// dict constructor function
+function dict(args: any[], kwargs: any) {
+    // XXX: handles only the most basic case
+    return new PyDict(kwargs);
+}
+
+// tuple constructor
+function tuple(args: any[], kwargs: any) {
+    if (kwargs.length > 0) {
+        throw new Error('TypeError: tuple() takes no keyword arguments')
+    }
+    // XXX: should do conversion here
+    return args[0];
+}
 // full mapping of builtin names to values.
 var builtins = {
     True: true,
@@ -38,6 +85,9 @@ var builtins = {
     iter: iterator.iter,
     xrange: iterator.xrange,
     range: range,
+    list: list,
+    dict: dict,
+    tuple: tuple,
 };
 
 export = builtins
