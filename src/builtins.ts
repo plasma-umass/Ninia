@@ -68,12 +68,9 @@ function dict(args: any[], kwargs: any) {
 }
 
 // tuple constructor
-function tuple(args: any[], kwargs: any) {
-    if (kwargs.length > 0) {
-        throw new Error('TypeError: tuple() takes no keyword arguments')
-    }
+function tuple(x) {
     // XXX: should do conversion here
-    return args[0];
+    return x;
 }
 
 function abs(x) {
@@ -122,7 +119,13 @@ function ord(x) {
 
 function pyfunc_wrapper_onearg(func, funcname: string) {
     return function(args: any[], kwargs: any) {
-        // TODO: input validation
+        if (kwargs.length > 0) {
+            throw new Error('TypeError: ' + funcname +
+                            '() takes no keyword arguments');
+        }
+        if (args.length != 1) {
+            throw new Error('TypeError: ' + funcname + '() takes one argument');
+        }
         return func(args[0]);
     }
 }
@@ -139,7 +142,7 @@ var builtins = {
     range: range,
     list: list,
     dict: dict,
-    tuple: tuple,
+    tuple: pyfunc_wrapper_onearg(tuple, 'tuple'),
     abs: pyfunc_wrapper_onearg(abs, 'abs'),
     all: pyfunc_wrapper_onearg(all, 'all'),
     any: pyfunc_wrapper_onearg(any, 'any'),
