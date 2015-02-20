@@ -75,6 +75,58 @@ function tuple(args: any[], kwargs: any) {
     // XXX: should do conversion here
     return args[0];
 }
+
+function abs(x) {
+    return x.abs();
+}
+
+function all(x) {
+    var it = iterator.iter(x);
+    for (var val = it.next(); val != null; val = it.next()) {
+        if (!bool(val)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function any(x) {
+    var it = iterator.iter(x);
+    for (var val = it.next(); val != null; val = it.next()) {
+        if (bool(val)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function bool(x) {
+    if (x === undefined)
+        return false;
+    if (x['bool'] !== undefined)
+        return x.bool();
+    return x;
+}
+
+function bin(x) {
+    return x.toNumber().toString(2);
+}
+
+function chr(x) {
+    return String.fromCharCode(x.toNumber());
+}
+
+function ord(x) {
+    return Py_Int.fromInt(x.charCodeAt(0));
+}
+
+function pyfunc_wrapper_onearg(func, funcname: string) {
+    return function(args: any[], kwargs: any) {
+        // TODO: input validation
+        return func(args[0]);
+    }
+}
+
 // full mapping of builtin names to values.
 var builtins = {
     True: true,
@@ -88,6 +140,13 @@ var builtins = {
     list: list,
     dict: dict,
     tuple: tuple,
+    abs: pyfunc_wrapper_onearg(abs, 'abs'),
+    all: pyfunc_wrapper_onearg(all, 'all'),
+    any: pyfunc_wrapper_onearg(any, 'any'),
+    bin: pyfunc_wrapper_onearg(bin, 'bin'),
+    bool: pyfunc_wrapper_onearg(bool, 'bool'),
+    chr: pyfunc_wrapper_onearg(chr, 'chr'),
+    ord: pyfunc_wrapper_onearg(ord, 'ord'),
 };
 
 export = builtins
