@@ -937,4 +937,24 @@ optable[opcodes.FOR_ITER] = function(f: Py_FrameObject) {
     }
 }
 
+optable[opcodes.IMPORT_NAME] = function(f: Py_FrameObject) {
+    var name_idx = f.readArg();
+    // see https://docs.python.org/2/library/functions.html#__import__
+    var fromlist = f.pop();
+    var level = f.pop().toNumber();
+    var name = f.codeObj.names[name_idx];
+    var mod;
+    // TODO: implement this. For now, we no-op.
+    // mod = builtins.__import__(name, f.globals, f.locals, fromlist, level)
+    f.push(mod);
+}
+
+optable[opcodes.IMPORT_FROM] = function(f: Py_FrameObject) {
+    var name_idx = f.readArg();
+    var mod = f.pop();
+    var attr;
+    // TODO: implement this. For now, we no-op.
+    // attr = mod.codeObj.names[name_idx]
+    f.push(attr);
+}
 export = optable;
