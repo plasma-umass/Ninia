@@ -1,6 +1,8 @@
 import iterator = require('./iterator');
 import singletons = require('./singletons');
 import Py_Int = require('./integer');
+import Py_Complex = require('./complex');
+import Py_Float = require('./float');
 
 // range function
 function range(args: any[], kwargs: any) {
@@ -117,6 +119,59 @@ function ord(x) {
     return Py_Int.fromInt(x.charCodeAt(0));
 }
 
+function cmp(args: any[], kwargs: any) {
+    var x = args[0];
+    var y = args[1];
+    if (typeof x == 'string') {
+        return x.localeCompare(y);
+    }
+    if (x.eq(y)) {
+        return 0;
+    } else if (x.lt(y)) {
+        return -1;
+    }
+    return 1;
+}
+
+function complex(args: any[], kwargs: any) {
+    if (args.length == 0) {
+        return Py_Complex.fromNumber(0);
+    } else if (args.length == 1) {
+        return Py_Complex.fromNumber(args[0].toNumber());
+    } else if (args.length == 2) {
+        return new Py_Complex(args[0], args[1]);
+    } else {
+        throw new Error('TypeError: complex() takes 0-2 arguments');
+    }
+}
+
+function divmod(args: any[], kwargs: any) {
+    var x = args[0];
+    var y = args[1];
+    return x.divmod(y);
+}
+
+function float(args: any[], kwargs: any) {
+    if (args.length == 0) {
+        return new Py_Float(0);
+    } else if (args.length == 1) {
+        if (typeof args[0] == 'string') {
+            return new Py_Float(args[0]-0);
+        }
+        return new Py_Float(args[0].toNumber());
+    } else {
+        throw new Error('TypeError: float() takes 0-1 arguments');
+    }
+}
+
+function hex(x: any): string {
+    var n = x.toNumber();
+    if (n < 0) {
+        return '-0x' + (-n).toString(16);
+    }
+    return '0x' + n.toString(16);
+}
+
 function pyfunc_wrapper_onearg(func, funcname: string) {
     return function(args: any[], kwargs: any) {
         if (kwargs.length > 0) {
@@ -150,6 +205,11 @@ var builtins = {
     bool: pyfunc_wrapper_onearg(bool, 'bool'),
     chr: pyfunc_wrapper_onearg(chr, 'chr'),
     ord: pyfunc_wrapper_onearg(ord, 'ord'),
+    cmp: cmp,
+    complex: complex,
+    divmod: divmod,
+    float: float,
+    hex: pyfunc_wrapper_onearg(hex, 'hex'),
 };
 
 export = builtins
