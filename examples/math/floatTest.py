@@ -1,10 +1,13 @@
+from __future__ import division
+
+
 def test(testVal, refVal, name):
     if (testVal != refVal):
-        print "FAILED: " + name
-        print "\tRESULT: ", testVal, " != ", refVal
+        print "FAILED:", name
+        print "\tRESULT:", testVal, "!=", refVal
         return 0
     else:
-        print "passed: " + name
+        print "passed:", name
         return 1
 
 passed = 0
@@ -26,4 +29,4 @@ passed = passed + test(5.0 % -3, -1, "Negative modulo (5 % -3 = -1)")
 passed = passed + test(5.0 ** 4.0, 625.0, "Positive power (5.0 ** 4.0 = 625.0)")
 passed = passed + test(5.0 ** -2.0, 0.04, "Negative power (5 ** -2.0 = 0.04)")
 
-print "Passed ", passed, "/", total, " tests"
+print "Passed", passed, "/", total, "tests"

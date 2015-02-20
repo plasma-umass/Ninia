@@ -1,6 +1,7 @@
 num_passed = 0
 num_tests = 0
 
+
 def test(exp, act, name):
   global num_tests, num_passed
   num_tests += 1
@@ -32,4 +33,3 @@ for i in range(3):
 test(3, x, 'range loop')
 
 print 'Passed', num_passed, '/', num_tests, 'tests'
-

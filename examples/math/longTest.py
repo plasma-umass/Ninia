@@ -1,10 +1,13 @@
+from __future__ import division
+
+
 def test(testVal, refVal, name):
     if (testVal != refVal):
-        print "FAILED: " + name
-        print "\tRESULT: ", testVal, " != ", refVal
+        print "FAILED:", name
+        print "\tRESULT:", testVal, "!=", refVal
         return 0
     else:
-        print "passed: " + name
+        print "passed:", name
         return 1
 
 passed = 0
@@ -27,4 +30,4 @@ passed = passed + test(5L << 2, 20, "Left shift (5 << 2 = 20)")
 passed = passed + test(5L >> 2, 1, "Right shift (5 >> 2 = 1)")
 passed = passed + test(~5L, -6, "Inversion (~5 = -6)")
 
-print "Passed ", passed, "/", total, " tests"
+print "Passed", passed, "/", total, "tests"

@@ -75,7 +75,7 @@
 # print "5 & 1 = ", a & b
 # print "5 | 1 = ", a | b
 # print "5 ^ 1 = ", a ^ b
-# print "5 << 1 = ", a << b	
+# print "5 << 1 = ", a << b
 # print "5 >> 1 = ", a >> b
 
 # #test SLICE

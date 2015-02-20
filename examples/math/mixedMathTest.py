@@ -1,10 +1,13 @@
+from __future__ import division
+
+
 def test(testVal, refVal, name):
     if (testVal != refVal):
-        print "FAILED: " + name
-        print "\tRESULT: ", testVal, " != ", refVal
+        print "FAILED:", name
+        print "\tRESULT:", testVal, "!=", refVal
         return 0
     else:
-        print "passed: " + name
+        print "passed:", name
         return 1
 
 passed = 0
@@ -25,4 +28,4 @@ passed = passed + test(c * f, (75 - 18.75j), "Complex * float multiplication")
 passed = passed + test(l / i, 1.5, "Long / Integer division (floating result)")
 passed = passed + test(l ** 2, 225L, "Long ** Integer power")
 
-print "Passed ", passed, "/", total, " tests"
+print "Passed", passed, "/", total, "tests"

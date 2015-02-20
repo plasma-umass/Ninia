@@ -1,10 +1,10 @@
 def test(testVal, refVal, name):
     if (testVal != refVal):
-        print "FAILED: " + name
-        print "\tRESULT: ", testVal, " != ", refVal
+        print "FAILED:", name
+        print "\tRESULT:", testVal, "!=", refVal
         return 0
     else:
-        print "passed: " + name
+        print "passed:", name
         return 1
 
 passed = 0
@@ -20,4 +20,4 @@ passed = passed + test(3 == (3 + 0j), True, "Integer-Complex equality")
 passed = passed + test(4L == (4 + 4j), False, "Long-Complex inequality")
 passed = passed + test(3 <= 3.0, True, "Integer-Float LTE comparison")
 
-print "Passed ", passed, "/", total, " tests"
+print "Passed", passed, "/", total, "tests"
