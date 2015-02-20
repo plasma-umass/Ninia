@@ -1,6 +1,6 @@
 ///<reference path="../lib/decimal.d.ts" />
-
-import NIError = require('./notimplementederror');
+import singletons = require('./singletons');
+var NIError = singletons.NotImplemented;
 import Py_Int = require('./integer');
 var Decimal = require('../lib/decimal');
 

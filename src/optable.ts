@@ -3,8 +3,8 @@ import Py_FrameObject = require('./frameobject');
 import Py_Int = require('./integer');
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
-import NotImplementedError = require('./notimplementederror');
-import None = require('./none');
+import builtins = require('./builtins');
+var NotImplemented = builtins.NotImplemented;
 
 // Big mapping from opcode enum to function
 var optable: { [op: number]: (f: Py_FrameObject)=>void } = {};
@@ -88,9 +88,9 @@ optable[opcodes.UNARY_INVERT] = function(f: Py_FrameObject) {
 // 2. Operations that are not supported for a particular type (e.g. binary
 //    AND or shifts for non-integers) are left undefined.
 // 3. If a particular operation is not defined for the given arguments,
-//    the function will return the NotImplementedError.
+//    the function will return the NotImplemented.
 // 4. If this is the case, try the reverse operation (rop) function
-// 5. If rop is similarly undefined or returns NotImplementedError, the
+// 5. If rop is similarly undefined or returns NotImplemented, the
 //    operation is not permitted for the given types.
 
 optable[opcodes.BINARY_POWER] = function(f: Py_FrameObject) {
@@ -104,11 +104,11 @@ optable[opcodes.BINARY_POWER] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.pow(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rpow == 'undefined')
             throw new Error(mess);
         res = b.rpow(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -126,11 +126,11 @@ optable[opcodes.BINARY_MULTIPLY] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.mult(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rmult == 'undefined')
             throw new Error(mess);
         res = b.rmult(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -149,11 +149,11 @@ optable[opcodes.BINARY_DIVIDE] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.div(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rdiv == 'undefined')
             throw new Error(mess);
         res = b.rdiv(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -171,11 +171,11 @@ optable[opcodes.BINARY_MODULO] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.mod(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rmod == 'undefined')
             throw new Error(mess);
         res = b.rmod(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -198,11 +198,11 @@ optable[opcodes.BINARY_ADD] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.add(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.radd == 'undefined')
             throw new Error(mess);
         res = b.radd(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -220,11 +220,11 @@ optable[opcodes.BINARY_SUBTRACT] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.sub(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rsub == 'undefined')
             throw new Error(mess);
         res = b.rsub(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -249,11 +249,11 @@ optable[opcodes.BINARY_FLOOR_DIVIDE] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.floordiv(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rfloordiv == 'undefined')
             throw new Error(mess);
         res = b.rfloordiv(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -274,11 +274,11 @@ optable[opcodes.BINARY_TRUE_DIVIDE] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.truediv(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rtruediv == 'undefined')
             throw new Error(mess);
         res = b.rtruediv(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -296,11 +296,11 @@ optable[opcodes.BINARY_LSHIFT] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.lshift(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rlshift == 'undefined')
             throw new Error(mess);
         res = b.rlshift(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -318,11 +318,11 @@ optable[opcodes.BINARY_RSHIFT] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.rshift(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rrshift == 'undefined')
             throw new Error(mess);
         res = b.rrshift(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -340,11 +340,11 @@ optable[opcodes.BINARY_AND] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.and(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rand == 'undefined')
             throw new Error(mess);
         res = b.rand(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -363,11 +363,11 @@ optable[opcodes.BINARY_XOR] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.xor(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.rxor == 'undefined')
             throw new Error(mess);
         res = b.rxor(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -386,11 +386,11 @@ optable[opcodes.BINARY_OR] = function(f: Py_FrameObject) {
         throw new Error(mess);
 
     res = a.or(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.ror == 'undefined')
             throw new Error(mess);
         res = b.ror(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -418,7 +418,7 @@ optable[opcodes.INPLACE_ADD] = function(f: Py_FrameObject) {
     }
 
     var res = a.add(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         throw new Error(mess);
     }
 
@@ -449,6 +449,13 @@ optable[opcodes.STORE_NAME] = function(f: Py_FrameObject) {
     f.locals[name] = val;
 }
 
+optable[opcodes.STORE_GLOBAL] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var val = f.pop();
+    var name = f.codeObj.names[i];
+    f.globals[name] = val;
+}
+
 optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
     var i = f.readArg();
     f.push(f.codeObj.consts[i]);
@@ -457,7 +464,17 @@ optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
 optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var name: string = f.codeObj.names[i];
-    var val = f.locals[name] || f.builtins[name];
+    var val = f.locals[name] || f.globals[name] || builtins[name];
+    if (val === undefined) {
+        throw new Error('undefined name: ' + name);
+    }
+    f.push(val);
+}
+
+optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var name: string = f.codeObj.names[i];
+    var val = f.globals[name];
     if (val === undefined) {
         throw new Error('undefined name: ' + name);
     }
@@ -542,11 +559,11 @@ function doLT(a,b): boolean {
         throw new Error(mess);
 
     res = a.lt(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.gt == 'undefined')
             throw new Error(mess);
         res = b.gt(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -561,11 +578,11 @@ function doLE(a,b): boolean {
         throw new Error(mess);
 
     res = a.le(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.ge == 'undefined')
             throw new Error(mess);
         res = b.ge(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -580,11 +597,11 @@ function doEQ(a,b): boolean {
         throw new Error(mess);
 
     res = a.eq(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.eq == 'undefined')
             throw new Error(mess);
         res = b.eq(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -599,11 +616,11 @@ function doNE(a,b): boolean {
         throw new Error(mess);
 
     res = a.ne(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.ne == 'undefined')
             throw new Error(mess);
         res = b.ne(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -618,11 +635,11 @@ function doGT(a,b): boolean {
         throw new Error(mess);
 
     res = a.gt(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.lt == 'undefined')
             throw new Error(mess);
         res = b.lt(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -637,11 +654,11 @@ function doGE(a,b): boolean {
         throw new Error(mess);
 
     res = a.ge(b);
-    if (res == NotImplementedError) {
+    if (res == NotImplemented) {
         if(typeof b.le == 'undefined')
             throw new Error(mess);
         res = b.le(a);
-        if (res == NotImplementedError)
+        if (res == NotImplemented)
             throw new Error(mess);
     }
 
@@ -660,7 +677,7 @@ function toBool(a: any): boolean {
     }
 
     switch(a) {
-        case None:
+        case builtins.None:
         case 0:
         case '':
         case []:
@@ -726,42 +743,45 @@ optable[opcodes.STORE_FAST] = function(f: Py_FrameObject) {
 }
 
 optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
-    var i = f.readArg();
-    // number of positional parameters
-    var posNum = i & 0xff;
-    // number of keyword arguments
-    var keyNum = (i >> 8) & 0xff;
-    var keyNames: string[] = [];
-    var keyVals: any[] = [];
-    var posVals = [];
-    var locals: { [name: string]: any } = {};
+    var x = f.readArg()
+    var num_args = x & 0xff;
+    var num_kwargs = (x >> 8) & 0xff;
+    var args = new Array(num_args);
+    var kwargs: { [name: string]: any } = {};
 
-    for (var x = 0; x < keyNum; x++) {
-        keyVals.push(f.pop());
-        keyNames.push(f.pop());
+    for (var i = 0; i < num_kwargs; i++) {
+        var val = f.pop();
+        var key = f.pop();
+        kwargs[key] = val;
     }
 
-    for (var x = 0; x < posNum; x++) {
-        posVals.push(f.pop());
+    // positional args come in backwards (stack) order
+    for (var i = num_args-1; i >= 0; i--) {
+        args[i] = f.pop();
     }
 
-    var func: Py_FuncObject = f.pop();
+    var func = f.pop();
 
-    for (var x = 0; x < keyNames.length; x++) {
-        locals[keyNames[x]] = keyVals[x];
-    }
-
-    func.code.varnames.reverse().forEach( function(name, idx, array) {
-        if (locals[name] == undefined) {
-            if (posVals.length == 0)
-                locals[name] = func.defaults[name];
-            else
-                locals[name] = posVals.pop();
+    // Hacky check for native functions
+    if (typeof func === 'function') {
+        // XXX: not async! Any async native will kill the interpreter.
+        f.push(func(args, kwargs));
+    } else {
+        // convert kwargs into local variables for the function
+        var varnames = func.code.varnames;
+        for (var i = 0; i < varnames.length; i++) {
+            var name = varnames[i];
+            if (kwargs[name] == undefined) {
+                if (args.length > 0) {
+                    kwargs[name] = args.shift();
+                } else {
+                    kwargs[name] = func.defaults[name];
+                }
+            }
         }
-    });
-
-    var newf = f.childFrame(func, locals);
-    newf.exec();
+        var newf = f.childFrame(func, kwargs);
+        newf.exec();
+    }
 }
 
 optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
@@ -892,21 +912,17 @@ optable[opcodes.POP_BLOCK] = function(f: Py_FrameObject) {
 }
 
 optable[opcodes.GET_ITER] = function(f: Py_FrameObject) {
-    // replace the list at TOS with a [list, pos] tuple
-    // TODO: formalize this as an iterator object
-    var list = f.pop();
-    f.push({'list': list, 'pos': 0});
+    // replace TOS with iter(TOS)
+    f.push(builtins.iter(f.pop()));
 }
 
 optable[opcodes.FOR_ITER] = function(f: Py_FrameObject) {
     // calls next() on the iter object at TOS
     var delta = f.readArg();
     var iter = f.peek();
-    var pos: number = iter['pos'];
-    var list: any[] = iter['list'];
-    if (pos < list.length) {
-        f.push(list[pos]);
-        iter['pos'] = pos + 1;
+    var res = iter.next();
+    if (res != null) {
+        f.push(res);
     } else {
         f.pop();
         f.lastInst += delta;

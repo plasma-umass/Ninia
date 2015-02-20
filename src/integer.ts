@@ -1,5 +1,6 @@
 import gLong = require("../lib/gLong");
-import NIError = require('./notimplementederror');
+import singletons = require('./singletons');
+var NIError = singletons.NotImplemented;
 import Py_Float = require('./float');
 
 // Py_Int represents the Python Integer class. Integers are marshalled as 32 and

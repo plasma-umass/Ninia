@@ -8,7 +8,7 @@ import Py_Int = require('./integer');
 import Py_Long = require('./long');
 import Py_Float = require('./float');
 import Py_Complex = require('./complex');
-import None = require('./none');
+import builtins = require('./builtins');
 import fs = require('fs');
 import gLong = require("../lib/gLong");
 var Decimal = require('../lib/decimal');
@@ -149,7 +149,7 @@ class Unmarshaller {
         switch (unit) {
             // Constants
             case "N": // None
-                res = None;
+                res = builtins.None;
                 break;
             case "F": // False
                 res = false;

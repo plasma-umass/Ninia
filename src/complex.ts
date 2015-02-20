@@ -1,4 +1,5 @@
-import NIError = require('./notimplementederror');
+import singletons = require('./singletons');
+var NIError = singletons.NotImplemented;
 import Py_Int = require('./integer');
 import Py_Long = require('./long');
 import Py_Float = require('./float');

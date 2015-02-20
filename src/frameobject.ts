@@ -11,8 +11,6 @@ import optable = require('./optable');
 class Py_FrameObject {
     // Previous stack frame (this frame's caller, may be None)
     back: Py_FrameObject;
-    // Built-in namespace -- TODO: Evaluate for this project?
-    builtins: { [name: string]: any; };
     // Code object executed in this frame
     codeObj: Py_CodeObject;
     // traceback for debugging -- TODO: Implement
@@ -43,7 +41,6 @@ class Py_FrameObject {
     blockStack: any[];
 
     constructor(back: Py_FrameObject,
-                builtins: { [name: string]: any; },
                 code: Py_CodeObject,
                 globals: { [name: string]: any },
                 lastInst: number,
@@ -52,7 +49,6 @@ class Py_FrameObject {
                 restricted: boolean,
                 outputDevice: any) {
         this.back = back;
-        this.builtins = builtins;
         this.codeObj = code;
         this.globals = globals;
         this.lastInst = lastInst;
@@ -115,7 +111,7 @@ class Py_FrameObject {
 
     // clone a new frame off this one, for calling a child function.
     childFrame(func: Py_FuncObject, locals: { [name: string]: any }): Py_FrameObject {
-        return new Py_FrameObject(this, this.builtins, func.code,
+        return new Py_FrameObject(this, func.code,
             func.globals, -1, func.code.firstlineno, locals, false,
             this.outputDevice);
     }
