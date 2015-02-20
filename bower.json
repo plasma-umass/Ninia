@@ -1,0 +1,22 @@
+{
+  "name": "ninia",
+  "version": "0.0.1",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "browserfs": "0.3.5",
+    "DefinitelyTyped": "latest"
+  },
+  "homepage": "https://github.com/plasma-umass/Ninia",
+  "description": "Python in the browser",
+  "main": "pyinterp.js",
+  "moduleType": [
+    "amd"
+  ],
+  "private": true
+}

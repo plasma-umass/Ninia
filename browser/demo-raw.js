@@ -1,6 +1,5 @@
-var Unmarshaller = require('./src/unmarshal');
-var Interpreter = require('./src/interpreter');
-// var BrowserFS = require('./lib/browserfs');
+var Unmarshaller = require('../src/unmarshal');
+var Interpreter = require('../src/interpreter');
 
 // Get the contents of the .pyc file
 function readFile(readerEvent) {

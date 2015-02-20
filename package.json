@@ -1,0 +1,23 @@
+{
+  "name": "ninia",
+  "version": "0.0.1",
+  "engine": "node >= 0.10.0",
+  "dependencies": {
+    "source-map-support": "*"
+  },
+  "devDependencies": {
+    "bower": "*",
+    "npm": "*",
+    "typescript": "1.4",
+    "browserify": "*",
+    "decimal.js": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/plasma-umass/Ninia.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plasma-umass/Ninia/issues"
+  },
+  "homepage": "https://github.com/plasma-umass/Ninia"
+}

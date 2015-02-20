@@ -1,4 +1,4 @@
-/// <reference path="../lib/node.d.ts" />
+/// <reference path="../bower_components/DefinitelyTyped/node/node.d.ts" />
 
 // An Unmarshaller takes a .pyc file (as a string of bytes, e.g. "\xXX") and
 // converts it into a Python code object. The marshal format is not officially
@@ -11,7 +11,7 @@ import Py_Complex = require('./complex');
 import builtins = require('./builtins');
 import fs = require('fs');
 import gLong = require("../lib/gLong");
-var Decimal = require('../lib/decimal');
+var Decimal = require('../node_modules/decimal.js/decimal');
 
 // An Unmarshaller takes a .pyc file (as a string of binarys, e.g. "\xXX")
 // and converts into a Python code object.

@@ -1,11 +1,11 @@
-# Typescript compiler
-TSC=tsc
-TSCFLAGS=--module commonjs
-# Python 2.7 "compiler"
-PYC=python2.7 -m compileall
-# Source and Example directory
+# directories
 SDIR=src
 EDIR=examples
+# compilers
+TSC=./node_modules/typescript/bin/tsc
+TSCFLAGS=--module commonjs
+PYC=python2.7 -m compileall
+BROWSERIFY=./node_modules/browserify/bin/cmd.js
 # Source files:
 TSSOURCES=$(wildcard $(SDIR)/*.ts) $(wildcard lib/*.ts)
 JSSOURCES=$(TSSOURCES:.ts=.js)
@@ -13,30 +13,21 @@ JSSOURCES=$(TSSOURCES:.ts=.js)
 PYSOURCES=$(wildcard $(EDIR)/*.py) $(wildcard $(EDIR)/**/*.py)
 EXSOURCES=$(PYSOURCES:.py=.pyc)
 # Main library output file:
-MAININ=main.js
-MAINOUT=pyinterp.js
-# Flags for compiling main file
-# MAINFLAGS=--out pyinter.js # This fails silently. GG, TypeScript.
+MAININ=browser/demo-raw.js
+MAINOUT=browser/demo.js
 # Test application file:
 TEST=test.ts
 TESTJS=test.js
 
-main:
-	@echo Compiling source files...
-	$(TSC) $(TSCFLAGS) $(TSSOURCES)
-	@echo
-	@echo Compiling main JS file...
-	browserify $(MAININ) > $(MAINOUT)
+.PHONY: main test compile clean
+main: compile
+	$(BROWSERIFY) $(MAININ) > $(MAINOUT)
 
-test: $(TESTJS) $(EXSOURCES)
-	@echo WARNING:
-	@echo Deleting the src/\*.js files will break $(TESTJS)!
+test: compile $(TESTJS) $(EXSOURCES)
 	node $(TESTJS)
 
-$(TESTJS): $(TEST) $(TSSOURCES)
-	@echo
-	@echo Compiling $(TESTJS)
-	$(TSC) $(TSCFLAGS) $(TEST)
+compile: $(TSSOURCES)
+	$(TSC) $(TSCFLAGS) $(TSSOURCES)
 
 %.js: %.ts
 	$(TSC) $(TSCFLAGS) $^
@@ -44,28 +35,6 @@ $(TESTJS): $(TEST) $(TSSOURCES)
 %.pyc: %.py
 	$(PYC) $^
 
-.PHONY: clean clean-src clean-ex clean-test
+clean:
+	$(RM) $(JSSOURCES) $(TESTJS) $(EXSOURCES) $(MAINOUT)
 
-clean-src:
-	@echo
-	@echo Cleaning $(SDIR)/ JS files
-	$(RM) $(JSFILE) $(JSSOURCES)
-
-clean-ex:
-	@echo
-	@echo Cleaning $(EDIR)/ PYC files
-	$(RM) $(EXSOURCES)
-
-clean-test: clean-ex
-	@echo
-	@echo Cleaning $(TESTJS)
-	$(RM) $(TESTJS)
-
-clean-main: clean-src
-	@echo
-	@echo Cleaning $(MAINOUT)
-	$(RM) $(MAINOUT)
-
-clean-all: clean-main clean-test clean-src clean-ex
-
-clean: clean-main

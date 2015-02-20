@@ -10,4 +10,7 @@ doc/report/*.*
 src/*.js
 lib/gLong.js
 test.js
-pyinterp.js
+browser/demo.js
+# third party packages
+bower_components
+node_modules

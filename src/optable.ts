@@ -1,4 +1,3 @@
-/// <reference path="../lib/node.d.ts" />
 import Py_FrameObject = require('./frameobject');
 import Py_Int = require('./integer');
 import Py_FuncObject = require('./funcobject');

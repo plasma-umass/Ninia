@@ -21,38 +21,35 @@ Supports a subset of Python 2.7.8 bytecode:
 
 ### Dependencies
 
-- TypeScript version 1.1+
-- Browserify (`npm install -g browserify`)
-- NodeJS for testing
-- Python 2.7.8 for compiling tests
-    - `python2.7` should be in $PATH
+- node.js, npm, and bower
+- Python 2.7 for compiling tests (`python2.7` should be in $PATH)
+
+Run `npm install` and `bower install` to grab all the necessary
+dependencies.
 
 ### Running
 
-- Compile the main JavaScript driver:
-```
-$ make main
-```
-- Load `main.html` in your browser of choice
-- Click on "Choose File" and upload a .pyc file
-- Click "Process File". The output should appear in the Output area.
+Compile the main JavaScript driver with `make`, then
+load `browser/demo.html` in your browser of choice.
+
+Click on "Choose File" and upload a .pyc file, then click "Process File".
+The output should appear in the Output area.
 
 ### Testing
 
-```
-$ make test
-```
-- Alternatively, follow the "Running the Interpreter" steps and load one of the
-  \*test.pyc files from the examples/ directory.
+Run the test suite with `make test`.
+Alternatively, follow the "Running" steps and load one of the
+ \*test.pyc files from the examples/ directory.
 
 ### Adding More Tests
-- Write the test: `testExample.py` somewhere in the examples/ directory.
-- Add a new line to test.ts that gives a description for the test and a path to
+
+ 1. Write a python file `testExample.py` somewhere in the examples/ directory.
+ 2. Add a new line to test.ts that gives a description for the test and a path to
   the .pyc file:
 ```javascript
 test("This is a sample test", "examples/path/to/testExample.pyc");
 ```
-- Make should be able to automatically compile the test file
+ 3. Check that it runs with `make test`.
 
 ## History
 

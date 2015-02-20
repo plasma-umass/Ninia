@@ -2,7 +2,7 @@
 import singletons = require('./singletons');
 var NIError = singletons.NotImplemented;
 import Py_Int = require('./integer');
-var Decimal = require('../lib/decimal');
+var Decimal = require('../node_modules/decimal.js/decimal');
 
 class Py_Long {
     isLong: boolean = true;
