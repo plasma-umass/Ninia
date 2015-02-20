@@ -427,11 +427,19 @@ optable[opcodes.INPLACE_ADD] = function(f: Py_FrameObject) {
 
 optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject) {
     var a = f.pop();
-    f.outputDevice.write(a.toString());
+    // see https://docs.python.org/2/reference/simple_stmts.html#print
+    if (f.shouldWriteSpace) {
+        f.outputDevice.write(' ');
+    }
+    var s = a.toString();
+    f.outputDevice.write(s);
+    var lastChar = s.slice(-1);
+    f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
 }
 
 optable[opcodes.PRINT_NEWLINE] = function(f: Py_FrameObject) {
     f.outputDevice.write("\n");
+    f.shouldWriteSpace = false;
 }
 
 optable[opcodes.RETURN_VALUE] = function(f: Py_FrameObject) {

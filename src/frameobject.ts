@@ -35,6 +35,8 @@ class Py_FrameObject {
     // trace:
     // Stdout stream (hack!)
     outputDevice: any;
+    // see https://docs.python.org/2/reference/simple_stmts.html#print
+    shouldWriteSpace: boolean;
     // block stack, for loops and such.
     // Entries are [stackSize, startPos, endPos] tuples.
     // TODO: type this correctly
@@ -57,6 +59,7 @@ class Py_FrameObject {
         this.restricted = restricted;
         this.stack = [];
         this.outputDevice = outputDevice;
+        this.shouldWriteSpace = false;
         this.blockStack = [];
     }
 
