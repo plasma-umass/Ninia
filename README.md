@@ -24,9 +24,6 @@ Supports a subset of Python 2.7.8 bytecode:
 - node.js, npm, and bower
 - Python 2.7 for compiling tests (`python2.7` should be in $PATH)
 
-Run `npm install` and `bower install` to grab all the necessary
-dependencies.
-
 ### Running
 
 Compile the main JavaScript driver with `make`, then

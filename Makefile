@@ -26,8 +26,14 @@ main: compile
 test: compile $(TESTJS) $(EXSOURCES)
 	node $(TESTJS)
 
-compile: $(TSSOURCES)
+compile: $(TSSOURCES) $(TSC) bower_components
 	$(TSC) $(TSCFLAGS) $(TSSOURCES)
+
+$(TSC):
+	npm install .
+
+bower_components:
+	bower install
 
 %.js: %.ts
 	$(TSC) $(TSCFLAGS) $^
