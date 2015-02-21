@@ -42,9 +42,9 @@ Alternatively, follow the "Running" steps and load one of the
 
  1. Write a python file `testExample.py` somewhere in the pytests/ directory.
  2. Add a new line to test.ts that gives a description for the test and a path to
-  the .pyc file:
+  the test file:
 ```javascript
-test("This is a sample test", "pytests/path/to/testExample.pyc");
+test("This is a sample test", "pytests/path/to/testExample");
 ```
  3. Check that it runs with `make test`.
 

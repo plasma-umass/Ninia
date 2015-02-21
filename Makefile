@@ -1,29 +1,32 @@
 # directories
 SDIR=src
-EDIR=pytests
+TDIR=pytests
 # compilers
 TSC=./node_modules/typescript/bin/tsc
 TSCFLAGS=--module commonjs
-PYC=python2.7 -m compileall
+PYTHON=python2.7
+PYC=$(PYTHON) -m compileall
 BROWSERIFY=./node_modules/browserify/bin/cmd.js
 # Source files:
 TSSOURCES=$(wildcard $(SDIR)/*.ts) $(wildcard lib/*.ts)
-JSSOURCES=$(TSSOURCES:.ts=.js)
-# Example files:
-PYSOURCES=$(wildcard $(EDIR)/*.py) $(wildcard $(EDIR)/**/*.py)
-EXSOURCES=$(PYSOURCES:.py=.pyc)
+# Test files:
+PYSOURCES=$(wildcard $(TDIR)/*.py) $(wildcard $(TDIR)/**/*.py)
+PYCS=$(PYSOURCES:.py=.pyc)
+TESTOUTS=$(PYSOURCES:.py=.out)
 # Main library output file:
 MAININ=browser/demo-raw.js
 MAINOUT=browser/demo.js
 # Test application file:
 TEST=test.ts
 TESTJS=test.js
+# Generated JS files (used for cleanup)
+GENJS=$(TSSOURCES:.ts=.js) $(TESTJS)
 
 .PHONY: main test compile clean
 main: compile
 	$(BROWSERIFY) $(MAININ) > $(MAINOUT)
 
-test: compile $(TESTJS) $(EXSOURCES)
+test: compile $(TESTJS) $(PYCS) $(TESTOUTS)
 	node $(TESTJS)
 
 compile: $(TSSOURCES) $(TSC) bower_components
@@ -41,6 +44,9 @@ bower_components:
 %.pyc: %.py
 	$(PYC) $^
 
+%.out: %.pyc
+	$(PYTHON) $^ &> $@
+
 clean:
-	$(RM) $(JSSOURCES) $(TESTJS) $(EXSOURCES) $(MAINOUT)
+	$(RM) $(GENJS) $(PYCS) $(MAINOUT) $(TESTOUTS)
 
