@@ -25,7 +25,8 @@ function test(name, file) {
         numPassed += 1;
     } else {
         process.stdout.write("Fail\n");
-        // TODO: show a diff of some kind
+        console.log('Expected output:\n', expectedOut);
+        console.log('Actual output:\n', testOut);
     }
 }
 
