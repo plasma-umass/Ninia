@@ -19,14 +19,17 @@ MAINOUT=browser/demo.js
 # Test application file:
 TEST=test.ts
 TESTJS=test.js
+# Console application file:
+RUNNER=runner.ts
+RUNNERJS=runner.js
 # Generated JS files (used for cleanup)
-GENJS=$(TSSOURCES:.ts=.js) $(TESTJS)
+GENJS=$(TSSOURCES:.ts=.js) $(TESTJS) $(RUNNERJS)
 
 .PHONY: main test compile clean
-main: compile
+main: compile $(RUNNERJS)
 	$(BROWSERIFY) $(MAININ) > $(MAINOUT)
 
-test: compile $(TESTJS) $(PYCS) $(TESTOUTS)
+test: compile $(TESTJS) $(PYCS) $(TESTOUTS) $(RUNNERJS)
 	node $(TESTJS)
 
 compile: $(TSSOURCES) $(TSC) bower_components
