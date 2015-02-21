@@ -5,8 +5,7 @@
     "**/.*",
     "node_modules",
     "bower_components",
-    "test",
-    "tests"
+    "pytests"
   ],
   "dependencies": {
     "browserfs": "0.3.5",
@@ -14,7 +13,6 @@
   },
   "homepage": "https://github.com/plasma-umass/Ninia",
   "description": "Python in the browser",
-  "main": "pyinterp.js",
   "moduleType": [
     "amd"
   ],

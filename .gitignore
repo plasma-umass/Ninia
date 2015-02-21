@@ -1,5 +1,5 @@
 # .pyc files should be generated and cleaned by make
-tests/**/*.pyc
+pytests/**/*.pyc
 # Ignore Vim's swap files
 *.swp
 *.swo

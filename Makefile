@@ -1,6 +1,6 @@
 # directories
 SDIR=src
-EDIR=tests
+EDIR=pytests
 # compilers
 TSC=./node_modules/typescript/bin/tsc
 TSCFLAGS=--module commonjs

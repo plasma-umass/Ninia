@@ -36,15 +36,15 @@ The output should appear in the Output area.
 
 Run the test suite with `make test`.
 Alternatively, follow the "Running" steps and load one of the
- \*test.pyc files from the tests/ directory.
+ \*test.pyc files from the pytests/ directory.
 
 ### Adding More Tests
 
- 1. Write a python file `testExample.py` somewhere in the tests/ directory.
+ 1. Write a python file `testExample.py` somewhere in the pytests/ directory.
  2. Add a new line to test.ts that gives a description for the test and a path to
   the .pyc file:
 ```javascript
-test("This is a sample test", "tests/path/to/testExample.pyc");
+test("This is a sample test", "pytests/path/to/testExample.pyc");
 ```
  3. Check that it runs with `make test`.
 
