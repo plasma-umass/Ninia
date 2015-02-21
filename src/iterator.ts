@@ -1,11 +1,12 @@
 import Py_Int = require('./integer');
+import collections = require('./collections');
 
 // all iterators must support next()
 export interface Iterator {
     next: ()=>any;
 }
 
-class ListIterator implements Iterator {
+export class ListIterator implements Iterator {
     private pos: number = 0;
     private list: any[];
     constructor(list: any[]) {
@@ -24,7 +25,7 @@ class ListIterator implements Iterator {
     }
 }
 
-class XRange implements Iterator {
+class XRange implements Iterator, collections.Iterable {
     private value: number = 0;
     private stop: number;
     private step: number = 1;
@@ -45,6 +46,9 @@ class XRange implements Iterator {
             throw new Error('TypeError: xrange() requires 1-3 int arguments')
         }
     }
+    public iter(): Iterator {
+        return this;
+    }
     public next(): number {
         var ret = null;
         if (this.value < this.stop) {
@@ -59,15 +63,6 @@ class XRange implements Iterator {
 }
 
 // builtin xrange()
-export function xrange(args: any[], kwargs: any) {
+export function xrange(args: any[], kwargs: any): XRange {
     return new XRange(args, kwargs);
-}
-
-// builtin iter()
-export function iter(arg: any): Iterator {
-    if (arg instanceof XRange) {
-        return arg;  // xrange is an iterator already
-    }
-    // XXX: arg might not be a list
-    return new ListIterator(arg);
 }

@@ -1,8 +1,11 @@
 import iterator = require('./iterator');
+import collections = require('./collections');
 import singletons = require('./singletons');
 import Py_Int = require('./integer');
 import Py_Complex = require('./complex');
 import Py_Float = require('./float');
+var Py_List = collections.Py_List;
+var Py_Dict = collections.Py_Dict;
 
 // range function
 function range(args: any[], kwargs: any) {
@@ -27,7 +30,7 @@ function range(args: any[], kwargs: any) {
     for (var i = start; i < stop; i += step) {
         res.push(Py_Int.fromInt(i));
     }
-    return res;
+    return new Py_List(res);
 }
 
 // list constructor
@@ -35,52 +38,50 @@ function list(args: any[], kwargs: any) {
     if (kwargs.length > 0) {
         throw new Error('TypeError: list() takes no keyword arguments')
     }
-    // XXX: should do conversion here
-    return args[0];
-}
-
-class PyDict {
-  constructor(public map: any) {}
-  public get(key: any): any {
-    // XXX: should use hash(key)
-    return this.map[key];
-  }
-  public set(key: any, val: any): void {
-    // XXX: should use hash(key)
-    this.map[key] = val;
-  }
-  public toString(): string {
-    var s = '{';
-    for (var k in this.map) {
-      if (this.map.hasOwnProperty(k)) {
-        s += k.toString() + ': ' + this.map[k].toString() + ', ';
-      }
+    if (args.length == 0) {
+        return new Py_List([]);
     }
-    if (s.length > 1) {
-      s = s.slice(0, -2);  // trim off last ', '
+    if (args.length > 1) {
+        throw new Error('TypeError: list() take 0-1 arguments');
     }
-    return s + '}';
-  }
+    var x = args[0];
+    if (x instanceof Py_List) {
+        return x;
+    }
+    return Py_List.fromIterable(x);
 }
 
 // dict constructor function
 function dict(args: any[], kwargs: any) {
     // XXX: handles only the most basic case
-    return new PyDict(kwargs);
+    return new Py_Dict(kwargs);
 }
 
 // tuple constructor
-function tuple(x) {
-    // XXX: should do conversion here
-    return x;
+// XXX: actually returns lists for now, because we don't have a Py_Tuple
+function tuple(args: any[], kwargs: any) {
+    if (kwargs.length > 0) {
+        throw new Error('TypeError: tuple() takes no keyword arguments')
+    }
+    if (args.length == 0) {
+        return new Py_List([]);
+    }
+    if (args.length > 1) {
+        throw new Error('TypeError: tuple() take 0-1 arguments');
+    }
+    var x = args[0];
+    if (x instanceof Py_List) {
+        return x;
+    }
+    return Py_List.fromIterable(x);
 }
 
 function abs(x) {
     return x.abs();
 }
 
-function all(x) {
-    var it = iterator.iter(x);
+function all(x: collections.Iterable): boolean {
+    var it = x.iter();
     for (var val = it.next(); val != null; val = it.next()) {
         if (!bool(val)) {
             return false;
@@ -89,8 +90,8 @@ function all(x) {
     return true;
 }
 
-function any(x) {
-    var it = iterator.iter(x);
+function any(x: collections.Iterable): boolean {
+    var it = x.iter();
     for (var val = it.next(); val != null; val = it.next()) {
         if (bool(val)) {
             return true;
@@ -172,6 +173,35 @@ function hex(x: any): string {
     return '0x' + n.toString(16);
 }
 
+function int(args: any[], kwargs: any) {
+    var x = args[0] || kwargs['x'] || 0;
+    var base = args[1] || kwargs['base'] || 10;
+    if (x.toNumber !== undefined) {
+        x = x.toNumber();
+    } else if (typeof x == 'string') {
+        if (base == 0) {
+            throw new Error('NotImplementedError: int() with base=0 is NYI');
+        }
+        x = parseInt(x, base);
+    }
+    return x | 0;  // force number -> int
+
+}
+
+// builtin iter()
+function iter(args: any[], kwargs: any): iterator.Iterator {
+    if (kwargs.length > 0) {
+        throw new Error('TypeError: iter() takes no keyword arguments');
+    }
+    if (args.length == 1) {
+        return args[0].iter();
+    }
+    if (args.length == 2) {
+        throw new Error('NotImplementedError: iter(a,b) is NYI');
+    }
+    throw new Error('TypeError: iter() take 1-2 arguments');
+}
+
 function pyfunc_wrapper_onearg(func, funcname: string) {
     return function(args: any[], kwargs: any) {
         if (kwargs.length > 0) {
@@ -192,12 +222,12 @@ var builtins = {
     None: singletons.None,
     NotImplemented: singletons.NotImplemented,
     Ellipsis: singletons.Ellipsis,
-    iter: iterator.iter,
+    iter: iter,
     xrange: iterator.xrange,
     range: range,
     list: list,
     dict: dict,
-    tuple: pyfunc_wrapper_onearg(tuple, 'tuple'),
+    tuple: tuple,
     abs: pyfunc_wrapper_onearg(abs, 'abs'),
     all: pyfunc_wrapper_onearg(all, 'all'),
     any: pyfunc_wrapper_onearg(any, 'any'),
@@ -210,6 +240,7 @@ var builtins = {
     divmod: divmod,
     float: float,
     hex: pyfunc_wrapper_onearg(hex, 'hex'),
+    int: int,
 };
 
 export = builtins

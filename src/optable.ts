@@ -3,7 +3,9 @@ import Py_Int = require('./integer');
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import builtins = require('./builtins');
+import collections = require('./collections');
 var NotImplemented = builtins.NotImplemented;
+var Py_List = collections.Py_List;
 
 // Big mapping from opcode enum to function
 var optable: { [op: number]: (f: Py_FrameObject)=>void } = {};
@@ -897,7 +899,7 @@ optable[opcodes.BUILD_TUPLE] = function(f: Py_FrameObject) {
     for (var i = count-1; i >= 0; i--){
         l[i] = f.pop();
     }
-    f.push(l);
+    f.push(new Py_List(l));
 }
 
 //TODO: seems to work but need more testing
@@ -907,7 +909,7 @@ optable[opcodes.BUILD_LIST] = function(f: Py_FrameObject) {
     for (var i = count-1; i >= 0; i--){
         l[i] = f.pop();
     }
-    f.push(l);
+    f.push(new Py_List(l));
 }
 
 optable[opcodes.BUILD_MAP] = function(f: Py_FrameObject) {
@@ -937,7 +939,8 @@ optable[opcodes.POP_BLOCK] = function(f: Py_FrameObject) {
 
 optable[opcodes.GET_ITER] = function(f: Py_FrameObject) {
     // replace TOS with iter(TOS)
-    f.push(builtins.iter(f.pop()));
+    var tos = f.pop();
+    f.push(builtins.iter([tos],{}));
 }
 
 optable[opcodes.FOR_ITER] = function(f: Py_FrameObject) {
