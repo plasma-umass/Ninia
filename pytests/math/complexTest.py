@@ -16,4 +16,4 @@ print y % 4
 print y % x
 print y % (2 + 5j)
 print y % 2
-print -x
+print -y

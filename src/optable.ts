@@ -430,7 +430,11 @@ optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject) {
     if (f.shouldWriteSpace) {
         f.outputDevice.write(' ');
     }
-    var s = a.toString();
+    var s: string = a.toString();
+    // Hack: check for True/False and print them correctly
+    if (a === true || a === false) {
+        s = s.charAt(0).toUpperCase() + s.substr(1);
+    }
     f.outputDevice.write(s);
     var lastChar = s.slice(-1);
     f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');

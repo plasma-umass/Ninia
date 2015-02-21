@@ -272,7 +272,11 @@ class Py_Float {
     }
 
     toString(): string {
-        return this.value.toString();
+        var s = this.value.toString();
+        if (s.indexOf('.') < 0) {
+            s += '.0';
+        }
+        return s;
     }
 }
 export = Py_Float;

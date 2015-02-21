@@ -92,11 +92,11 @@ class Py_Complex {
         return this.mathOp(other, function(a, b) {
             if (b.real.value == 0 && b.imag.value == 0)
                 throw new Error("Division by 0")
-            var r, i, d: Py_Float;
+            var r, d: Py_Float;
             r = a.real.mult(b.real).add(a.imag.mult(b.imag));
-            i = a.imag.mult(b.real).sub(a.real.mult(b.imag));
             d = b.real.mult(b.real).add(b.imag.mult(b.imag));
-            return new Py_Complex(r.floordiv(d), i.floordiv(d));
+            // Note: floor division always zeros the imaginary part
+            return new Py_Complex(r.floordiv(d), new Py_Float(0));
         });
     }
 
@@ -320,7 +320,13 @@ class Py_Complex {
     // }
 
     toString(): string {
-        return "(" + this.real.toString() + " + " + this.imag.toString() + "j)";
+        if (this.real.value == 0) {
+            return `${this.imag.value}j`;
+        }
+        if (this.imag.value < 0) {
+            return `(${this.real.value}-${-this.imag.value}j)`;
+        }
+        return `(${this.real.value}+${this.imag.value}j)`;
     }
 }
 export = Py_Complex;
