@@ -11,7 +11,10 @@ import Py_Complex = require('./complex');
 import builtins = require('./builtins');
 import fs = require('fs');
 import gLong = require("../lib/gLong");
+import collections = require('./collections')
 var Decimal = require('../node_modules/decimal.js/decimal');
+var Py_Tuple = collections.Py_Tuple;
+var Py_List = collections.Py_List;
 
 // An Unmarshaller takes a .pyc file (as a string of binarys, e.g. "\xXX")
 // and converts into a Python code object.
@@ -143,7 +146,7 @@ class Unmarshaller {
 
     // Unmarshals the input string recursively. May handle unneeded cases, e.g.
     // T (true) and F (false) due to undocumented marshalling format.
-    unmarshal() {
+    unmarshal(convertTypes: boolean = false) {
         var unit = this.readChar();
         var res: any;
         switch (unit) {
@@ -218,7 +221,7 @@ class Unmarshaller {
                 var length = this.readInt32();
                 res = [];
                 for (var x = 0; x < length; x++) {
-                    res.push(this.unmarshal());
+                    res.push(this.unmarshal(true));
                 }
                 break;
             // Code Objects:
@@ -228,7 +231,7 @@ class Unmarshaller {
                 var stacksize = this.readInt32();
                 var flags = this.readInt32();
                 var codestr: Buffer = this.unmarshalCodeString();
-                var consts: string[] = this.unmarshal();
+                var consts: any[] = this.unmarshal();
                 var names: string[] = this.unmarshal();
                 var varnames: string[] = this.unmarshal();
                 var freevars: string[] = this.unmarshal();
@@ -247,6 +250,16 @@ class Unmarshaller {
                 console.log("Unsupported marshal format: " + unit + " @" +
                         this.index);
                 throw new Error("Unsupported marshal format: " + unit)
+        }
+        // XXX: internal structures use JS arrays, but code constants need
+        // conversion to python list/tuple types.
+        if (convertTypes) {
+            if (unit === '(') {
+                return new Py_Tuple(res);
+            }
+            if (unit === '[') {
+                return new Py_List(res);
+            }
         }
         return res;
     }
