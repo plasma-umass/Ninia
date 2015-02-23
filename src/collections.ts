@@ -38,6 +38,41 @@ export class Py_List implements Iterable {
   }
 }
 
+export class Py_Tuple implements Iterable {
+  private _len: Py_Int;  // can't resize a tuple
+  constructor(private _tuple: any[]) {
+    this._len = Py_Int.fromInt(_tuple.length);
+  }
+  static fromIterable(x: Iterable) {
+    var it = x.iter();
+    var tuple = [];
+    for (var val = it.next(); val != null; val = it.next()) {
+        tuple.push(val);
+    }
+    return new Py_Tuple(tuple);
+  }
+  public len(): Py_Int {
+    return this._len;
+  }
+  public iter(): iterator.Iterator {
+    return new iterator.ListIterator(this._tuple);
+  }
+  public toString(): string {
+    var s = '(';
+    for (var i=0; i<this._tuple.length; i++) {
+      var x = this._tuple[i];
+      // XXX: Ugly hack around the lack of repr()
+      if (typeof x == 'string') {
+        s += "'" + x.toString() + "'";
+      } else {
+        s += x.toString();
+      }
+      s += ', ';
+    }
+    return s.slice(0, -2) + ')';
+  }
+}
+
 export class Py_Dict {
   constructor(private _map: any) {}
   public get(key: any): any {

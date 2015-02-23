@@ -6,6 +6,7 @@ import Py_Complex = require('./complex');
 import Py_Float = require('./float');
 var Py_List = collections.Py_List;
 var Py_Dict = collections.Py_Dict;
+var Py_Tuple = collections.Py_Tuple;
 
 // range function
 function range(args: any[], kwargs: any) {
@@ -58,22 +59,21 @@ function dict(args: any[], kwargs: any) {
 }
 
 // tuple constructor
-// XXX: actually returns lists for now, because we don't have a Py_Tuple
 function tuple(args: any[], kwargs: any) {
     if (kwargs.length > 0) {
         throw new Error('TypeError: tuple() takes no keyword arguments')
     }
     if (args.length == 0) {
-        return new Py_List([]);
+        return new Py_Tuple([]);
     }
     if (args.length > 1) {
         throw new Error('TypeError: tuple() take 0-1 arguments');
     }
     var x = args[0];
-    if (x instanceof Py_List) {
+    if (x instanceof Py_Tuple) {
         return x;
     }
-    return Py_List.fromIterable(x);
+    return Py_Tuple.fromIterable(x);
 }
 
 function abs(x) {
