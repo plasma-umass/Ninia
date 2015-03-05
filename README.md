@@ -32,6 +32,12 @@ load `browser/demo.html` in your browser of choice.
 Click on "Choose File" and upload a .pyc file, then click "Process File".
 The output should appear in the Output area.
 
+To create a .pyc file from a .py file, simply run:
+
+```
+python -m compileall file.py
+```
+
 ### Testing
 
 Run the test suite with `make test`.
