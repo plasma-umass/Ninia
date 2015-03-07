@@ -40,5 +40,6 @@ test("Keyword and default arguments test","pytests/functions/keywordargs");
 test("Numeric comparison test", "pytests/functions/comparisonTest");
 test("Loop test", "pytests/loopTest");
 test("Builtins test", "pytests/builtinsTest");
+test("Builtin 'bin' function test", "pytests/builtins/bin");
 
 console.log(`Passed ${numPassed}/${numTests} tests.`);
