@@ -109,7 +109,8 @@ function bool(x) {
 }
 
 function bin(x) {
-    return x.toNumber().toString(2);
+    // Default implementation in python adds '0b' prefix
+    return "0b" + x.toNumber().toString(2);
 }
 
 function chr(x) {
