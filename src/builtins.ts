@@ -170,7 +170,10 @@ function hex(x: any): string {
     if (n < 0) {
         return '-0x' + (-n).toString(16);
     }
-    return '0x' + n.toString(16);
+    var ret = '0x' + n.toString(16);
+    if (x.isLong)
+        ret += 'L';
+    return ret;
 }
 
 function int(args: any[], kwargs: any) {
