@@ -18,26 +18,25 @@ function range(args: any[], kwargs: any) {
         case 1:
             stop = args[0].toNumber();
             break;
-        case 3:
-            step = args[2].toNumber();  // fall through!
+
         case 2:
             start = args[0].toNumber();
             stop = args[1].toNumber();
             break;
+
+        case 3:
+            start = args[0].toNumber();
+            stop = args[1].toNumber();
+            step = args[2].toNumber();
+            if(step === 0){
+                throw new Error('ValueError: range() step argument must not be zero')
+            }
+            break;
         default:
             throw new Error('TypeError: range() expects 1-3 int arguments')
     }
-	var res = [];
-	if (start > stop) {
-		for (var i = start; i > stop; i += step) {
-			res.push(Py_Int.fromInt(i));
-		}
-	}else{
-		for (var i = start; i < stop; i += step) {
-			res.push(Py_Int.fromInt(i));
-			}
-	}
-    return new Py_List(res);
+    var it = iterator.xrange([Py_Int.fromInt(start), Py_Int.fromInt(stop), Py_Int.fromInt(step)], {});
+    return list([it], {});
 }
 
 // list constructor
