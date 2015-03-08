@@ -26,9 +26,11 @@ export class ListIterator implements Iterator {
 }
 
 class XRange implements Iterator, collections.Iterable {
-    private value: number = 0;
+    private start: number = 0;
+    private index: number = 0;
     private stop: number;
     private step: number = 1;
+    private len: number;
     constructor(args: any[], kwargs: any) {
         if (kwargs.length > 0) {
             throw new Error('TypeError: xrange() does not take keyword arguments')
@@ -36,14 +38,28 @@ class XRange implements Iterator, collections.Iterable {
         if (args.length == 1) {
             this.stop = args[0].toNumber();
         } else if (args.length == 2) {
-            this.value = args[0].toNumber();
+            this.start = args[0].toNumber();
             this.stop = args[1].toNumber();
         } else if (args.length == 3) {
-            this.value = args[0].toNumber();
+            this.start = args[0].toNumber();
             this.stop = args[1].toNumber();
             this.step = args[2].toNumber();
+
+            if(this.step === 0){
+                throw new Error('ValueError: xrange() arg 3 must not be zero')
+            }
         } else {
             throw new Error('TypeError: xrange() requires 1-3 int arguments')
+        }
+
+        if (this.step > 0 && this.start < this.stop){
+            this.len = 1 + Math.floor((this.stop - 1 - this.start) / this.step);
+        }
+        else if (this.step < 0 && this.start > this.stop){
+            this.len = 1 + Math.floor((this.start - 1 - this.stop) / ( -1 * this.step));
+        }
+        else{
+            this.len = 0;
         }
     }
     public iter(): Iterator {
@@ -51,9 +67,9 @@ class XRange implements Iterator, collections.Iterable {
     }
     public next(): number {
         var ret = null;
-        if (this.value < this.stop) {
-            ret = Py_Int.fromInt(this.value);
-            this.value += this.step;
+        if (this.index < this.len) {
+            ret = Py_Int.fromInt(this.start + this.index * this.step);
+            this.index += 1;
         }
         return ret;
     }
