@@ -14,7 +14,6 @@ print a, b
 print abs(-3), abs(-3L), abs(-3.)
 print all([True, False]), all([True])
 print any([True, False]), any([False])
-print bin(5)
 print bool('test'), bool(0.0), bool(None)
 print chr(97), chr(98)
 print ord('a'), ord('b')
