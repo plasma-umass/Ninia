@@ -63,6 +63,7 @@ console.log(`\n--- Builtin tests ---`);
 test("Builtins test", "pytests/builtinsTest");
 test("Bin function test", "pytests/builtins/bin");
 test("Hex function test", "pytests/builtins/hex");
+test("Complex function test", "pytests/builtins/complex");
 console.log(`\n--- Other tests ---`);
 test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");
