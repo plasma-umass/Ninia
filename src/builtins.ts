@@ -27,10 +27,16 @@ function range(args: any[], kwargs: any) {
         default:
             throw new Error('TypeError: range() expects 1-3 int arguments')
     }
-    var res = [];
-    for (var i = start; i < stop; i += step) {
-        res.push(Py_Int.fromInt(i));
-    }
+	var res = [];
+	if (start > stop) {
+		for (var i = start; i > stop; i += step) {
+			res.push(Py_Int.fromInt(i));
+		}
+	}else{
+		for (var i = start; i < stop; i += step) {
+			res.push(Py_Int.fromInt(i));
+			}
+	}
     return new Py_List(res);
 }
 
