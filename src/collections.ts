@@ -34,7 +34,11 @@ export class Py_List implements Iterable {
       }
       s += ', ';
     }
-    return s.slice(0, -2) + ']';
+    if (s.length > 1) {
+      return s.slice(0, -2) + ']';
+    }else{
+      return '[]'
+    }
   }
 }
 
