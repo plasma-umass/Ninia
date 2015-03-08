@@ -7,14 +7,19 @@ var mockStdout = {write: (data: string) => {testOut += data;}};
 var interp = new Interpreter(mockStdout);
 var numTests = 0;
 var numPassed = 0;
+var testFails: { [testName: string]: number; } = { };
 
 function test(name, file) {
     process.stdout.write(`Running ${name}... `);
     numTests += 1;
     var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
     testOut = '';  // reset the output catcher
+    var testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
+    if (isNaN(testFails[testName]))
+        testFails[testName] = 0;  // initialize
+
     try {
-      interp.interpret(u.value());
+        interp.interpret(u.value());
     } catch (e) {
         process.stdout.write(`${e}\n`);
         return;
@@ -27,19 +32,36 @@ function test(name, file) {
         process.stdout.write("Fail\n");
         console.log('CPython output:\n', expectedOut);
         console.log('Ninia output:\n', testOut);
+        testFails[testName] += 1;
     }
 }
 
+function printResults() {
+    console.log(`\n--- Results ---`);
+    for (var tName in testFails) {
+        if (testFails[tName] > 0) {
+            console.log(`${testFails[tName]} test failed in ${tName} tests.`);
+        }
+        else {
+            console.log(`${tName} tests passed successfully!`);
+        }
+    }
+    console.log(`Passed ${numPassed}/${numTests} tests.`);
+}
+
 // Add more tests here:
+console.log(`\n--- Math tests ---`);
 test("Integer test", "pytests/math/intTest");
 test("Long Int test", "pytests/math/longTest");
 test("Floating-point test", "pytests/math/floatTest");
 test("Complex number test", "pytests/math/complexTest");
 test("Mixed Arithmetic test", "pytests/math/mixedMathTest");
+console.log(`\n--- Function tests ---`);
 test("Keyword and default arguments test","pytests/functions/keywordargs");
 test("Numeric comparison test", "pytests/functions/comparisonTest");
-test("Loop test", "pytests/loopTest");
+console.log(`\n--- Builtin tests ---`);
 test("Builtins test", "pytests/builtinsTest");
 test("Bin function test", "pytests/builtins/bin");
-
-console.log(`Passed ${numPassed}/${numTests} tests.`);
+console.log(`\n--- Loop test ---`);
+test("Loop test", "pytests/loopTest");
+printResults()
