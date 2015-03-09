@@ -21,7 +21,9 @@ function test(name, file) {
     try {
         interp.interpret(u.value());
     } catch (e) {
+        process.stdout.write("Fail : ");
         process.stdout.write(`${e}\n`);
+        testFails[testName] += 1;
         return;
     }
     var expectedOut = fs.readFileSync(file+'.out').toString();
@@ -73,4 +75,5 @@ test("Chr & Ord functions test", "pytests/builtins/chr_ord");
 console.log(`\n--- Other tests ---`);
 test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");
+test("Recursion test", "pytests/recursionTest");
 printResults()
