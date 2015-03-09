@@ -115,7 +115,7 @@ class Unmarshaller {
     readString(length: number, encoding = "ascii"): pytypes.Py_Str {
         var s = this.input.toString(encoding, this.index, this.index+length);
         this.index += length;
-        return new pytypes.Py_Str(s);
+        return pytypes.Py_Str.fromJS(s);
     }
 
     // Unicode strings have to be treated differently by the Buffer class.

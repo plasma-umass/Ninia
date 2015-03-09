@@ -64,7 +64,7 @@ function dict(args: any[], kwargs: any) {
     var d = new Py_Dict();
     for (var k in kwargs) {
         if (kwargs.hasOwnProperty(k)) {
-            d.set(new pytypes.Py_Str(k), kwargs[k]);
+            d.set(pytypes.Py_Str.fromJS(k), kwargs[k]);
         }
     }
     return d;
@@ -122,11 +122,11 @@ function bool(x) {
 
 function bin(x): pytypes.Py_Str {
     // Default implementation in python adds '0b' prefix
-    return new pytypes.Py_Str("0b" + x.toNumber().toString(2));
+    return pytypes.Py_Str.fromJS("0b" + x.toNumber().toString(2));
 }
 
 function chr(x): pytypes.Py_Str {
-    return new pytypes.Py_Str(String.fromCharCode(x.toNumber()));
+    return pytypes.Py_Str.fromJS(String.fromCharCode(x.toNumber()));
 }
 
 function ord(x) {
@@ -179,12 +179,12 @@ function float(args: any[], kwargs: any): Py_Float {
 function hex(x: any): pytypes.Py_Str {
     var n = x.toNumber();
     if (n < 0) {
-        return new pytypes.Py_Str('-0x' + (-n).toString(16));
+        return pytypes.Py_Str.fromJS('-0x' + (-n).toString(16));
     }
     var ret = '0x' + n.toString(16);
     if (x.isLong)
         ret += 'L';
-    return new pytypes.Py_Str(ret);
+    return pytypes.Py_Str.fromJS(ret);
 }
 
 function int(args: any[], kwargs: any): Py_Int {

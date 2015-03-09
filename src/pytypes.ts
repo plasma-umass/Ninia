@@ -16,13 +16,26 @@ export class Py_Object {
     }
 }
 
+// Enforces immutable strings, at the cost of having to keep
+// all strings around forever.
+var string_pool: { [s: string]: Py_Str } = {};
+
 export class Py_Str extends Py_Object {
     private _str: string;
+    // No other class should call this constructor.
     constructor(s: string) {
         super();
         this._str = s;
     }
-    // TODO: override hash()
+    public static fromJS(s: string): Py_Str {
+        var inst: Py_Str = string_pool[s];
+        if (inst !== undefined) {
+            return inst;
+        }
+        inst = new Py_Str(s);
+        string_pool[s] = inst;
+        return inst;
+    }
     public repr(): Py_Str {
         return new Py_Str(`'${this._str}'`);
     }
