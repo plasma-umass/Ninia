@@ -16,7 +16,7 @@ class Py_Long extends pytypes.Py_Object {
     // Long is a step above integer in the hierarchy. They represent
     // arbitrary-precision decimal numbers.
     static fromInt(n: number) {
-        var d = Decimal(n);
+        var d = new Decimal(n);
         return new Py_Long(d);
     }
 
