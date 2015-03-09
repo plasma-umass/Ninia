@@ -4,6 +4,7 @@ import singletons = require('./singletons');
 import Py_Int = require('./integer');
 import Py_Complex = require('./complex');
 import Py_Float = require('./float');
+import Py_Long = require('./long');
 import pytypes = require('./pytypes');
 var Py_List = collections.Py_List;
 var Py_Dict = collections.Py_Dict;
@@ -113,11 +114,24 @@ function any(x: collections.Iterable): boolean {
 }
 
 function bool(x) {
-    if (x === undefined)
+    
+    if(x instanceof Py_Tuple || x instanceof iterator.XRange || x instanceof pytypes.Py_Str 
+       || x instanceof Py_List || x instanceof Py_Dict){
+        return x.len() !== 0;
+    }
+    if(x instanceof Py_Int || x instanceof Py_Float){
+        return x.toNumber() != 0;
+    }
+    if(x instanceof Py_Long){
+        return !x.eq(Py_Long.fromInt(0));
+    }
+    if(x instanceof Py_Complex){
+        return !(x.real.value == 0 && x.imag.value == 0);
+    }
+    if(x == singletons.None || x == false){
         return false;
-    if (x['bool'] !== undefined)
-        return x.bool();
-    return x != 0;
+    }
+    return true;
 }
 
 function bin(x): pytypes.Py_Str {
