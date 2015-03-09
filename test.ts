@@ -76,4 +76,5 @@ console.log(`\n--- Other tests ---`);
 test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");
 test("Recursion test", "pytests/recursionTest");
+test("Strings test", "pytests/stringTest");
 printResults()
