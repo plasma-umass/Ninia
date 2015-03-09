@@ -84,18 +84,13 @@ class Py_Int {
     mod(other: any): any {
         return this.mathOp(other, function(a, b) {
             if (b.value.isZero())
-                throw new Error("Modulos by 0 is not allowed");
-            // return new Py_Int(a.value.modulo(b.value));
-            console.log("MOD: ", a, b);
-            console.log("FLOORDIV: ", a.floordiv(b));
+                throw new Error("Modulo by 0 is not allowed");
             return a.sub(b.mult(a.floordiv(b)));
         });
     }
 
     divmod(other: any): any {
-        return this.mathOp(other, function(a, b) {
-            return a.div(b).mod(b);
-        });
+        return [this.floordiv(other), this.mod(other)];
     }
 
     // gLong, the underlying type for Py_Int, doesn't have a power function.

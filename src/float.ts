@@ -97,9 +97,7 @@ class Py_Float {
     }
 
     divmod(other: any): any {
-        return this.mathOp(other, function(a, b) {
-            return new Py_Float(Math.floor(a.value / b.value) % b.value);
-        });
+        return [this.floordiv(other), this.mod(other)];
     }
 
     pow(other: any): any {

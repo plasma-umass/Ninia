@@ -104,9 +104,10 @@ class Py_Long {
     }
 
     divmod(other: any): any {
-        return this.mathOp(other, function(a, b) {
-            return new Py_Long(a.value.divToInt(b.value).modulo(b.value));
-        });
+        return [
+            Py_Long.fromPy_Int(this.floordiv(other)),
+            Py_Long.fromPy_Int(this.mod(other))
+        ];
     }
 
     // Thankfully, Decimal has a toPower function.

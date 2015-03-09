@@ -153,9 +153,7 @@ function complex(args: any[], kwargs: any) {
 }
 
 function divmod(args: any[], kwargs: any) {
-    var x = args[0];
-    var y = args[1];
-    return x.divmod(y);
+    return new Py_Tuple(args[0].divmod(args[1]));
 }
 
 function float(args: any[], kwargs: any) {
