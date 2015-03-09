@@ -1,3 +1,4 @@
+import pytypes = require('./pytypes');
 import Py_Int = require('./integer');
 import iterator = require('./iterator');
 
@@ -6,8 +7,12 @@ export interface Iterable {
     iter: ()=>iterator.Iterator;
 }
 
-export class Py_List implements Iterable {
-  constructor(private _list: any[]) {}
+export class Py_List extends pytypes.Py_Object implements Iterable {
+  private _list: pytypes.Py_Object[];
+  constructor(lst: pytypes.Py_Object[]) {
+    super();
+    this._list = lst;
+  }
   static fromIterable(x: Iterable) {
     var it = x.iter();
     var list = new Py_List([]);
@@ -23,29 +28,26 @@ export class Py_List implements Iterable {
     return new iterator.ListIterator(this._list);
   }
   public toString(): string {
+    if (this._list.length == 0) {
+      return '[]';
+    }
     var s = '[';
     for (var i=0; i<this._list.length; i++) {
-      var x = this._list[i];
-      // XXX: Ugly hack around the lack of repr()
-      if (typeof x == 'string') {
-        s += "'" + x.toString() + "'";
-      } else {
-        s += x.toString();
-      }
+      s += this._list[i].repr();
       s += ', ';
     }
-    if (s.length > 1) {
-      return s.slice(0, -2) + ']';
-    }else{
-      return '[]'
-    }
+    // Remove last ', ' from the end.
+    return s.slice(0, -2) + ']';
   }
 }
 
-export class Py_Tuple implements Iterable {
+export class Py_Tuple extends pytypes.Py_Object implements Iterable {
   private _len: Py_Int;  // can't resize a tuple
-  constructor(private _tuple: any[]) {
-    this._len = Py_Int.fromInt(_tuple.length);
+  private _tuple: pytypes.Py_Object[];
+  constructor(t: pytypes.Py_Object[]) {
+    super();
+    this._tuple = t;
+    this._len = Py_Int.fromInt(t.length);
   }
   static fromIterable(x: Iterable) {
     var it = x.iter();
@@ -62,41 +64,51 @@ export class Py_Tuple implements Iterable {
     return new iterator.ListIterator(this._tuple);
   }
   public toString(): string {
+    if (this._tuple.length == 0) {
+      return '()';
+    }
     var s = '(';
     for (var i=0; i<this._tuple.length; i++) {
-      var x = this._tuple[i];
-      // XXX: Ugly hack around the lack of repr()
-      if (typeof x == 'string') {
-        s += "'" + x.toString() + "'";
-      } else {
-        s += x.toString();
-      }
+      s += this._tuple[i].repr();
       s += ', ';
     }
+    // Remove last ', ' from the end.
     return s.slice(0, -2) + ')';
   }
 }
 
-export class Py_Dict {
-  constructor(private _map: any) {}
-  public get(key: any): any {
-    // XXX: should use hash(key)
-    return this._map[key];
+export class Py_Dict extends pytypes.Py_Object {
+  private _keys: pytypes.Py_Object[];
+  private _vals: any;
+  constructor() {
+    super();
+    this._keys = [];
+    this._vals = {};
   }
-  public set(key: any, val: any): void {
-    // XXX: should use hash(key)
-    this._map[key] = val;
+  public get(key: pytypes.Py_Object): pytypes.Py_Object {
+    var h = key.hash();
+    return this._vals[h];
+  }
+  public set(key: pytypes.Py_Object, val: pytypes.Py_Object): void {
+    var h = key.hash();
+    if (this._vals[h] === undefined) {
+      this._keys.push(key);
+    }
+    this._vals[h] = val;
   }
   public toString(): string {
+    if (this._keys.length == 0) {
+      return '{}';
+    }
     var s = '{';
-    for (var k in this._map) {
-      if (this._map.hasOwnProperty(k)) {
-        s += "'" + k.toString() + "': " + this._map[k].toString() + ', ';
-      }
+    for (var i=0; i<this._keys.length; i++) {
+      var key = this._keys[i];
+      var h = key.hash();
+      var val = this._vals[h];
+      s += key.repr() + ': ';
+      s += val.repr() + ', ';
     }
-    if (s.length > 1) {
-      s = s.slice(0, -2);  // trim off last ', '
-    }
-    return s + '}';
+    // trim off last ', '
+    return s.slice(0, -2) + '}';
   }
 }

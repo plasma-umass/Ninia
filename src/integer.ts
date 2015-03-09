@@ -2,13 +2,18 @@ import gLong = require("../lib/gLong");
 import singletons = require('./singletons');
 var NIError = singletons.NotImplemented;
 import Py_Float = require('./float');
+import pytypes = require('./pytypes');
 
 // Py_Int represents the Python Integer class. Integers are marshalled as 32 and
 // 64 bit integers, but they are handled as 64 bit ints. This class follows the
 // latter design by quietly handling the small ints.
-class Py_Int {
-    isInt: boolean = true;
-    constructor(public value: gLong) {}
+class Py_Int extends pytypes.Py_Object {
+    private isInt: boolean = true;
+    private value: gLong;
+    constructor(val: gLong) {
+        super();
+        this.value = val;
+    }
 
     // Integers are the narrowest of the numeric types. fromInt is a convenient
     // function for quickly making Py_Ints from JavaScript numbers.
