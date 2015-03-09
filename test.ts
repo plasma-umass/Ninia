@@ -60,7 +60,7 @@ console.log(`\n--- Function tests ---`);
 test("Keyword and default arguments test","pytests/functions/keywordargs");
 test("Numeric comparison test", "pytests/functions/comparisonTest");
 console.log(`\n--- Builtin tests ---`);
-test("Builtins test", "pytests/builtinsTest");
+test("Builtin Types test", "pytests/builtins/builtinTypes");
 test("Bin function test", "pytests/builtins/bin");
 test("Hex function test", "pytests/builtins/hex");
 test("Complex function test", "pytests/builtins/complex");
