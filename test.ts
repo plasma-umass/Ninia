@@ -67,6 +67,7 @@ test("Complex function test", "pytests/builtins/complex");
 test("Bool function test", "pytests/builtins/bool");
 test("Divmod function test", "pytests/builtins/divmod");
 test("All & Any functions test", "pytests/builtins/all_any");
+test("Chr & Ord functions test", "pytests/builtins/chr_ord");
 console.log(`\n--- Other tests ---`);
 test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");

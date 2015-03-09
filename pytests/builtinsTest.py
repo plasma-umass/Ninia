@@ -12,8 +12,6 @@ print a, b
 
 # Non-exhaustive set of "easy" cases for builtin functions
 print abs(-3), abs(-3L), abs(-3.)
-print chr(97), chr(98)
-print ord('a'), ord('b')
 print cmp(1, 3), cmp(0, 0), cmp('abc', 'acb')
 print divmod(5, 3), divmod(5., 3.)
 print float(5), float('5')
