@@ -11,7 +11,8 @@ import Py_Complex = require('./complex');
 import builtins = require('./builtins');
 import fs = require('fs');
 import gLong = require("../lib/gLong");
-import collections = require('./collections')
+import collections = require('./collections');
+import pytypes = require('./pytypes');
 var Decimal = require('../node_modules/decimal.js/decimal');
 var Py_Tuple = collections.Py_Tuple;
 var Py_List = collections.Py_List;
@@ -111,14 +112,14 @@ class Unmarshaller {
 
     // Read a string from the input. Strings are encoded with a 32-bit integer
     // length (in bytes), followed by the actual bytes of the string.
-    readString(length: number, encoding = "ascii"): string {
+    readString(length: number, encoding = "ascii"): pytypes.Py_Str {
         var s = this.input.toString(encoding, this.index, this.index+length);
         this.index += length;
-        return s;
+        return new pytypes.Py_Str(s);
     }
 
     // Unicode strings have to be treated differently by the Buffer class.
-    readUnicodeString(length: number): string {
+    readUnicodeString(length: number): pytypes.Py_Str {
         return this.readString(length, "utf8");
     }
 

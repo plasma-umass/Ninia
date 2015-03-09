@@ -3,10 +3,15 @@ import singletons = require('./singletons');
 var NIError = singletons.NotImplemented;
 import Py_Int = require('./integer');
 var Decimal = require('../node_modules/decimal.js/decimal');
+import pytypes = require('./pytypes');
 
-class Py_Long {
+class Py_Long extends pytypes.Py_Object {
     isLong: boolean = true;
-    constructor(public value: Decimal) {}
+    value: Decimal;
+    constructor(val: Decimal) {
+        super();
+        this.value = val;
+    }
 
     // Long is a step above integer in the hierarchy. They represent
     // arbitrary-precision decimal numbers.
@@ -103,11 +108,8 @@ class Py_Long {
         });
     }
 
-    divmod(other: any): any {
-        return [
-            Py_Long.fromPy_Int(this.floordiv(other)),
-            Py_Long.fromPy_Int(this.mod(other))
-        ];
+    divmod(other: any): Py_Long[] {
+        return [this.floordiv(other), this.mod(other)];
     }
 
     // Thankfully, Decimal has a toPower function.
@@ -321,11 +323,15 @@ class Py_Long {
     }
 
     toString(): string {
-        return this.value.toString();
+        return this.value.toString() + 'L';
     }
 
     toNumber(): number {
         return this.value.toNumber();
+    }
+
+    str(): pytypes.Py_Str {
+        return new pytypes.Py_Str(this.value.toString());
     }
 }
 export = Py_Long;

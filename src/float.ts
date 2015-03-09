@@ -2,13 +2,18 @@ import singletons = require('./singletons');
 var NIError = singletons.NotImplemented;
 import Py_Int = require('./integer');
 import Py_Long = require('./long');
+import pytypes = require('./pytypes');
 
 // Py_Float emulates the Python Floating-point numeric class. Py_Float is
 // basically a wrapper around JavaScript's numbers.
 // Note that edge cases with e.g. NaN, +/-Infinity are not really covered.
-class Py_Float {
+class Py_Float extends pytypes.Py_Object {
     isFloat: boolean = true;
-    constructor(public value: number) {}
+    value: number;
+    constructor(val: number) {
+        super();
+        this.value = val;
+    }
 
     // Float is below Complex but above Int and Long in the widening hierarchy
     static fromPy_Int(n: Py_Int): Py_Float {

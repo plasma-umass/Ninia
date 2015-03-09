@@ -4,6 +4,7 @@ import singletons = require('./singletons');
 import Py_Int = require('./integer');
 import Py_Complex = require('./complex');
 import Py_Float = require('./float');
+import pytypes = require('./pytypes');
 var Py_List = collections.Py_List;
 var Py_Dict = collections.Py_Dict;
 var Py_Tuple = collections.Py_Tuple;
@@ -60,7 +61,13 @@ function list(args: any[], kwargs: any) {
 // dict constructor function
 function dict(args: any[], kwargs: any) {
     // XXX: handles only the most basic case
-    return new Py_Dict(kwargs);
+    var d = new Py_Dict();
+    for (var k in kwargs) {
+        if (kwargs.hasOwnProperty(k)) {
+            d.set(new pytypes.Py_Str(k), kwargs[k]);
+        }
+    }
+    return d;
 }
 
 // tuple constructor
@@ -110,34 +117,34 @@ function bool(x) {
         return false;
     if (x['bool'] !== undefined)
         return x.bool();
-    return x;
+    return x != 0;
 }
 
-function bin(x) {
+function bin(x): pytypes.Py_Str {
     // Default implementation in python adds '0b' prefix
-    return "0b" + x.toNumber().toString(2);
+    return new pytypes.Py_Str("0b" + x.toNumber().toString(2));
 }
 
-function chr(x) {
-    return String.fromCharCode(x.toNumber());
+function chr(x): pytypes.Py_Str {
+    return new pytypes.Py_Str(String.fromCharCode(x.toNumber()));
 }
 
 function ord(x) {
-    return Py_Int.fromInt(x.charCodeAt(0));
+    return Py_Int.fromInt(x.toString().charCodeAt(0));
 }
 
-function cmp(args: any[], kwargs: any) {
+function cmp(args: any[], kwargs: any): Py_Int {
     var x = args[0];
     var y = args[1];
-    if (typeof x == 'string') {
-        return x.localeCompare(y);
+    if (x instanceof pytypes.Py_Str) {
+        return Py_Int.fromInt(x.toString().localeCompare(y.toString()));
     }
     if (x.eq(y)) {
-        return 0;
+        return Py_Int.fromInt(0);
     } else if (x.lt(y)) {
-        return -1;
+        return Py_Int.fromInt(-1);
     }
-    return 1;
+    return Py_Int.fromInt(1);
 }
 
 function complex(args: any[], kwargs: any) {
@@ -156,12 +163,12 @@ function divmod(args: any[], kwargs: any) {
     return new Py_Tuple(args[0].divmod(args[1]));
 }
 
-function float(args: any[], kwargs: any) {
+function float(args: any[], kwargs: any): Py_Float {
     if (args.length == 0) {
         return new Py_Float(0);
     } else if (args.length == 1) {
-        if (typeof args[0] == 'string') {
-            return new Py_Float(args[0]-0);
+        if (args[0] instanceof pytypes.Py_Str) {
+            return new Py_Float(args[0].toString()-0);
         }
         return new Py_Float(args[0].toNumber());
     } else {
@@ -169,29 +176,29 @@ function float(args: any[], kwargs: any) {
     }
 }
 
-function hex(x: any): string {
+function hex(x: any): pytypes.Py_Str {
     var n = x.toNumber();
     if (n < 0) {
-        return '-0x' + (-n).toString(16);
+        return new pytypes.Py_Str('-0x' + (-n).toString(16));
     }
     var ret = '0x' + n.toString(16);
     if (x.isLong)
         ret += 'L';
-    return ret;
+    return new pytypes.Py_Str(ret);
 }
 
-function int(args: any[], kwargs: any) {
+function int(args: any[], kwargs: any): Py_Int {
     var x = args[0] || kwargs['x'] || 0;
     var base = args[1] || kwargs['base'] || 10;
     if (x.toNumber !== undefined) {
         x = x.toNumber();
-    } else if (typeof x == 'string') {
+    } else if (x instanceof pytypes.Py_Str) {
         if (base == 0) {
             throw new Error('NotImplementedError: int() with base=0 is NYI');
         }
-        x = parseInt(x, base);
+        x = parseInt(x.toString(), base);
     }
-    return x | 0;  // force number -> int
+    return Py_Int.fromInt(x | 0);  // force number -> int
 
 }
 

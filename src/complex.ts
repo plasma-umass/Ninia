@@ -3,15 +3,22 @@ var NIError = singletons.NotImplemented;
 import Py_Int = require('./integer');
 import Py_Long = require('./long');
 import Py_Float = require('./float');
+import pytypes = require('./pytypes');
 
 // Py_Complex models Python Complex numbers. These are stored as 2
 // floating-point numbers, one each for the real and imaginary components.
 // Complex is the "widest" of Python's numeric types, which means any operation
 // between another number and a complex will (most likely) recast the other
 // number as a Complex.
-class Py_Complex {
+class Py_Complex extends pytypes.Py_Object {
     isComplex: boolean = true;
-    constructor(public real: Py_Float, public imag: Py_Float) {}
+    real: Py_Float;
+    imag: Py_Float;
+    constructor(real: Py_Float, imag: Py_Float) {
+        super();
+        this.real = real;
+        this.imag = imag;
+    }
 
     // fromNumber creates a new complex number from 1 or 2 JS numbers.
     // This is simple since Py_Floats are just wrappers around JS numbers.
