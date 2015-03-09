@@ -792,6 +792,9 @@ optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
                 }
             }
         }
+        // Add function itself to its globals
+        if (f.locals[func.name] != undefined)
+            f.globals[func.name] = f.locals[func.name];
         var newf = f.childFrame(func, kwargs);
         newf.exec();
     }
