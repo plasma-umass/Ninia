@@ -66,6 +66,7 @@ test("Hex function test", "pytests/builtins/hex");
 test("Complex function test", "pytests/builtins/complex");
 test("Bool function test", "pytests/builtins/bool");
 test("Divmod function test", "pytests/builtins/divmod");
+test("Abs function test", "pytests/builtins/abs");
 test("All & Any functions test", "pytests/builtins/all_any");
 test("Chr & Ord functions test", "pytests/builtins/chr_ord");
 console.log(`\n--- Other tests ---`);
