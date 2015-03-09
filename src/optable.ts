@@ -187,24 +187,16 @@ optable[opcodes.BINARY_ADD] = function(f: Py_FrameObject) {
     var b = f.pop();
     var a = f.pop();
 
-    if (typeof a == 'string' && typeof b == 'string') {
-        f.push(a + b);
-        return;
-    }
-
-    var res;
-    var mess = "You cannot add " + a + " and " + b;
-
     if (typeof a.add == 'undefined')
-        throw new Error(mess);
+        throw new Error(`You cannot add ${a} and ${b}`);
 
-    res = a.add(b);
+    var res = a.add(b);
     if (res == NotImplemented) {
         if(typeof b.radd == 'undefined')
-            throw new Error(mess);
+            throw new Error(`You cannot add ${a} and ${b}`);
         res = b.radd(a);
         if (res == NotImplemented)
-            throw new Error(mess);
+            throw new Error(`You cannot add ${a} and ${b}`);
     }
 
     f.push(res);
@@ -511,17 +503,11 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
     // Note that True = 1 and False = 0 is consistent with Python (True >
     // False == True)
     if (typeof a == 'boolean') {
-        if (a)
-            a = Py_Int.fromInt(1);
-        else
-            a = Py_Int.fromInt(0);
+        a = Py_Int.fromInt(+a);
     }
 
     if (typeof b == 'boolean') {
-        if (b)
-            b = Py_Int.fromInt(1);
-        else
-            b = Py_Int.fromInt(0);
+        b = Py_Int.fromInt(+b);
     }
 
     switch(op) {
@@ -554,16 +540,16 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
         //         return elem != a;
         //     });
         //     break;
-        // case 'is':
-        //     return a == b;
-        //     break;
-        // case 'is not':
-        //     return a != b;
-        //     break;
+        case 'is':
+            f.push(a.hash() === b.hash());
+            break;
+        case 'is not':
+            f.push(a.hash() !== b.hash());
+            break;
         // case 'exception match':
         //     throw new Error("Python Exceptions are not supported");
         default:
-            throw new Error("Unknown or unsupported comparison operator");
+            throw new Error("Unknown or unsupported comparison operator: "+op);
     }
 }
 

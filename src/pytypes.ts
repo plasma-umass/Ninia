@@ -1,3 +1,5 @@
+import singletons = require('./singletons');
+
 var ref = 1;
 
 export class Py_Object {
@@ -9,7 +11,7 @@ export class Py_Object {
         return this._ref;
     }
     public repr(): Py_Str {
-        return new Py_Str(this.toString());
+        return Py_Str.fromJS(this.toString());
     }
     public str(): Py_Str {
         return this.repr();
@@ -37,12 +39,18 @@ export class Py_Str extends Py_Object {
         return inst;
     }
     public repr(): Py_Str {
-        return new Py_Str(`'${this._str}'`);
+        return Py_Str.fromJS(`'${this._str}'`);
     }
     public str(): Py_Str {
         return this;
     }
     public toString(): string {
         return this._str;
+    }
+    public add(other: Py_Object): any {
+        if (other instanceof Py_Str) {
+            return Py_Str.fromJS(this._str + other.toString());
+        }
+        return singletons.NotImplemented;
     }
 }
