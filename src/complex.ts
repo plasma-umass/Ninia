@@ -335,5 +335,9 @@ class Py_Complex extends pytypes.Py_Object {
         }
         return `(${this.real.value}+${this.imag.value}j)`;
     }
+
+    asBool(): boolean {
+        return !(this.real.value === 0 && this.imag.value === 0);
+    }
 }
 export = Py_Complex;

@@ -44,6 +44,11 @@ export class Py_Str extends Py_Object {
     public str(): Py_Str {
         return this;
     }
+
+    public len(): number {
+        return this._str.length;
+    }
+
     public toString(): string {
         return this._str;
     }
@@ -52,5 +57,9 @@ export class Py_Str extends Py_Object {
             return Py_Str.fromJS(this._str + other.toString());
         }
         return singletons.NotImplemented;
+    }
+
+    public asBool(): boolean {
+        return this.len() !== 0;
     }
 }

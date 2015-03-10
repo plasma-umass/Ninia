@@ -4,6 +4,7 @@ import singletons = require('./singletons');
 import Py_Int = require('./integer');
 import Py_Complex = require('./complex');
 import Py_Float = require('./float');
+import Py_Long = require('./long');
 import pytypes = require('./pytypes');
 var Py_List = collections.Py_List;
 var Py_Dict = collections.Py_Dict;
@@ -113,11 +114,13 @@ function any(x: collections.Iterable): boolean {
 }
 
 function bool(x) {
-    if (x === undefined)
-        return false;
-    if (x['bool'] !== undefined)
-        return x.bool();
-    return x != 0;
+
+    if (x instanceof Object && x.asBool) {
+        return x.asBool();
+    }
+    else {
+        return !!x;
+    }
 }
 
 function bin(x): pytypes.Py_Str {

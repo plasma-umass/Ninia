@@ -318,5 +318,9 @@ class Py_Int extends pytypes.Py_Object {
     toNumber(): number {
         return this.value.toNumber();
     }
+
+    asBool(): boolean {
+         return this.toNumber() !== 0;
+    }
 }
 export = Py_Int;

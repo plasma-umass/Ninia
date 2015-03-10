@@ -21,9 +21,10 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     }
     return list;
   }
-  public len(): Py_Int {
-    return Py_Int.fromInt(this._list.length);
+  public len(): number {
+    return this._list.length;
   }
+
   public iter(): iterator.Iterator {
     return new iterator.ListIterator(this._list);
   }
@@ -38,6 +39,10 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     }
     // Remove last ', ' from the end.
     return s.slice(0, -2) + ']';
+  }
+
+  public asBool(): boolean {
+    return this.len() !== 0;
   }
 }
 
@@ -57,9 +62,11 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
     }
     return new Py_Tuple(tuple);
   }
-  public len(): Py_Int {
-    return this._len;
+
+  public len(): number {
+      return this._len.toNumber();
   }
+    
   public iter(): iterator.Iterator {
     return new iterator.ListIterator(this._tuple);
   }
@@ -74,6 +81,10 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
     }
     // Remove last ', ' from the end.
     return s.slice(0, -2) + ')';
+  }
+
+  public asBool(): boolean {
+    return this.len() !== 0;
   }
 }
 
@@ -96,6 +107,10 @@ export class Py_Dict extends pytypes.Py_Object {
     }
     this._vals[h] = val;
   }
+
+  public len(): number {
+      return this._keys.length;
+  }
   public toString(): string {
     if (this._keys.length == 0) {
       return '{}';
@@ -110,5 +125,9 @@ export class Py_Dict extends pytypes.Py_Object {
     }
     // trim off last ', '
     return s.slice(0, -2) + '}';
+  }
+
+  public asBool(): boolean {
+    return this.len() !== 0;
   }
 }

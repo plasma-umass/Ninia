@@ -281,5 +281,9 @@ class Py_Float extends pytypes.Py_Object {
         }
         return s;
     }
+
+    asBool(): boolean {
+         return this.toNumber() !== 0;
+    }
 }
 export = Py_Float;

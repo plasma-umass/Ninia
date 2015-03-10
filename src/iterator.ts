@@ -25,12 +25,12 @@ export class ListIterator implements Iterator {
     }
 }
 
-class XRange implements Iterator, collections.Iterable {
+export class XRange implements Iterator, collections.Iterable {
     private start: number = 0;
     private index: number = 0;
     private stop: number;
     private step: number = 1;
-    private len: number;
+    private _len: number;
     constructor(args: any[], kwargs: any) {
         if (kwargs.length > 0) {
             throw new Error('TypeError: xrange() does not take keyword arguments')
@@ -53,13 +53,13 @@ class XRange implements Iterator, collections.Iterable {
         }
 
         if (this.step > 0 && this.start < this.stop){
-            this.len = 1 + Math.floor((this.stop - 1 - this.start) / this.step);
+            this._len = 1 + Math.floor((this.stop - 1 - this.start) / this.step);
         }
         else if (this.step < 0 && this.start > this.stop){
-            this.len = 1 + Math.floor((this.start - 1 - this.stop) / ( -1 * this.step));
+            this._len = 1 + Math.floor((this.start - 1 - this.stop) / ( -1 * this.step));
         }
         else{
-            this.len = 0;
+            this._len = 0;
         }
     }
     public iter(): Iterator {
@@ -67,14 +67,22 @@ class XRange implements Iterator, collections.Iterable {
     }
     public next(): number {
         var ret = null;
-        if (this.index < this.len) {
+        if (this.index < this._len) {
             ret = Py_Int.fromInt(this.start + this.index * this.step);
             this.index += 1;
         }
         return ret;
     }
+
+    public len(): number {
+           return this._len;
+    }
     public toString(): string {
         return "xrange";
+    }
+
+    public asBool(): boolean {
+        return this.len() !== 0;
     }
 }
 
