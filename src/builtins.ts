@@ -114,24 +114,13 @@ function any(x: collections.Iterable): boolean {
 }
 
 function bool(x) {
-    
-    if(x instanceof Py_Tuple || x instanceof iterator.XRange || x instanceof pytypes.Py_Str 
-       || x instanceof Py_List || x instanceof Py_Dict){
-        return x.len() !== 0;
+
+    if(x instanceof Object){
+        return x.asBool();
     }
-    if(x instanceof Py_Int || x instanceof Py_Float){
-        return x.toNumber() != 0;
+    else{
+        return !!x;
     }
-    if(x instanceof Py_Long){
-        return !x.eq(Py_Long.fromInt(0));
-    }
-    if(x instanceof Py_Complex){
-        return !(x.real.value == 0 && x.imag.value == 0);
-    }
-    if(x == singletons.None || x == false){
-        return false;
-    }
-    return true;
 }
 
 function bin(x): pytypes.Py_Str {
