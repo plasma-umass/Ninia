@@ -115,7 +115,7 @@ function any(x: collections.Iterable): boolean {
 
 function bool(x) {
 
-    if(x instanceof Object){
+    if(x instanceof Object && x.asBool){
         return x.asBool();
     }
     else{
