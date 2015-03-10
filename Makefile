@@ -24,8 +24,10 @@ RUNNER=runner.ts
 RUNNERJS=runner.js
 # Generated JS files (used for cleanup)
 GENJS=$(TSSOURCES:.ts=.js) $(TESTJS) $(RUNNERJS)
+# TSLINT
+TSLINT=./node_modules/tslint/bin/tslint
 
-.PHONY: main test compile clean
+.PHONY: main test compile lint clean 
 main: compile $(RUNNERJS)
 	$(BROWSERIFY) $(MAININ) > $(MAINOUT)
 
@@ -40,6 +42,9 @@ $(TSC):
 
 bower_components:
 	bower install
+
+lint:
+	$(TSLINT) $(foreach source,$(TSSOURCES), -f $(source))
 
 %.js: %.ts
 	$(TSC) $(TSCFLAGS) $^
