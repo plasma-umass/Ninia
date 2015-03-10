@@ -9,7 +9,12 @@ class SingletonClass {
 }
 
 // Python has a single null object called "None".
-export var None = new SingletonClass("None");
+class NoneType extends SingletonClass{
+      asBool(): boolean {
+          return false;          
+      }
+}
+export var None = new NoneType("None");
 
 // Ellipsis is the object corresponding to the ... syntax.
 export var Ellipsis = new SingletonClass("Ellipsis");

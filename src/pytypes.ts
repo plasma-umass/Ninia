@@ -58,4 +58,8 @@ export class Py_Str extends Py_Object {
         }
         return singletons.NotImplemented;
     }
+
+    public asBool(): boolean {
+        return this.len() !== 0;
+    }
 }

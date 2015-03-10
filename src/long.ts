@@ -333,5 +333,9 @@ class Py_Long extends pytypes.Py_Object {
     str(): pytypes.Py_Str {
         return pytypes.Py_Str.fromJS(this.value.toString());
     }
+
+    asBool(): boolean {
+         return !this.eq(Py_Long.fromInt(0));
+    }
 }
 export = Py_Long;

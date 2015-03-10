@@ -80,6 +80,10 @@ export class XRange implements Iterator, collections.Iterable {
     public toString(): string {
         return "xrange";
     }
+
+    public asBool(): boolean {
+        return this.len() !== 0;
+    }
 }
 
 // builtin xrange()

@@ -40,6 +40,10 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     // Remove last ', ' from the end.
     return s.slice(0, -2) + ']';
   }
+
+  public asBool(): boolean {
+    return this.len() !== 0;
+  }
 }
 
 export class Py_Tuple extends pytypes.Py_Object implements Iterable {
@@ -77,6 +81,10 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
     }
     // Remove last ', ' from the end.
     return s.slice(0, -2) + ')';
+  }
+
+  public asBool(): boolean {
+    return this.len() !== 0;
   }
 }
 
@@ -117,5 +125,9 @@ export class Py_Dict extends pytypes.Py_Object {
     }
     // trim off last ', '
     return s.slice(0, -2) + '}';
+  }
+
+  public asBool(): boolean {
+    return this.len() !== 0;
   }
 }
