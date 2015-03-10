@@ -181,10 +181,12 @@ function float(args: any[], kwargs: any): Py_Float {
 
 function hex(x: any): pytypes.Py_Str {
     var n = x.toNumber();
-    if (n < 0) {
-        return pytypes.Py_Str.fromJS('-0x' + (-n).toString(16));
+    var ret: string;
+    if (n >= 0) {
+        ret = '0x' + n.toString(16);
+    } else {
+        ret = '-0x' + (-n).toString(16);
     }
-    var ret = '0x' + n.toString(16);
     if (x.isLong)
         ret += 'L';
     return pytypes.Py_Str.fromJS(ret);
