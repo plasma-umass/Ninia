@@ -115,10 +115,10 @@ function any(x: collections.Iterable): boolean {
 
 function bool(x) {
 
-    if(x instanceof Object && x.asBool){
+    if (x instanceof Object && x.asBool) {
         return x.asBool();
     }
-    else{
+    else {
         return !!x;
     }
 }

@@ -22,7 +22,7 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     return list;
   }
   public len(): number {
-          return this._list.length;
+    return this._list.length;
   }
 
   public iter(): iterator.Iterator {
