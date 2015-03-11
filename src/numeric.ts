@@ -1,7 +1,8 @@
 /// <reference path="../lib/decimal.d.ts" />
-import NIError = require('./notimplementederror');
+import singletons = require('./singletons');
 import pytypes = require('./pytypes');
 import gLong = require("../lib/gLong");
+var NIError = singletons.NotImplemented;
 var Decimal = require('../node_modules/decimal.js/decimal');
 
 // Py_Float emulates the Python Floating-point numeric class. Py_Float is
