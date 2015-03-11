@@ -1,14 +1,15 @@
 import iterator = require('./iterator');
 import collections = require('./collections');
 import singletons = require('./singletons');
-import Py_Int = require('./integer');
-import Py_Complex = require('./complex');
-import Py_Float = require('./float');
-import Py_Long = require('./long');
+import numeric = require('./numeric');
+import Py_Int = numeric.Py_Int;
+import Py_Complex = numeric.Py_Complex;
+import Py_Float = numeric.Py_Float;
+import Py_Long = numeric.Py_Long;
 import pytypes = require('./pytypes');
-var Py_List = collections.Py_List;
-var Py_Dict = collections.Py_Dict;
-var Py_Tuple = collections.Py_Tuple;
+import Py_List = collections.Py_List;
+import Py_Dict = collections.Py_Dict;
+import Py_Tuple = collections.Py_Tuple;
 
 // range function
 function range(args: any[], kwargs: any) {

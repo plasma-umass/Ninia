@@ -23,6 +23,9 @@ function test(name, file) {
     } catch (e) {
         process.stdout.write("Fail : ");
         process.stdout.write(`${e}\n`);
+        if (e.stack) {
+          process.stdout.write(`${e.stack}\n`);
+        }
         testFails[testName] += 1;
         return;
     }

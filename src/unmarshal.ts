@@ -4,10 +4,11 @@
 // converts it into a Python code object. The marshal format is not officially
 // documented, and there may be unnecessary cruft in the unmarshal loop below.
 import Py_CodeObject = require('./codeobject');
-import Py_Int = require('./integer');
-import Py_Long = require('./long');
-import Py_Float = require('./float');
-import Py_Complex = require('./complex');
+import numeric = require('./numeric');
+import Py_Int = numeric.Py_Int;
+import Py_Long = numeric.Py_Long;
+import Py_Float = numeric.Py_Float;
+import Py_Complex = numeric.Py_Complex;
 import builtins = require('./builtins');
 import fs = require('fs');
 import gLong = require("../lib/gLong");

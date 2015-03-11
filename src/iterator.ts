@@ -1,5 +1,6 @@
-import Py_Int = require('./integer');
+import numeric = require('./numeric');
 import collections = require('./collections');
+import Py_Int = numeric.Py_Int;
 
 // all iterators must support next()
 export interface Iterator {

@@ -1,6 +1,7 @@
 import pytypes = require('./pytypes');
-import Py_Int = require('./integer');
+import numeric = require('./numeric');
 import iterator = require('./iterator');
+import Py_Int = numeric.Py_Int;
 
 // all iterables must support iter()
 export interface Iterable {
@@ -66,7 +67,7 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
   public len(): number {
       return this._len.toNumber();
   }
-    
+
   public iter(): iterator.Iterator {
     return new iterator.ListIterator(this._tuple);
   }

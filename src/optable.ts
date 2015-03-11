@@ -1,11 +1,12 @@
+import numeric = require('./numeric');
 import Py_FrameObject = require('./frameobject');
-import Py_Int = require('./integer');
+import Py_Int = numeric.Py_Int;
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import builtins = require('./builtins');
 import collections = require('./collections');
+import Py_List = collections.Py_List;
 var NotImplemented = builtins.NotImplemented;
-var Py_List = collections.Py_List;
 
 // Big mapping from opcode enum to function
 var optable: { [op: number]: (f: Py_FrameObject)=>void } = {};

@@ -11,7 +11,7 @@ class SingletonClass {
 // Python has a single null object called "None".
 class NoneType extends SingletonClass{
       asBool(): boolean {
-          return false;          
+          return false;
       }
 }
 export var None = new NoneType("None");
