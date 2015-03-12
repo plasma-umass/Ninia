@@ -1,7 +1,6 @@
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
-import singletons = require('./singletons');
 
 var ref = 1;
 
@@ -60,7 +59,8 @@ export class Py_Str extends Py_Object {
       if (other instanceof Py_Str) {
         return Py_Str.fromJS(this._str + other.toString());
       }
-      return singletons.NotImplemented;
+      // Avoid circular dependency.
+      // return singletons.NotImplemented;
     }
 
     public asBool(): boolean {

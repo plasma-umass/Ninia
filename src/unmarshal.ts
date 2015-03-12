@@ -12,10 +12,13 @@ import Py_Complex = numeric.Py_Complex;
 import builtins = require('./builtins');
 import fs = require('fs');
 import collections = require('./collections');
+import interfaces = require('./interfaces');
 import pytypes = require('./pytypes');
 var Decimal: DecimalStatic = require('../node_modules/decimal.js/decimal');
-var Py_Tuple = collections.Py_Tuple;
-var Py_List = collections.Py_List;
+import Py_Tuple = collections.Py_Tuple;
+import Py_List = collections.Py_List;
+import Py_Str = pytypes.Py_Str;
+import IPy_Object = interfaces.IPy_Object;
 
 // An Unmarshaller takes a .pyc file (as a string of binarys, e.g. "\xXX")
 // and converts into a Python code object.
@@ -113,14 +116,14 @@ class Unmarshaller {
 
     // Read a string from the input. Strings are encoded with a 32-bit integer
     // length (in bytes), followed by the actual bytes of the string.
-    readString(length: number, encoding = "ascii"): pytypes.Py_Str {
+    readString(length: number, encoding = "ascii"): Py_Str {
         var s = this.input.toString(encoding, this.index, this.index+length);
         this.index += length;
-        return pytypes.Py_Str.fromJS(s);
+        return Py_Str.fromJS(s);
     }
 
     // Unicode strings have to be treated differently by the Buffer class.
-    readUnicodeString(length: number): pytypes.Py_Str {
+    readUnicodeString(length: number): Py_Str {
         return this.readString(length, "utf8");
     }
 
@@ -234,15 +237,15 @@ class Unmarshaller {
                 var stacksize = this.readInt32();
                 var flags = this.readInt32();
                 var codestr: Buffer = this.unmarshalCodeString();
-                var consts: any[] = this.unmarshal();
-                var names: string[] = this.unmarshal();
-                var varnames: string[] = this.unmarshal();
-                var freevars: string[] = this.unmarshal();
-                var cellvars: string[] = this.unmarshal();
-                var filename: string = this.unmarshal();
-                var name: string = this.unmarshal();
+                var consts: IPy_Object[] = this.unmarshal();
+                var names: Py_Str[] = this.unmarshal();
+                var varnames: Py_Str[] = this.unmarshal();
+                var freevars: Py_Str[] = this.unmarshal();
+                var cellvars: Py_Str[] = this.unmarshal();
+                var filename: Py_Str = this.unmarshal();
+                var name: Py_Str = this.unmarshal();
                 var firstlineno = this.readInt32();
-                var lnotab: string = this.unmarshal();
+                var lnotab: Py_Str = this.unmarshal();
                 res = new Py_CodeObject(
                     argc, nlocals, stacksize, flags, codestr, consts,
                     names, varnames, freevars, cellvars, filename,

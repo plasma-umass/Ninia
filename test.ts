@@ -75,9 +75,12 @@ test("Abs function test", "pytests/builtins/abs");
 test("Cmp function test", "pytests/builtins/cmp");
 test("All & Any functions test", "pytests/builtins/all_any");
 test("Chr & Ord functions test", "pytests/builtins/chr_ord");
-console.log(`\n--- Other tests ---`);
+console.log(`\n--- Collection tests ---`);
+test("List test", "pytests/collections/lists");
+console.log(`\n--- Control flow tests ---`);
 test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");
 test("Recursion test", "pytests/recursionTest");
+console.log(`\n--- Other tests ---`);
 test("Strings test", "pytests/stringTest");
 printResults()

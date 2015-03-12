@@ -1,4 +1,6 @@
 import interfaces = require('./interfaces');
+import pytypes = require('./pytypes');
+import Py_Str = pytypes.Py_Str;
 import enums = require('./enums');
 // Py_CodeObject models the Python Code Object, which is used to represent
 // functions, blocks, modules, etc. -- anything that can be executed.
@@ -11,15 +13,15 @@ class Py_CodeObject implements interfaces.IPy_Object {
                 public stacksize: number,
                 public flags: number,
                 public code: Buffer,
-                public consts: any[],
-                public names: string[],
-                public varnames: string[],
-                public freevars: string[],
-                public cellvars: string[],
-                public filename: string,
-                public name: string,
+                public consts: interfaces.IPy_Object[],
+                public names: Py_Str[],
+                public varnames: Py_Str[],
+                public freevars: Py_Str[],
+                public cellvars: Py_Str[],
+                public filename: Py_Str,
+                public name: Py_Str,
                 public firstlineno: number,
-                public lnotab: string) {}
+                public lnotab: Py_Str) {}
     getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
     hash(): number { return -1; }
 }

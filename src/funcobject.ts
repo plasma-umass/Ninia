@@ -11,6 +11,8 @@ import Py_CodeObject = require('./codeobject');
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
+import pytypes = require('./pytypes');
+import Py_Str = pytypes.Py_Str;
 
 // Similar to frame objects, Function Objects wrap Python functions. However,
 // these are more the data representation of functions, and are transformed into
@@ -20,12 +22,12 @@ class Py_FuncObject implements IPy_Object {
     globals: { [name: string]: IPy_Object };
     defaults: { [name: string]: IPy_Object };
     //closure: ???
-    name: string;
+    name: Py_Str;
 
     constructor(code: Py_CodeObject,
                 globals: { [name: string]: IPy_Object },
                 defaults: { [name: string]: IPy_Object },
-                name: string) {
+                name: Py_Str) {
         this.code = code;
         this.globals = globals;
         this.defaults = defaults;

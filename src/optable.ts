@@ -10,6 +10,7 @@ import IPy_Object = interfaces.IPy_Object;
 import Py_List = collections.Py_List;
 import Py_Dict = collections.Py_Dict;
 import Py_CodeObject = require('./codeobject');
+import enums = require('./enums');
 import True = numeric.True;
 import False = numeric.False;
 import Iterator = interfaces.Iterator;
@@ -241,9 +242,20 @@ optable[opcodes.BINARY_SUBTRACT] = function(f: Py_FrameObject) {
 }
 
 optable[opcodes.BINARY_SUBSCR] = function(f: Py_FrameObject) {
-    var b = <any> f.pop();
-    var a = <any> f.pop();
-    f.push(a[b]);
+    var b = f.pop();
+    var a = f.pop();
+    if (a.getType() === enums.Py_Type.LIST) {
+      var idx: number;
+      if (b.getType() !== enums.Py_Type.INT) {
+        idx = parseInt(b.toString(), 10);
+      } else {
+        idx = (<Py_Int> b).toNumber();
+      }
+      if (idx < 0) idx = (<Py_List> a).len() + idx;
+      f.push((<Py_List> a)._list[idx]);
+    } else {
+      throw new Error("Unsupported.");
+    }
 }
 
 optable[opcodes.BINARY_FLOOR_DIVIDE] = function(f: Py_FrameObject) {
@@ -457,14 +469,14 @@ optable[opcodes.STORE_NAME] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var val = f.pop();
     var name = f.codeObj.names[i];
-    f.locals[name] = val;
+    f.locals[name.toString()] = val;
 }
 
 optable[opcodes.STORE_GLOBAL] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var val = f.pop();
     var name = f.codeObj.names[i];
-    f.globals[name] = val;
+    f.globals[name.toString()] = val;
 }
 
 optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
@@ -474,7 +486,7 @@ optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    var name: string = f.codeObj.names[i];
+    var name: string = f.codeObj.names[i].toString();
     var val = f.locals[name] || f.globals[name] || builtins[name];
     if (val === undefined) {
         throw new Error('undefined name: ' + name);
@@ -484,7 +496,7 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    var name: string = f.codeObj.names[i];
+    var name: string = f.codeObj.names[i].toString();
     var val = f.globals[name];
     if (val === undefined) {
         throw new Error('undefined name: ' + name);
@@ -700,14 +712,14 @@ optable[opcodes.POP_JUMP_IF_TRUE] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_FAST] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    var name = f.codeObj.varnames[i];
+    var name = f.codeObj.varnames[i].toString();
     f.push(f.locals[name]);
 }
 
 optable[opcodes.STORE_FAST] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var val = f.pop();
-    f.locals[f.codeObj.varnames[i]] = val;
+    f.locals[f.codeObj.varnames[i].toString()] = val;
 }
 
 optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
@@ -738,7 +750,7 @@ optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
         // convert kwargs into local variables for the function
         var varnames = (<Py_FuncObject> func).code.varnames;
         for (var i = 0; i < varnames.length; i++) {
-            var name = varnames[i];
+            var name = varnames[i].toString();
             if (kwargs[name] == undefined) {
                 if (args.length > 0) {
                     kwargs[name] = args.shift();
@@ -748,8 +760,8 @@ optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
             }
         }
         // Add function itself to its globals
-        if (f.locals[(<Py_FuncObject> func).name] != undefined)
-            f.globals[(<Py_FuncObject> func).name] = f.locals[(<Py_FuncObject> func).name];
+        if (f.locals[(<Py_FuncObject> func).name.toString()] != undefined)
+            f.globals[(<Py_FuncObject> func).name.toString()] = f.locals[(<Py_FuncObject> func).name.toString()];
         var newf = f.childFrame((<Py_FuncObject> func), kwargs);
         newf.exec();
     } else {
@@ -764,7 +776,7 @@ optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
     var code = f.pop();
 
     for (var i = (<Py_CodeObject> code).varnames.length-1; i >= 0; i--) {
-        defaults[(<Py_CodeObject> code).varnames[i]] = f.pop();
+        defaults[(<Py_CodeObject> code).varnames[i].toString()] = f.pop();
     }
 
     var func = new Py_FuncObject((<Py_CodeObject> code), f.globals, defaults, (<Py_CodeObject> code).name);
@@ -780,28 +792,27 @@ optable[opcodes.DUP_TOP] = function(f: Py_FrameObject) {
 optable[opcodes.NOP] = function(f: Py_FrameObject) {}
 
 optable[opcodes.SLICE_0] = function(f: Py_FrameObject) {
-    var a = <any[]><any> f.pop();
-    var b = a.slice(0);
-    f.push(<any> b);
+    var a = <Py_List> f.pop();
+    f.push(new Py_List(a._list.slice(0)));
 }
 
 optable[opcodes.SLICE_1] = function(f: Py_FrameObject) {
-    var a = <number><any> f.pop();
-    var b = <any[]><any> f.pop();
-    f.push(<any> b.slice(a));
+  var a = <Py_Int> f.pop();
+  var b = <Py_List> f.pop();
+  f.push(new Py_List(b._list.slice(a.toNumber())));
 }
 
 optable[opcodes.SLICE_2] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = <any> f.pop();
-    f.push(b.slice(0,a));
+  var a = <Py_Int> f.pop();
+  var b = <Py_List> f.pop();
+  f.push(new Py_List(b._list.slice(0, a.toNumber())));
 }
 
 optable[opcodes.SLICE_3] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = f.pop();
-    var c = <any> f.pop();
-    f.push(<any> c.slice(b,a));
+  var a = <Py_Int> f.pop();
+  var b = <Py_Int> f.pop();
+  var c = <Py_List> f.pop();
+  f.push(new Py_List(c._list.slice(b.toNumber(), a.toNumber())));
 }
 
 //TODO: store_slice is not working yet
@@ -935,5 +946,19 @@ optable[opcodes.IMPORT_FROM] = function(f: Py_FrameObject) {
     // TODO: implement this. For now, we no-op.
     // attr = mod.codeObj.names[name_idx]
     f.push(attr);
+}
+
+// Replaces TOS with getattr(TOS, co_names[namei]).
+optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) {
+  var name = f.codeObj.names[f.readArg()].toString(), obj = <Py_List> f.pop(), val = obj[name];
+  // XXX: We need a better way to handle functions!
+  if (typeof(val) === 'function') {
+    // Create an anonymous function binding `obj` to this particular property.
+    f.push(<any> ((args: IPy_Object[], kwargs: { [name: string]: IPy_Object }) => obj[name](args, kwargs)));
+  } else if (val === undefined) {
+    throw new Error(`Invalid attribute: ${name}`);
+  } else {
+    f.push(val);
+  }
 }
 export = optable;

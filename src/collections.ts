@@ -2,13 +2,14 @@ import pytypes = require('./pytypes');
 import numeric = require('./numeric');
 import iterator = require('./iterator');
 import interfaces = require('./interfaces');
+import enums = require('./enums');
 import Py_Int = numeric.Py_Int;
 import Iterable = interfaces.Iterable;
 import Iterator = interfaces.Iterator;
 import IPy_Object = interfaces.IPy_Object;
 
 export class Py_List extends pytypes.Py_Object implements Iterable {
-  private _list: IPy_Object[];
+  public _list: IPy_Object[];
   constructor(lst: IPy_Object[]) {
     super();
     this._list = lst;
@@ -21,8 +22,14 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     }
     return list;
   }
+  public getType(): enums.Py_Type { return enums.Py_Type.LIST; }
   public len(): number {
     return this._list.length;
+  }
+
+  public append(args: IPy_Object[]) {
+    // TODO: Should return 'None'.
+    this._list.push(args[0]);
   }
 
   public iter(): Iterator {
@@ -43,6 +50,14 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
 
   public asBool(): boolean {
     return this.len() !== 0;
+  }
+
+  public __add__(other: IPy_Object): Py_List {
+    if (other instanceof Py_List) {
+      return new Py_List(this._list.concat((<Py_List> other)._list));
+    } else {
+      throw new Error("???");
+    }
   }
 }
 
@@ -90,7 +105,7 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
 
 export class Py_Dict extends pytypes.Py_Object {
   private _keys: IPy_Object[];
-  private _vals: any;
+  private _vals: { [name: string]: IPy_Object };
   constructor() {
     super();
     this._keys = [];
