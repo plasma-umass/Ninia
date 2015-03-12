@@ -8,25 +8,31 @@
 // dict: __dict__, can be NULL
 
 import Py_CodeObject = require('./codeobject');
+import interfaces = require('./interfaces');
+import IPy_Object = interfaces.IPy_Object;
+import enums = require('./enums');
 
 // Similar to frame objects, Function Objects wrap Python functions. However,
 // these are more the data representation of functions, and are transformed into
 // Frame Objects when the function is called.
-class Py_FuncObject {
+class Py_FuncObject implements IPy_Object {
     code: Py_CodeObject;
-    globals: { [name: string]: any };
-    defaults: { [name: string]: any};
+    globals: { [name: string]: IPy_Object };
+    defaults: { [name: string]: IPy_Object };
     //closure: ???
     name: string;
 
     constructor(code: Py_CodeObject,
-                globals: { [name: string]: any },
-                defaults: { [name: string]: any},
+                globals: { [name: string]: IPy_Object },
+                defaults: { [name: string]: IPy_Object },
                 name: string) {
         this.code = code;
         this.globals = globals;
         this.defaults = defaults;
         this.name = name
     }
+    getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
+    // XXX: Fix.
+    hash(): number { return -1; }
 }
 export = Py_FuncObject;

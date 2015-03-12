@@ -1,16 +1,15 @@
 import pytypes = require('./pytypes');
 import numeric = require('./numeric');
 import iterator = require('./iterator');
+import interfaces = require('./interfaces');
 import Py_Int = numeric.Py_Int;
-
-// all iterables must support iter()
-export interface Iterable {
-    iter: ()=>iterator.Iterator;
-}
+import Iterable = interfaces.Iterable;
+import Iterator = interfaces.Iterator;
+import IPy_Object = interfaces.IPy_Object;
 
 export class Py_List extends pytypes.Py_Object implements Iterable {
-  private _list: pytypes.Py_Object[];
-  constructor(lst: pytypes.Py_Object[]) {
+  private _list: IPy_Object[];
+  constructor(lst: IPy_Object[]) {
     super();
     this._list = lst;
   }
@@ -26,7 +25,7 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     return this._list.length;
   }
 
-  public iter(): iterator.Iterator {
+  public iter(): Iterator {
     return new iterator.ListIterator(this._list);
   }
   public toString(): string {
@@ -35,7 +34,7 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     }
     var s = '[';
     for (var i=0; i<this._list.length; i++) {
-      s += this._list[i].repr();
+      s += this._list[i].__repr__();
       s += ', ';
     }
     // Remove last ', ' from the end.
@@ -53,7 +52,7 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
   constructor(t: pytypes.Py_Object[]) {
     super();
     this._tuple = t;
-    this._len = Py_Int.fromInt(t.length);
+    this._len = Py_Int.fromNumber(t.length);
   }
   static fromIterable(x: Iterable) {
     var it = x.iter();
@@ -68,7 +67,7 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
       return this._len.toNumber();
   }
 
-  public iter(): iterator.Iterator {
+  public iter(): Iterator {
     return new iterator.ListIterator(this._tuple);
   }
   public toString(): string {
@@ -77,7 +76,7 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
     }
     var s = '(';
     for (var i=0; i<this._tuple.length; i++) {
-      s += this._tuple[i].repr();
+      s += this._tuple[i].__repr__();
       s += ', ';
     }
     // Remove last ', ' from the end.
@@ -90,18 +89,18 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
 }
 
 export class Py_Dict extends pytypes.Py_Object {
-  private _keys: pytypes.Py_Object[];
+  private _keys: IPy_Object[];
   private _vals: any;
   constructor() {
     super();
     this._keys = [];
     this._vals = {};
   }
-  public get(key: pytypes.Py_Object): pytypes.Py_Object {
+  public get(key: IPy_Object): IPy_Object {
     var h = key.hash();
     return this._vals[h];
   }
-  public set(key: pytypes.Py_Object, val: pytypes.Py_Object): void {
+  public set(key: IPy_Object, val: IPy_Object): void {
     var h = key.hash();
     if (this._vals[h] === undefined) {
       this._keys.push(key);
@@ -121,8 +120,8 @@ export class Py_Dict extends pytypes.Py_Object {
       var key = this._keys[i];
       var h = key.hash();
       var val = this._vals[h];
-      s += key.repr() + ': ';
-      s += val.repr() + ', ';
+      s += key.__repr__() + ': ';
+      s += val.__repr__() + ', ';
     }
     // trim off last ', '
     return s.slice(0, -2) + '}';

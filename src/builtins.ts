@@ -10,10 +10,13 @@ import pytypes = require('./pytypes');
 import Py_List = collections.Py_List;
 import Py_Dict = collections.Py_Dict;
 import Py_Tuple = collections.Py_Tuple;
+import interfaces = require('./interfaces');
+import IPy_Object = interfaces.IPy_Object;
+import enums = require('./enums');
 
 // range function
-function range(args: any[], kwargs: any) {
-    if (kwargs.length > 0) {
+function range(args: Py_Int[], kwargs: { [name: string]: IPy_Object }): Py_List {
+    if (Object.keys(kwargs).length > 0) {
         throw new Error('TypeError: range() takes no keyword arguments')
     }
     var start = 0, step = 1, stop: number;
@@ -38,13 +41,13 @@ function range(args: any[], kwargs: any) {
         default:
             throw new Error('TypeError: range() expects 1-3 int arguments')
     }
-    var it = iterator.xrange([Py_Int.fromInt(start), Py_Int.fromInt(stop), Py_Int.fromInt(step)], {});
+    var it = iterator.xrange([Py_Int.fromNumber(start), Py_Int.fromNumber(stop), Py_Int.fromNumber(step)], {});
     return list([it], {});
 }
 
 // list constructor
-function list(args: any[], kwargs: any) {
-    if (kwargs.length > 0) {
+function list(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object }): Py_List {
+    if (Object.keys(kwargs).length > 0) {
         throw new Error('TypeError: list() takes no keyword arguments')
     }
     if (args.length == 0) {
@@ -55,13 +58,14 @@ function list(args: any[], kwargs: any) {
     }
     var x = args[0];
     if (x instanceof Py_List) {
-        return x;
+      // TODO: Shouldn't TypeScript 1.4 infer the type here?
+      return <Py_List> x;
     }
     return Py_List.fromIterable(x);
 }
 
 // dict constructor function
-function dict(args: any[], kwargs: any) {
+function dict(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Dict {
     // XXX: handles only the most basic case
     var d = new Py_Dict();
     for (var k in kwargs) {
@@ -73,8 +77,8 @@ function dict(args: any[], kwargs: any) {
 }
 
 // tuple constructor
-function tuple(args: any[], kwargs: any) {
-    if (kwargs.length > 0) {
+function tuple(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object }): Py_Tuple {
+    if (Object.keys(kwargs).length > 0) {
         throw new Error('TypeError: tuple() takes no keyword arguments')
     }
     if (args.length == 0) {
@@ -85,160 +89,166 @@ function tuple(args: any[], kwargs: any) {
     }
     var x = args[0];
     if (x instanceof Py_Tuple) {
-        return x;
+        return <Py_Tuple> x;
     }
     return Py_Tuple.fromIterable(x);
 }
 
-function abs(x) {
-    return x.abs();
+function abs(x: IPy_Object): IPy_Object {
+    return x.__abs__();
 }
 
-function all(x: collections.Iterable): boolean {
-    var it = x.iter();
-    for (var val = it.next(); val != null; val = it.next()) {
-        if (!bool(val)) {
-            return false;
-        }
+function all(x: interfaces.Iterable): typeof True {
+  var it = x.iter();
+  for (var val = it.next(); val != null; val = it.next()) {
+    if (bool(val) === False) {
+      return False;
     }
-    return true;
+  }
+  return True;
 }
 
-function any(x: collections.Iterable): boolean {
-    var it = x.iter();
-    for (var val = it.next(); val != null; val = it.next()) {
-        if (bool(val)) {
-            return true;
-        }
+function any(x: interfaces.Iterable): typeof True {
+  var it = x.iter();
+  for (var val = it.next(); val != null; val = it.next()) {
+    if (bool(val) === True) {
+      return True;
     }
-    return false;
+  }
+  return False;
 }
 
-function bool(x) {
+function bool(x: IPy_Object): typeof True {
+  if (x.asBool) {
+    return x.asBool() ? True : False;
+  }
+  return True;
+}
 
-    if (x instanceof Object && x.asBool) {
-        return x.asBool();
+function bin(x: Py_Int): pytypes.Py_Str {
+  // Default implementation in python adds '0b' prefix
+  return pytypes.Py_Str.fromJS("0b" + x.toNumber().toString(2));
+}
+
+function chr(x: Py_Int): pytypes.Py_Str {
+  return pytypes.Py_Str.fromJS(String.fromCharCode(x.toNumber()));
+}
+
+function ord(x: IPy_Object): Py_Int {
+  return Py_Int.fromNumber(x.toString().charCodeAt(0));
+}
+
+function cmp(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
+  var x = args[0];
+  var y = args[1];
+  if (x instanceof pytypes.Py_Str) {
+    return Py_Int.fromNumber(x.toString().localeCompare(y.toString()));
+  }
+  if (x.__eq__(y) === True) {
+    return Py_Int.fromNumber(0);
+  } else if (x.__lt__(y) === True) {
+    return Py_Int.fromNumber(-1);
+  }
+  return Py_Int.fromNumber(1);
+}
+
+function complex(args: Py_Float[], kwargs: { [name: string]: IPy_Object }): Py_Complex {
+  if (args.length === 0) {
+    return Py_Complex.fromNumber(0);
+  } else if (args.length === 1) {
+    return Py_Complex.fromNumber(args[0].toNumber());
+  } else if (args.length === 2) {
+    return new Py_Complex(args[0], args[1]);
+  } else {
+    throw new Error('TypeError: complex() takes 0-2 arguments');
+  }
+}
+
+function divmod(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Tuple {
+  // XXX: __divmod__ should return a tuple.
+  return new Py_Tuple(args[0].__divmod__(args[1]));
+}
+
+function float(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Float {
+  if (args.length == 0) {
+    return new Py_Float(0);
+  } else if (args.length == 1) {
+    if (args[0] instanceof pytypes.Py_Str) {
+      return new Py_Float(parseFloat(args[0].toString()));
     }
-    else {
-        return !!x;
-    }
+    return new Py_Float((<Py_Int> args[0]).toNumber());
+  } else {
+    throw new Error('TypeError: float() takes 0-1 arguments');
+  }
 }
 
-function bin(x): pytypes.Py_Str {
-    // Default implementation in python adds '0b' prefix
-    return pytypes.Py_Str.fromJS("0b" + x.toNumber().toString(2));
+function hex(x: Py_Int): pytypes.Py_Str {
+  var n = x.toNumber();
+  var ret: string;
+  if (n >= 0) {
+    ret = '0x' + n.toString(16);
+  } else {
+    ret = '-0x' + (-n).toString(16);
+  }
+  if (x.getType() === enums.Py_Type.LONG)
+    ret += 'L';
+  return pytypes.Py_Str.fromJS(ret);
 }
 
-function chr(x): pytypes.Py_Str {
-    return pytypes.Py_Str.fromJS(String.fromCharCode(x.toNumber()));
-}
-
-function ord(x) {
-    return Py_Int.fromInt(x.toString().charCodeAt(0));
-}
-
-function cmp(args: any[], kwargs: any): Py_Int {
-    var x = args[0];
-    var y = args[1];
-    if (x instanceof pytypes.Py_Str) {
-        return Py_Int.fromInt(x.toString().localeCompare(y.toString()));
-    }
-    if (x.eq(y)) {
-        return Py_Int.fromInt(0);
-    } else if (x.lt(y)) {
-        return Py_Int.fromInt(-1);
-    }
-    return Py_Int.fromInt(1);
-}
-
-function complex(args: any[], kwargs: any) {
-    if (args.length == 0) {
-        return Py_Complex.fromNumber(0);
-    } else if (args.length == 1) {
-        return Py_Complex.fromNumber(args[0].toNumber());
-    } else if (args.length == 2) {
-        return new Py_Complex(args[0], args[1]);
-    } else {
-        throw new Error('TypeError: complex() takes 0-2 arguments');
-    }
-}
-
-function divmod(args: any[], kwargs: any) {
-    return new Py_Tuple(args[0].divmod(args[1]));
-}
-
-function float(args: any[], kwargs: any): Py_Float {
-    if (args.length == 0) {
-        return new Py_Float(0);
-    } else if (args.length == 1) {
-        if (args[0] instanceof pytypes.Py_Str) {
-            return new Py_Float(args[0].toString()-0);
-        }
-        return new Py_Float(args[0].toNumber());
-    } else {
-        throw new Error('TypeError: float() takes 0-1 arguments');
-    }
-}
-
-function hex(x: any): pytypes.Py_Str {
-    var n = x.toNumber();
-    var ret: string;
-    if (n >= 0) {
-        ret = '0x' + n.toString(16);
-    } else {
-        ret = '-0x' + (-n).toString(16);
-    }
-    if (x.isLong)
-        ret += 'L';
-    return pytypes.Py_Str.fromJS(ret);
-}
-
-function int(args: any[], kwargs: any): Py_Int {
-    var x = args[0] || kwargs['x'] || 0;
-    var base = args[1] || kwargs['base'] || 10;
-    if (x.toNumber !== undefined) {
-        x = x.toNumber();
-    } else if (x instanceof pytypes.Py_Str) {
-        if (base == 0) {
-            throw new Error('NotImplementedError: int() with base=0 is NYI');
-        }
-        x = parseInt(x.toString(), base);
-    }
-    return Py_Int.fromInt(x | 0);  // force number -> int
-
+function int(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
+  if (kwargs['base'] !== undefined) {
+    args.push(kwargs['base']);
+  }
+  switch (args.length) {
+    case 0:
+      return Py_Int.fromNumber(0);
+    case 1:
+      var arg1 = args[0];
+      switch(arg1.getType()) {
+        case enums.Py_Type.INT:
+          return <Py_Int> arg1;
+        case enums.Py_Type.LONG:
+        case enums.Py_Type.FLOAT:
+          return Py_Int.fromNumber((<Py_Long | Py_Float> arg1).toNumber() | 0);
+        default:
+          return Py_Int.fromNumber(parseInt(arg1.toString(), 10));
+      }
+    case 2:
+      return Py_Int.fromNumber(parseInt(args[0].toString(), (<Py_Int> args[1]).toNumber()));
+  }
 }
 
 // builtin iter()
-function iter(args: any[], kwargs: any): iterator.Iterator {
-    if (kwargs.length > 0) {
-        throw new Error('TypeError: iter() takes no keyword arguments');
-    }
-    if (args.length == 1) {
-        return args[0].iter();
-    }
-    if (args.length == 2) {
-        throw new Error('NotImplementedError: iter(a,b) is NYI');
-    }
-    throw new Error('TypeError: iter() take 1-2 arguments');
+function iter(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): interfaces.Iterator {
+  if (Object.keys(kwargs).length > 0) {
+    throw new Error('TypeError: iter() takes no keyword arguments');
+  }
+  if (args.length == 1) {
+    return (<interfaces.Iterable> args[0]).iter();
+  }
+  if (args.length == 2) {
+    throw new Error('NotImplementedError: iter(a,b) is NYI');
+  }
+  throw new Error('TypeError: iter() take 1-2 arguments');
 }
 
 function pyfunc_wrapper_onearg(func, funcname: string) {
-    return function(args: any[], kwargs: any) {
-        if (kwargs.length > 0) {
-            throw new Error('TypeError: ' + funcname +
-                            '() takes no keyword arguments');
-        }
-        if (args.length != 1) {
-            throw new Error('TypeError: ' + funcname + '() takes one argument');
-        }
-        return func(args[0]);
+  return function(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): IPy_Object {
+    if (Object.keys(kwargs).length > 0) {
+      throw new Error('TypeError: ' + funcname +
+                      '() takes no keyword arguments');
     }
+    if (args.length != 1) {
+      throw new Error('TypeError: ' + funcname + '() takes one argument');
+    }
+    return func(args[0]);
+  };
 }
 
 // full mapping of builtin names to values.
 var builtins = {
-    True: true,
-    False: false,
+    True: numeric.True,
+    False: numeric.False,
     None: singletons.None,
     NotImplemented: singletons.NotImplemented,
     Ellipsis: singletons.Ellipsis,
@@ -261,6 +271,6 @@ var builtins = {
     float: float,
     hex: pyfunc_wrapper_onearg(hex, 'hex'),
     int: int,
-};
+}, True = builtins.True, False = builtins.False;
 
 export = builtins

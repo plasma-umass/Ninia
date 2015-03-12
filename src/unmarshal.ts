@@ -172,7 +172,7 @@ class Unmarshaller {
                 res = new Py_Float(this.readFloat64());
                 break;
             case "i": // 32-bit integer (signed)
-                res = Py_Int.fromInt(this.readInt32());
+                res = Py_Int.fromNumber(this.readInt32());
                 break;
             case "I": // 64-bit integer (signed)
                 res = new Py_Int(this.readInt64());

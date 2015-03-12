@@ -1,16 +1,16 @@
 import numeric = require('./numeric');
+import pytypes = require('./pytypes');
 import collections = require('./collections');
+import interfaces = require('./interfaces');
+import Iterator = interfaces.Iterator;
 import Py_Int = numeric.Py_Int;
+import Py_Object = pytypes.Py_Object;
 
-// all iterators must support next()
-export interface Iterator {
-    next: ()=>any;
-}
-
-export class ListIterator implements Iterator {
+export class ListIterator extends Py_Object implements Iterator {
     private pos: number = 0;
     private list: any[];
     constructor(list: any[]) {
+        super();
         this.list = list;
     }
     public next(): any {
@@ -26,13 +26,14 @@ export class ListIterator implements Iterator {
     }
 }
 
-export class XRange implements Iterator, collections.Iterable {
+export class XRange extends Py_Object implements Iterator, interfaces.Iterable {
     private start: number = 0;
     private index: number = 0;
     private stop: number;
     private step: number = 1;
     private _len: number;
     constructor(args: any[], kwargs: any) {
+        super();
         if (kwargs.length > 0) {
             throw new Error('TypeError: xrange() does not take keyword arguments')
         }
@@ -69,7 +70,7 @@ export class XRange implements Iterator, collections.Iterable {
     public next(): number {
         var ret = null;
         if (this.index < this._len) {
-            ret = Py_Int.fromInt(this.start + this.index * this.step);
+            ret = Py_Int.fromNumber(this.start + this.index * this.step);
             this.index += 1;
         }
         return ret;

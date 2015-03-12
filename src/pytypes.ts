@@ -1,20 +1,24 @@
+import interfaces = require('./interfaces');
+import IPy_Object = interfaces.IPy_Object;
+import enums = require('./enums');
 import singletons = require('./singletons');
 
 var ref = 1;
 
-export class Py_Object {
+export class Py_Object implements IPy_Object {
     private _ref: number;
     constructor() {
         this._ref = ref++;
     }
+    public getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
     public hash(): number {
         return this._ref;
     }
-    public repr(): Py_Str {
+    public __repr__(): Py_Str {
         return Py_Str.fromJS(this.toString());
     }
-    public str(): Py_Str {
-        return this.repr();
+    public __str__(): Py_Str {
+        return this.__repr__();
     }
 }
 
@@ -38,10 +42,10 @@ export class Py_Str extends Py_Object {
         string_pool[s] = inst;
         return inst;
     }
-    public repr(): Py_Str {
+    public __repr__(): Py_Str {
         return Py_Str.fromJS(`'${this._str}'`);
     }
-    public str(): Py_Str {
+    public __str__(): Py_Str {
         return this;
     }
 
@@ -52,11 +56,11 @@ export class Py_Str extends Py_Object {
     public toString(): string {
         return this._str;
     }
-    public add(other: Py_Object): any {
-        if (other instanceof Py_Str) {
-            return Py_Str.fromJS(this._str + other.toString());
-        }
-        return singletons.NotImplemented;
+    public __add__(other: IPy_Object): IPy_Object {
+      if (other instanceof Py_Str) {
+        return Py_Str.fromJS(this._str + other.toString());
+      }
+      return singletons.NotImplemented;
     }
 
     public asBool(): boolean {

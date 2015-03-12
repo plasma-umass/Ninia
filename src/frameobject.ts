@@ -1,3 +1,5 @@
+import interfaces = require('./interfaces');
+import IPy_Object = interfaces.IPy_Object;
 import Py_CodeObject = require('./codeobject');
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
@@ -20,17 +22,17 @@ class Py_FrameObject {
     // Exception value, if raised in this frame
     // exc_value
     // List of global values (global namespace!)
-    globals: { [name: string]: any };
+    globals: { [name: string]: IPy_Object };
     // Last attempted instruction
     lastInst: number;
     // Current line number
     lineNum: number;
     // Local namespace
-    locals: { [name: string]: any };
+    locals: { [name: string]: IPy_Object };
     // Flag: 1 if running in restricted mode (TODO: What?)
     restricted: boolean;
     // This frame's stack
-    stack: any[];
+    stack: IPy_Object[];
     // Tracing function for this frame
     // trace:
     // Stdout stream (hack!)
@@ -40,14 +42,14 @@ class Py_FrameObject {
     // block stack, for loops and such.
     // Entries are [stackSize, startPos, endPos] tuples.
     // TODO: type this correctly
-    blockStack: any[];
+    blockStack: [number, number, number][];
 
     constructor(back: Py_FrameObject,
                 code: Py_CodeObject,
-                globals: { [name: string]: any },
+                globals: { [name: string]: IPy_Object },
                 lastInst: number,
                 lineNum: number,
-                locals: { [name: string]: any },
+                locals: { [name: string]: IPy_Object },
                 restricted: boolean,
                 outputDevice: any) {
         this.back = back;
@@ -64,31 +66,31 @@ class Py_FrameObject {
     }
 
     // Stack handling operations.
-    push(v) {
-        return this.stack.push(v);
+    push(v: IPy_Object) {
+      return this.stack.push(v);
     }
 
-    pop() {
-        return this.stack.pop();
+    pop(): IPy_Object {
+      return this.stack.pop();
     }
 
-    peek() {
-        return this.stack[this.stack.length-1];
+    peek(): IPy_Object {
+      return this.stack[this.stack.length-1];
     }
 
     // The frame's lastInst field keeps track of the last executed instruction.
     readOp(): number {
-        this.lastInst += 1;
-        return this.codeObj.code[this.lastInst];
+      this.lastInst += 1;
+      return this.codeObj.code[this.lastInst];
     }
 
     // Arguments are stored as 2 bytes, little-endian.
     readArg(): number {
-        this.lastInst += 1;
-        var low = this.codeObj.code[this.lastInst];
-        this.lastInst += 1;
-        var high = this.codeObj.code[this.lastInst];
-        return (high << 8) + low;
+      this.lastInst += 1;
+      var low = this.codeObj.code[this.lastInst];
+      this.lastInst += 1;
+      var high = this.codeObj.code[this.lastInst];
+      return (high << 8) + low;
     }
 
     // exec is the Fetch-Execute-Decode loop for the interpreter.
@@ -113,7 +115,7 @@ class Py_FrameObject {
     }
 
     // clone a new frame off this one, for calling a child function.
-    childFrame(func: Py_FuncObject, locals: { [name: string]: any }): Py_FrameObject {
+    childFrame(func: Py_FuncObject, locals: { [name: string]: IPy_Object }): Py_FrameObject {
         return new Py_FrameObject(this, func.code,
             func.globals, -1, func.code.firstlineno, locals, false,
             this.outputDevice);

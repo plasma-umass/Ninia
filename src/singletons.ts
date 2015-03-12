@@ -1,18 +1,28 @@
+import numeric = require('./numeric');
+import True = numeric.True;
+import False = numeric.False;
+import interfaces = require('./interfaces');
+import IPy_Object = interfaces.IPy_Object;
+import enums = require('./enums');
+
 // This file is split apart from builtins.ts to avoid circular dependencies.
 
 // We don't export this, so our instances will be singleton-ish.
-class SingletonClass {
+class SingletonClass implements IPy_Object {
     constructor(private name: string) {}
     toString(): string {
         return this.name;
     }
+    getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
+    // XXX: Should be fixed.
+    hash(): number { return -1; }
 }
 
 // Python has a single null object called "None".
 class NoneType extends SingletonClass{
-      asBool(): boolean {
-          return false;
-      }
+  asBool(): typeof True {
+    return False;
+  }
 }
 export var None = new NoneType("None");
 
