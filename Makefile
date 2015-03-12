@@ -3,7 +3,7 @@ SDIR=src
 TDIR=pytests
 # compilers
 TSC=./node_modules/typescript/bin/tsc
-TSCFLAGS=--module commonjs
+TSCFLAGS=-t ES3 --sourceMap --module commonjs
 PYTHON=python2.7
 PYC=$(PYTHON) -m compileall
 BROWSERIFY=./node_modules/browserify/bin/cmd.js
@@ -27,12 +27,15 @@ GENJS=$(TSSOURCES:.ts=.js) $(TESTJS) $(RUNNERJS)
 # TSLINT
 TSLINT=./node_modules/tslint/bin/tslint
 
-.PHONY: main test compile lint clean 
+.PHONY: main test coverage compile lint clean
 main: compile $(RUNNERJS)
 	$(BROWSERIFY) $(MAININ) > $(MAINOUT)
 
 test: compile $(TESTJS) $(PYCS) $(TESTOUTS) $(RUNNERJS)
 	node $(TESTJS)
+
+coverage: compile $(TESTJS) $(PYCS) $(TESTOUTS) $(RUNNERJS)
+	istanbul cover $(TESTJS)
 
 compile: $(TSSOURCES) $(TSC) bower_components
 	$(TSC) $(TSCFLAGS) $(TSSOURCES)
@@ -57,4 +60,3 @@ lint:
 
 clean:
 	$(RM) $(GENJS) $(PYCS) $(MAINOUT) $(TESTOUTS)
-

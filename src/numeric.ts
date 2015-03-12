@@ -26,26 +26,25 @@ function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
  * type before executing the math operation. We use a regular expression to
  * replace the function name in the generated version.
  */
-var widenedMathOpTemplate = function(b: IPy_Number): IPy_Number | typeof NIError {
-  var a: IPy_Number = this,
-    bType = b.getType(),
-    aType = a.getType(),
-    typeDiff = aType - bType;
-  if (bType > enums.Py_Type.COMPLEX) {
-    // b is not a number.
-    return NIError;
-  } else if (typeDiff > 0) {
-    // a is wider than b
-    b = widenTo(b, aType);
-  } else if (typeDiff < 0) {
-    // b is wider than a
-    a = widenTo(a, bType);
-  }
-  return a["%MATHOP%"](b);
-};
-
 function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof NIError {
-  return eval(`(function() { return ${widenedMathOpTemplate.toString().replace(`["%MATHOP%"]`, `.${name}`)} })()`);
+  return eval(`(function() { return function(b) {
+      var a = this,
+        bType = b.getType(),
+        aType = a.getType(),
+        typeDiff = aType - bType;
+      if (bType > ${enums.Py_Type.COMPLEX}) {
+        // b is not a number.
+        return NIError;
+      } else if (typeDiff > 0) {
+        // a is wider than b
+        b = widenTo(b, aType);
+      } else if (typeDiff < 0) {
+        // b is wider than a
+        a = widenTo(a, bType);
+      }
+      return a.${name}(b);
+    }
+  })()`);
 }
 
 // Py_Int represents the Python Integer class. Integers are marshalled as 32 and
