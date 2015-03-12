@@ -11,10 +11,9 @@ import Py_Float = numeric.Py_Float;
 import Py_Complex = numeric.Py_Complex;
 import builtins = require('./builtins');
 import fs = require('fs');
-import gLong = require("../lib/gLong");
 import collections = require('./collections');
 import pytypes = require('./pytypes');
-var Decimal = require('../node_modules/decimal.js/decimal');
+var Decimal: DecimalStatic = require('../node_modules/decimal.js/decimal');
 var Py_Tuple = collections.Py_Tuple;
 var Py_List = collections.Py_List;
 
@@ -95,10 +94,11 @@ class Unmarshaller {
     }
 
     // Reads a 64 bit integer
-    readInt64(): gLong {
+    readInt64(): Decimal {
         var low = this.readInt32();
         var high = this.readInt32();
-        return gLong.fromBits(low, high);
+        var d = new Decimal(high);
+        return d.times(Math.pow(2, 32)).plus(low);
     }
 
     // Reads a 64-bit floating-pount number
@@ -172,10 +172,11 @@ class Unmarshaller {
                 res = new Py_Float(this.readFloat64());
                 break;
             case "i": // 32-bit integer (signed)
-                res = Py_Int.fromNumber(this.readInt32());
+                res = new Py_Int(this.readInt32());
                 break;
             case "I": // 64-bit integer (signed)
-                res = new Py_Int(this.readInt64());
+                // Use Long for >32 bits.
+                res = new Py_Long(this.readInt64());
                 break;
             case "l": // arbitrary precision integer
                 // Stored as a 32-bit integer of length, then $length 16-bit

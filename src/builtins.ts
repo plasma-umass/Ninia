@@ -41,7 +41,7 @@ function range(args: Py_Int[], kwargs: { [name: string]: IPy_Object }): Py_List 
         default:
             throw new Error('TypeError: range() expects 1-3 int arguments')
     }
-    var it = iterator.xrange([Py_Int.fromNumber(start), Py_Int.fromNumber(stop), Py_Int.fromNumber(step)], {});
+    var it = iterator.xrange([new Py_Int(start), new Py_Int(stop), new Py_Int(step)], {});
     return list([it], {});
 }
 
@@ -135,21 +135,21 @@ function chr(x: Py_Int): pytypes.Py_Str {
 }
 
 function ord(x: IPy_Object): Py_Int {
-  return Py_Int.fromNumber(x.toString().charCodeAt(0));
+  return new Py_Int(x.toString().charCodeAt(0));
 }
 
 function cmp(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
   var x = args[0];
   var y = args[1];
   if (x instanceof pytypes.Py_Str) {
-    return Py_Int.fromNumber(x.toString().localeCompare(y.toString()));
+    return new Py_Int(x.toString().localeCompare(y.toString()));
   }
   if (x.__eq__(y) === True) {
-    return Py_Int.fromNumber(0);
+    return new Py_Int(0);
   } else if (x.__lt__(y) === True) {
-    return Py_Int.fromNumber(-1);
+    return new Py_Int(-1);
   }
-  return Py_Int.fromNumber(1);
+  return new Py_Int(1);
 }
 
 function complex(args: Py_Float[], kwargs: { [name: string]: IPy_Object }): Py_Complex {
@@ -201,7 +201,7 @@ function int(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int
   }
   switch (args.length) {
     case 0:
-      return Py_Int.fromNumber(0);
+      return new Py_Int(0);
     case 1:
       var arg1 = args[0];
       switch(arg1.getType()) {
@@ -209,12 +209,12 @@ function int(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int
           return <Py_Int> arg1;
         case enums.Py_Type.LONG:
         case enums.Py_Type.FLOAT:
-          return Py_Int.fromNumber((<Py_Long | Py_Float> arg1).toNumber() | 0);
+          return new Py_Int((<Py_Long | Py_Float> arg1).toNumber() | 0);
         default:
-          return Py_Int.fromNumber(parseInt(arg1.toString(), 10));
+          return new Py_Int(parseInt(arg1.toString(), 10));
       }
     case 2:
-      return Py_Int.fromNumber(parseInt(args[0].toString(), (<Py_Int> args[1]).toNumber()));
+      return new Py_Int(parseInt(args[0].toString(), (<Py_Int> args[1]).toNumber()));
   }
 }
 

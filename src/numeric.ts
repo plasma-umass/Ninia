@@ -1,14 +1,13 @@
 /// <reference path="../lib/decimal.d.ts" />
 import singletons = require('./singletons');
 import pytypes = require('./pytypes');
-import gLong = require("../lib/gLong");
 import enums = require('./enums');
 import NIError = singletons.NotImplemented;
 import interfaces = require('./interfaces');
 import IPy_Number = interfaces.IPy_Number;
 import IPy_Object = interfaces.IPy_Object;
 import Py_Object = pytypes.Py_Object;
-var Decimal = require('../node_modules/decimal.js/decimal');
+var Decimal: DecimalStatic = require('../node_modules/decimal.js/decimal');
 
 function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
   switch (widerType) {
@@ -53,37 +52,31 @@ function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof NI
 // 64 bit integers, but they are handled as 64 bit ints. This class follows the
 // latter design by quietly handling the small ints.
 export class Py_Int extends pytypes.Py_Object implements IPy_Number {
-    protected value: gLong;
-    constructor(val: gLong) {
+    protected value: number;
+    constructor(val: number) {
         super();
         this.value = val;
     }
 
     getType(): enums.Py_Type { return enums.Py_Type.INT; }
     asLong(): Py_Long {
-      return new Py_Long(new Decimal(this.value.toString()));
+      return new Py_Long(new Decimal(this.value));
     }
     asFloat(): Py_Float {
-      return new Py_Float(this.value.toNumber());
+      return new Py_Float(this.value);
     }
     asComplex(): Py_Complex {
       return new Py_Complex(this.asFloat(), new Py_Float(0));
     }
 
-    // Integers are the narrowest of the numeric types. fromNumber is a convenient
-    // function for quickly making Py_Ints from JavaScript numbers.
-    static fromNumber(n: number): Py_Int {
-      return new Py_Int(gLong.fromNumber(n));
-    }
-
     // The following are very self explanatory.
-    add(other: Py_Int): Py_Int { return new Py_Int(this.value.add(other.value)); }
-    sub(other: Py_Int): Py_Int { return new Py_Int(this.value.subtract(other.value)); }
-    mul(other: Py_Int): Py_Int { return new Py_Int(this.value.multiply(other.value)); }
+    add(other: Py_Int): Py_Int { return new Py_Int((this.value + other.value) | 0); }
+    sub(other: Py_Int): Py_Int { return new Py_Int((this.value - other.value) | 0); }
+    mul(other: Py_Int): Py_Int { return new Py_Int((this.value * other.value) | 0); }
     floordiv(other: Py_Int): Py_Int {
-      if (other.value.isZero())
+      if (other.value === 0)
           throw new Error("Division by 0");
-      return new Py_Int(this.value.div(other.value));
+      return new Py_Int((this.value / other.value) | 0);
     }
 
     // Future division is always in effect
@@ -101,92 +94,79 @@ export class Py_Int extends pytypes.Py_Object implements IPy_Number {
     // 2. a == (a // b) * b + (a % b)
     // These are useful for defining modulo for different types though
     mod(other: Py_Int): Py_Int {
-      if (other.value.isZero())
+      var a = this.value, b = other.value;
+      if (b === 0)
         throw new Error("Modulo by 0 is not allowed");
-      return this.sub(other.mul(this.floordiv(other)));
+      return new Py_Int((a - (b * ((a / b) | 0))) | 0);
     }
 
     divmod(other: Py_Int): [Py_Int, Py_Int] {
         return [this.floordiv(other), this.mod(other)];
     }
 
-    // gLong, the underlying type for Py_Int, doesn't have a power function.
-    // This simple and naive implementation limits us to positive powers,
-    // though we cheat by calling Float for negative powers. Fractional powers
-    // should also work thanks to rpow.
     pow(other: Py_Int): Py_Float | Py_Int {
-      // ???
-      if (other.value.isNegative()) {
-        return this.asFloat().pow(other.asFloat());
-      } else {
-        var res = this.value;
-        var x = gLong.ONE;
-        for (x; x.lessThan(other.value); x = x.add(gLong.ONE)) {
-          res = res.multiply(this.value);
-        }
-        return new Py_Int(res);
-      }
+      return new Py_Int(Math.pow(this.value, other.value) | 0);
     }
 
     lshift(other: Py_Int): Py_Int {
-      return new Py_Int(this.value.shiftLeft(other.toNumber()));
+      return new Py_Int(this.value << other.value);
     }
 
     rshift(other: Py_Int): Py_Int {
-      return new Py_Int(this.value.shiftRight(other.toNumber()));
+      return new Py_Int(this.value >> other.value);
     }
 
     and(other: Py_Int): Py_Int {
-      return new Py_Int(this.value.and(other.value));
+      return new Py_Int(this.value & other.value);
     }
 
     xor(other: Py_Int): Py_Int {
-      return new Py_Int(this.value.xor(other.value));
+      return new Py_Int(this.value ^ other.value);
     }
 
     or(other: Py_Int): Py_Int {
-      return new Py_Int(this.value.or(other.value));
+      return new Py_Int(this.value | other.value);
     }
 
     // Negation is obvious and simple.
     __neg__(): Py_Int {
-      return this.mul(Py_Int.fromNumber(-1));
+      return new Py_Int((this.value * -1) | 0);
     }
 
     // Apparently unary plus doesn't really do much.
     // Presumably you can do more with it in user-defined classes.
     __pos__(): Py_Int {
-      return this
+      return this;
     }
 
     __abs__(): Py_Int {
-      if (this.value.isNegative())
+      if (this.value < 0)
         return this.__neg__();
       else
         return this;
     }
 
     __invert__(): Py_Int {
-      return new Py_Int(this.value.not());
+      return new Py_Int(~this.value);
     }
 
     lt(other: Py_Int): Py_Boolean {
-      return this.value.lessThan(other.value) ? True : False;
+      return this.value < other.value ? True : False;
     }
     le(other: Py_Int): Py_Boolean {
-      return this.value.lessThanOrEqual(other.value) ? True : False;
+      return this.value <= other.value ? True : False;
     }
     eq(other: Py_Int): Py_Boolean {
-      return this.value.equals(other.value) ? True : False;
+      return this.value === other.value ? True : False;
     }
     ne(other: Py_Int): Py_Boolean {
-      return this.value.notEquals(other.value) ? True : False;
+      return this.value !== other.value ? True : False;
     }
     gt(other: Py_Int): Py_Boolean {
-      return this.value.greaterThan(other.value) ? True : False;
+      return this.value > other.value ? True : False;
     }
     ge(other: Py_Int): Py_Boolean {
-      return this.value.greaterThanOrEqual(other.value) ? True : False;
+      return this.value >= other.value ? True : False;
     }
 
     toString(): string {
@@ -194,7 +174,7 @@ export class Py_Int extends pytypes.Py_Object implements IPy_Number {
     }
 
     toNumber(): number {
-      return this.value.toNumber();
+      return this.value;
     }
 
     asBool(): boolean {
@@ -204,11 +184,11 @@ export class Py_Int extends pytypes.Py_Object implements IPy_Number {
 
 class Py_Boolean extends Py_Int {
   constructor(val: boolean) {
-    super(val ? gLong.ONE : gLong.ZERO);
+    super(val ? 1 : 0);
   }
 
   toString(): string {
-    return this.value === gLong.ONE ? 'True' : 'False';
+    return this.value === 1 ? 'True' : 'False';
   }
 }
 

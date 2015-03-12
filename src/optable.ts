@@ -500,19 +500,6 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
     var b = f.pop();
     var a = f.pop();
 
-    // Convert booleans to Integers
-    // Python has True and False encoded as Integers (booleans, subclassed
-    // from Integer) but that will take too long to implement
-    // Note that True = 1 and False = 0 is consistent with Python (True >
-    // False == True)
-    if (typeof a == 'boolean') {
-        a = Py_Int.fromNumber(+a);
-    }
-
-    if (typeof b == 'boolean') {
-        b = Py_Int.fromNumber(+b);
-    }
-
     switch(op) {
         case '<':
             f.push(doLT(a,b));

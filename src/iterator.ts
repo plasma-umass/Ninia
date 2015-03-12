@@ -70,7 +70,7 @@ export class XRange extends Py_Object implements Iterator, interfaces.Iterable {
     public next(): number {
         var ret = null;
         if (this.index < this._len) {
-            ret = Py_Int.fromNumber(this.start + this.index * this.step);
+            ret = new Py_Int(this.start + this.index * this.step);
             this.index += 1;
         }
         return ret;

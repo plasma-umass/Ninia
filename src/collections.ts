@@ -52,7 +52,7 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
   constructor(t: pytypes.Py_Object[]) {
     super();
     this._tuple = t;
-    this._len = Py_Int.fromNumber(t.length);
+    this._len = new Py_Int(t.length);
   }
   static fromIterable(x: Iterable) {
     var it = x.iter();
