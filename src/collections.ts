@@ -73,8 +73,8 @@ export class Py_List extends Py_Object implements Iterable {
     return this.len() !== 0;
   }
   private standardizeKey(key: IPy_Object): number {
-    assert(key.getType() === enums.Py_Type.INT, `Py_List only accepts keys of type INT.`);
-    var fixedKey = (<Py_Int> key).toNumber();
+    assert(key.getType() <= enums.Py_Type.LONG, `Py_List only accepts keys of type INT or LONG.`);
+    var fixedKey = (<Py_Int | Py_Long> key).toNumber();
     if (fixedKey < 0) fixedKey += this._list.length;
     return fixedKey;
   }
