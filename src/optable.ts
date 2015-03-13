@@ -971,4 +971,17 @@ optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) {
     f.push(val);
   }
 }
+
+optable[opcodes.BUILD_SLICE] = function(f: Py_FrameObject) {
+  var argv = f.readArg(), step: IPy_Object, start: IPy_Object, stop: IPy_Object;
+  if (argv === 3) {
+    step = f.pop();
+  } else {
+    step = None;
+  }
+  stop = f.pop();
+  start = f.pop();
+  f.push(new Py_Slice(start, stop, step));
+}
+
 export = optable;

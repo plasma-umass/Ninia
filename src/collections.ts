@@ -3,6 +3,7 @@ import iterator = require('./iterator');
 import interfaces = require('./interfaces');
 import enums = require('./enums');
 import singletons = require('./singletons');
+import assert = require('./assert');
 import Py_Object = primitives.Py_Object;
 import Py_Int = primitives.Py_Int;
 import Py_Long = primitives.Py_Long;
@@ -72,16 +73,8 @@ export class Py_List extends Py_Object implements Iterable {
     return this.len() !== 0;
   }
   private standardizeKey(key: IPy_Object): number {
-    var fixedKey: number;
-    switch (key.getType()) {
-      case enums.Py_Type.INT:
-      case enums.Py_Type.LONG:
-        fixedKey = (<Py_Int | Py_Long> key).toNumber();
-        break;
-      default:
-        fixedKey = parseInt(key.toString(), 10);
-        break;
-    }
+    assert(key.getType() === enums.Py_Type.INT, `Py_List only accepts keys of type INT.`);
+    var fixedKey = (<Py_Int> key).toNumber();
     if (fixedKey < 0) fixedKey += this._list.length;
     return fixedKey;
   }

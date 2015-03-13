@@ -6,3 +6,4 @@ print squares[:]
 print squares + [36, 49, 64, 81, 100]
 squares.append(66);
 print squares
+print squares[1::2]
