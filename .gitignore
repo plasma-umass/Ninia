@@ -11,6 +11,7 @@ doc/report/*.*
 src/*.js
 src/*.js.map
 test.js
+test.js.map
 runner.js
 browser/demo.js
 # third party packages
