@@ -25,9 +25,47 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     return this._list.length;
   }
 
+  public getSlice(start: any, end = <any> undefined): Py_List {
+    
+    if (start instanceof Py_Int) {
+      start = start.toNumber();
+    }
+    if (end instanceof Py_Int) {
+      end = end.toNumber();
+    }
+
+    if (end !== undefined) {
+      return new Py_List(this._list.slice(start, end));
+    }
+    else {
+      return new Py_List(this._list.slice(start));
+    }
+
+  }
+
+  public setSlice(value: any, start = <any> 0 , end = <any> this._list.length) {
+
+    if (!(value instanceof Py_List)) {
+      value = Py_List.fromIterable(value);
+    }
+
+    if (start instanceof Py_Int) {
+      start = start.toNumber();
+    }
+    if (end instanceof Py_Int) {
+      end = end.toNumber();
+    }
+
+    value = value.toArray();
+    var len = end - start;
+    Array.prototype.splice.apply(this._list, [start, len].concat(value))
+    
+  }
+
   public iter(): Iterator {
     return new iterator.ListIterator(this._list);
   }
+
   public toString(): string {
     if (this._list.length == 0) {
       return '[]';
@@ -40,9 +78,13 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     // Remove last ', ' from the end.
     return s.slice(0, -2) + ']';
   }
-
+  
   public asBool(): boolean {
     return this.len() !== 0;
+  }
+
+  public toArray(): IPy_Object[] {
+    return this._list;
   }
 }
 

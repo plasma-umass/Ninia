@@ -13,6 +13,7 @@ import Py_CodeObject = require('./codeobject');
 import True = numeric.True;
 import False = numeric.False;
 import Iterator = interfaces.Iterator;
+import Iterable = interfaces.Iterable;
 var NotImplemented = builtins.NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
@@ -780,61 +781,56 @@ optable[opcodes.DUP_TOP] = function(f: Py_FrameObject) {
 optable[opcodes.NOP] = function(f: Py_FrameObject) {}
 
 optable[opcodes.SLICE_0] = function(f: Py_FrameObject) {
-    var a = <any[]><any> f.pop();
-    var b = a.slice(0);
-    f.push(<any> b);
+    var list = <Py_List> f.pop();
+    f.push(<Py_List> list.getSlice(0));
 }
 
 optable[opcodes.SLICE_1] = function(f: Py_FrameObject) {
-    var a = <number><any> f.pop();
-    var b = <any[]><any> f.pop();
-    f.push(<any> b.slice(a));
+    var start = f.pop();
+    var list = <Py_List> f.pop();
+    f.push(<Py_List> list.getSlice(start));
 }
 
 optable[opcodes.SLICE_2] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = <any> f.pop();
-    f.push(b.slice(0,a));
+    var end = f.pop();
+    var list = <Py_List> f.pop();
+    f.push(<Py_List> list.getSlice(0, end));
 }
 
 optable[opcodes.SLICE_3] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = f.pop();
-    var c = <any> f.pop();
-    f.push(<any> c.slice(b,a));
+    var end = f.pop();
+    var start = f.pop();
+    var list = <Py_List> f.pop();
+    f.push(<Py_List> list.getSlice(start, end));
 }
 
 //TODO: store_slice is not working yet
 optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject) {
-    var a = <any> f.pop();
-    var b = f.pop();
-    var aux = a.slice(0);
-    aux = b;
+    var list = <Py_List> f.pop();
+    var value = <Iterable> f.pop();
+    list.setSlice(value);
 }
 
 optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = <any> f.pop();
-    var c = f.pop();
-    var aux = b.slice(a);
-    aux = c;
+    var start = f.pop();
+    var list = <Py_List> f.pop();
+    var value = <Iterable> f.pop();
+    list.setSlice(value, start);
 }
 
 optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = <any> f.pop();
-    var c = f.pop();
-    var aux = b.slice(0,a);
-    aux = c;
+    var end = f.pop();
+    var list = <Py_List> f.pop();
+    var value = <Iterable> f.pop();
+    list.setSlice(value, 0, end);
 }
 
 optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = f.pop();
-    var c = <any> f.pop();
-    var d = f.pop();
-    var aux = c.slice(b,a);
-    aux = d;
+    var end = f.pop();
+    var start = f.pop();
+    var list = <Py_List> f.pop();
+    var value = <Iterable> f.pop();
+    list.setSlice(value, start, end);
 }
 
 // TODO: more testing
