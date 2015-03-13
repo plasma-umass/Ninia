@@ -1,6 +1,6 @@
-import numeric = require('./numeric');
+import primitives = require('./primitives');
 import Py_FrameObject = require('./frameobject');
-import Py_Int = numeric.Py_Int;
+import Py_Int = primitives.Py_Int;
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import builtins = require('./builtins');
@@ -11,9 +11,12 @@ import Py_List = collections.Py_List;
 import Py_Dict = collections.Py_Dict;
 import Py_CodeObject = require('./codeobject');
 import enums = require('./enums');
-import True = numeric.True;
-import False = numeric.False;
+import singletons = require('./singletons');
+import True = primitives.True;
+import False = primitives.False;
 import Iterator = interfaces.Iterator;
+import Py_Slice = collections.Py_Slice;
+import None = singletons.None;
 var NotImplemented = builtins.NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
@@ -244,17 +247,8 @@ optable[opcodes.BINARY_SUBTRACT] = function(f: Py_FrameObject) {
 optable[opcodes.BINARY_SUBSCR] = function(f: Py_FrameObject) {
     var b = f.pop();
     var a = f.pop();
-    if (a.getType() === enums.Py_Type.LIST) {
-      var idx: number;
-      if (b.getType() !== enums.Py_Type.INT) {
-        idx = parseInt(b.toString(), 10);
-      } else {
-        idx = (<Py_Int> b).toNumber();
-      }
-      if (idx < 0) idx = (<Py_List> a).len() + idx;
-      f.push((<Py_List> a)._list[idx]);
-    } else {
-      throw new Error("Unsupported.");
+    if (a.__getitem__) {
+      f.push(a.__getitem__(b));
     }
 }
 
@@ -792,27 +786,43 @@ optable[opcodes.DUP_TOP] = function(f: Py_FrameObject) {
 optable[opcodes.NOP] = function(f: Py_FrameObject) {}
 
 optable[opcodes.SLICE_0] = function(f: Py_FrameObject) {
-    var a = <Py_List> f.pop();
-    f.push(new Py_List(a._list.slice(0)));
+    var a = f.pop();
+    if (a.__getitem__) {
+      f.push(a.__getitem__(new Py_Slice(new Py_Int(0), a.__len__(), None)));
+    } else {
+      throw new Error("Unsupported type.");
+    }
 }
 
 optable[opcodes.SLICE_1] = function(f: Py_FrameObject) {
-  var a = <Py_Int> f.pop();
-  var b = <Py_List> f.pop();
-  f.push(new Py_List(b._list.slice(a.toNumber())));
+  var a = f.pop();
+  var b = f.pop();
+  if (b.__getitem__) {
+    f.push(b.__getitem__(new Py_Slice(a, b.__len__(), None)));
+  } else {
+    throw new Error("Wrong type.");
+  }
 }
 
 optable[opcodes.SLICE_2] = function(f: Py_FrameObject) {
-  var a = <Py_Int> f.pop();
-  var b = <Py_List> f.pop();
-  f.push(new Py_List(b._list.slice(0, a.toNumber())));
+  var a = f.pop();
+  var b = f.pop();
+  if (b.__getitem__) {
+    f.push(b.__getitem__(new Py_Slice(new Py_Int(0), a, None)));
+  } else {
+    throw new Error("Wrong type.");
+  }
 }
 
 optable[opcodes.SLICE_3] = function(f: Py_FrameObject) {
-  var a = <Py_Int> f.pop();
-  var b = <Py_Int> f.pop();
-  var c = <Py_List> f.pop();
-  f.push(new Py_List(c._list.slice(b.toNumber(), a.toNumber())));
+  var a = f.pop();
+  var b = f.pop();
+  var c = f.pop();
+  if (c.__getitem__) {
+    f.push(c.__getitem__(new Py_Slice(b, a, None)));
+  } else {
+    throw new Error("Wrong type.");
+  }
 }
 
 //TODO: store_slice is not working yet

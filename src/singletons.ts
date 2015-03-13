@@ -1,6 +1,6 @@
-import numeric = require('./numeric');
-import True = numeric.True;
-import False = numeric.False;
+import primitives = require('./primitives');
+import True = primitives.True;
+import False = primitives.False;
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
@@ -20,8 +20,8 @@ class SingletonClass implements IPy_Object {
 
 // Python has a single null object called "None".
 class NoneType extends SingletonClass{
-  asBool(): typeof True {
-    return False;
+  asBool(): boolean {
+    return false;
   }
 }
 export var None = new NoneType("None");

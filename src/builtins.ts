@@ -1,15 +1,15 @@
 import iterator = require('./iterator');
 import collections = require('./collections');
 import singletons = require('./singletons');
-import numeric = require('./numeric');
-import Py_Int = numeric.Py_Int;
-import Py_Complex = numeric.Py_Complex;
-import Py_Float = numeric.Py_Float;
-import Py_Long = numeric.Py_Long;
-import pytypes = require('./pytypes');
+import primitives = require('./primitives');
+import Py_Int = primitives.Py_Int;
+import Py_Complex = primitives.Py_Complex;
+import Py_Float = primitives.Py_Float;
+import Py_Long = primitives.Py_Long;
 import Py_List = collections.Py_List;
 import Py_Dict = collections.Py_Dict;
 import Py_Tuple = collections.Py_Tuple;
+import Py_Str = primitives.Py_Str;
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
@@ -70,7 +70,7 @@ function dict(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Di
     var d = new Py_Dict();
     for (var k in kwargs) {
         if (kwargs.hasOwnProperty(k)) {
-            d.set(pytypes.Py_Str.fromJS(k), kwargs[k]);
+            d.set(Py_Str.fromJS(k), kwargs[k]);
         }
     }
     return d;
@@ -125,13 +125,13 @@ function bool(x: IPy_Object): typeof True {
   return True;
 }
 
-function bin(x: Py_Int): pytypes.Py_Str {
+function bin(x: Py_Int): Py_Str {
   // Default implementation in python adds '0b' prefix
-  return pytypes.Py_Str.fromJS("0b" + x.toNumber().toString(2));
+  return Py_Str.fromJS("0b" + x.toNumber().toString(2));
 }
 
-function chr(x: Py_Int): pytypes.Py_Str {
-  return pytypes.Py_Str.fromJS(String.fromCharCode(x.toNumber()));
+function chr(x: Py_Int): Py_Str {
+  return Py_Str.fromJS(String.fromCharCode(x.toNumber()));
 }
 
 function ord(x: IPy_Object): Py_Int {
@@ -141,7 +141,7 @@ function ord(x: IPy_Object): Py_Int {
 function cmp(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
   var x = args[0];
   var y = args[1];
-  if (x instanceof pytypes.Py_Str) {
+  if (x instanceof Py_Str) {
     return new Py_Int(x.toString().localeCompare(y.toString()));
   }
   if (x.__eq__(y) === True) {
@@ -173,7 +173,7 @@ function float(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_F
   if (args.length == 0) {
     return new Py_Float(0);
   } else if (args.length == 1) {
-    if (args[0] instanceof pytypes.Py_Str) {
+    if (args[0] instanceof Py_Str) {
       return new Py_Float(parseFloat(args[0].toString()));
     }
     return new Py_Float((<Py_Int> args[0]).toNumber());
@@ -182,7 +182,7 @@ function float(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_F
   }
 }
 
-function hex(x: Py_Int): pytypes.Py_Str {
+function hex(x: Py_Int): Py_Str {
   var n = x.toNumber();
   var ret: string;
   if (n >= 0) {
@@ -192,7 +192,7 @@ function hex(x: Py_Int): pytypes.Py_Str {
   }
   if (x.getType() === enums.Py_Type.LONG)
     ret += 'L';
-  return pytypes.Py_Str.fromJS(ret);
+  return Py_Str.fromJS(ret);
 }
 
 function int(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
@@ -247,8 +247,8 @@ function pyfunc_wrapper_onearg(func, funcname: string) {
 
 // full mapping of builtin names to values.
 var builtins = {
-    True: numeric.True,
-    False: numeric.False,
+    True: primitives.True,
+    False: primitives.False,
     None: singletons.None,
     NotImplemented: singletons.NotImplemented,
     Ellipsis: singletons.Ellipsis,

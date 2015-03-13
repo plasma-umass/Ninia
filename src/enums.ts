@@ -4,5 +4,5 @@
  */
 export const enum Py_Type {
   // For numeric types: Narrower types < Wider types.
-  INT, LONG, FLOAT, COMPLEX, OTHER, LIST
+  INT, LONG, FLOAT, COMPLEX, OTHER, LIST, SLICE
 }

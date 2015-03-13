@@ -1,15 +1,35 @@
-import pytypes = require('./pytypes');
-import numeric = require('./numeric');
+import primitives = require('./primitives');
 import iterator = require('./iterator');
 import interfaces = require('./interfaces');
 import enums = require('./enums');
-import Py_Int = numeric.Py_Int;
+import singletons = require('./singletons');
+import Py_Object = primitives.Py_Object;
+import Py_Int = primitives.Py_Int;
+import Py_Long = primitives.Py_Long;
 import Iterable = interfaces.Iterable;
 import Iterator = interfaces.Iterator;
 import IPy_Object = interfaces.IPy_Object;
+import None = singletons.None;
 
-export class Py_List extends pytypes.Py_Object implements Iterable {
-  public _list: IPy_Object[];
+export class Py_Slice extends Py_Object {
+  public start: IPy_Object;
+  public stop: IPy_Object;
+  public step: IPy_Object;
+
+  constructor(start: IPy_Object, stop: IPy_Object, step: IPy_Object) {
+    super();
+    this.start = start;
+    this.stop = stop;
+    this.step = step;
+  }
+
+  public getType(): enums.Py_Type {
+    return enums.Py_Type.SLICE;
+  }
+}
+
+export class Py_List extends Py_Object implements Iterable {
+  private _list: IPy_Object[];
   constructor(lst: IPy_Object[]) {
     super();
     this._list = lst;
@@ -27,9 +47,9 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
     return this._list.length;
   }
 
-  public append(args: IPy_Object[]) {
-    // TODO: Should return 'None'.
+  public append(args: IPy_Object[]): IPy_Object {
     this._list.push(args[0]);
+    return None;
   }
 
   public iter(): Iterator {
@@ -51,6 +71,20 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
   public asBool(): boolean {
     return this.len() !== 0;
   }
+  private standardizeKey(key: IPy_Object): number {
+    var fixedKey: number;
+    switch (key.getType()) {
+      case enums.Py_Type.INT:
+      case enums.Py_Type.LONG:
+        fixedKey = (<Py_Int | Py_Long> key).toNumber();
+        break;
+      default:
+        fixedKey = parseInt(key.toString(), 10);
+        break;
+    }
+    if (fixedKey < 0) fixedKey += this._list.length;
+    return fixedKey;
+  }
 
   public __add__(other: IPy_Object): Py_List {
     if (other instanceof Py_List) {
@@ -59,12 +93,42 @@ export class Py_List extends pytypes.Py_Object implements Iterable {
       throw new Error("???");
     }
   }
+  public __len__(): Py_Int {
+    return new Py_Int(this.len());
+  }
+  public __getitem__(key: IPy_Object): IPy_Object {
+    if (key.getType() === enums.Py_Type.SLICE) {
+      var slice = <Py_Slice> key,
+        start = slice.start === None ? 0 : (<Py_Int> slice.start).toNumber(),
+        stop = slice.stop === None ? this._list.length : (<Py_Int> slice.stop).toNumber();
+      if (slice.step === None) {
+        return new Py_List(this._list.slice(start, stop));
+      } else {
+        var newArr: IPy_Object[] = [], step = (<Py_Int> slice.step).toNumber(), i: number;
+        for (i = start; i < stop; i += step) {
+          newArr.push(this._list[i]);
+        }
+        return new Py_List(newArr);
+      }
+    } else {
+      return this._list[this.standardizeKey(key)];
+    }
+  }
+  public __setitem__(key: IPy_Object, val: IPy_Object): IPy_Object {
+    this._list[this.standardizeKey(key)] = val;
+    return None;
+  }
+  public __delitem__(key: IPy_Object): IPy_Object {
+    // Delete is the same as splicing out the element and moving everything down
+    this._list.splice(this.standardizeKey(key), 1);
+    return None;
+  }
 }
 
-export class Py_Tuple extends pytypes.Py_Object implements Iterable {
+export class Py_Tuple extends Py_Object implements Iterable {
   private _len: Py_Int;  // can't resize a tuple
-  private _tuple: pytypes.Py_Object[];
-  constructor(t: pytypes.Py_Object[]) {
+  private _tuple: Py_Object[];
+  constructor(t: Py_Object[]) {
     super();
     this._tuple = t;
     this._len = new Py_Int(t.length);
@@ -101,9 +165,13 @@ export class Py_Tuple extends pytypes.Py_Object implements Iterable {
   public asBool(): boolean {
     return this.len() !== 0;
   }
+
+  public __len__(): Py_Int {
+    return new Py_Int(this.len());
+  }
 }
 
-export class Py_Dict extends pytypes.Py_Object {
+export class Py_Dict extends Py_Object {
   private _keys: IPy_Object[];
   private _vals: { [name: string]: IPy_Object };
   constructor() {
@@ -144,5 +212,9 @@ export class Py_Dict extends pytypes.Py_Object {
 
   public asBool(): boolean {
     return this.len() !== 0;
+  }
+
+  public __len__(): Py_Int {
+    return new Py_Int(this.len());
   }
 }

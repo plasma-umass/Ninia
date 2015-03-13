@@ -9,7 +9,7 @@ doc/report/*.*
 !doc/report/*.tex
 # generated JS files
 src/*.js
-lib/gLong.js
+src/*.js.map
 test.js
 runner.js
 browser/demo.js

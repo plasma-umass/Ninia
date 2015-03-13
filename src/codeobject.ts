@@ -1,6 +1,6 @@
 import interfaces = require('./interfaces');
-import pytypes = require('./pytypes');
-import Py_Str = pytypes.Py_Str;
+import primitives = require('./primitives');
+import Py_Str = primitives.Py_Str;
 import enums = require('./enums');
 // Py_CodeObject models the Python Code Object, which is used to represent
 // functions, blocks, modules, etc. -- anything that can be executed.

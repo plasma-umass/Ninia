@@ -4,20 +4,19 @@
 // converts it into a Python code object. The marshal format is not officially
 // documented, and there may be unnecessary cruft in the unmarshal loop below.
 import Py_CodeObject = require('./codeobject');
-import numeric = require('./numeric');
-import Py_Int = numeric.Py_Int;
-import Py_Long = numeric.Py_Long;
-import Py_Float = numeric.Py_Float;
-import Py_Complex = numeric.Py_Complex;
+import primitives = require('./primitives');
+import Py_Int = primitives.Py_Int;
+import Py_Long = primitives.Py_Long;
+import Py_Float = primitives.Py_Float;
+import Py_Complex = primitives.Py_Complex;
 import builtins = require('./builtins');
 import fs = require('fs');
 import collections = require('./collections');
 import interfaces = require('./interfaces');
-import pytypes = require('./pytypes');
 var Decimal: DecimalStatic = require('../node_modules/decimal.js/decimal');
 import Py_Tuple = collections.Py_Tuple;
 import Py_List = collections.Py_List;
-import Py_Str = pytypes.Py_Str;
+import Py_Str = primitives.Py_Str;
 import IPy_Object = interfaces.IPy_Object;
 
 // An Unmarshaller takes a .pyc file (as a string of binarys, e.g. "\xXX")

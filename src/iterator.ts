@@ -1,10 +1,9 @@
-import numeric = require('./numeric');
-import pytypes = require('./pytypes');
+import primitives = require('./primitives');
 import collections = require('./collections');
 import interfaces = require('./interfaces');
 import Iterator = interfaces.Iterator;
-import Py_Int = numeric.Py_Int;
-import Py_Object = pytypes.Py_Object;
+import Py_Int = primitives.Py_Int;
+import Py_Object = primitives.Py_Object;
 
 export class ListIterator extends Py_Object implements Iterator {
     private pos: number = 0;
