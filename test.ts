@@ -80,4 +80,5 @@ test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");
 test("Recursion test", "pytests/recursionTest");
 test("Strings test", "pytests/stringTest");
+test("Slice test", "pytests/sliceTest");
 printResults()
