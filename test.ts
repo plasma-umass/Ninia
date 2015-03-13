@@ -56,12 +56,9 @@ function printResults() {
 
 // Add more tests here:
 console.log(`\n--- Math tests ---`);
-test("Integer test", "pytests/math/intTest");
-test("Long Int test", "pytests/math/longTest");
-test("Floating-point test", "pytests/math/floatTest");
-test("Complex number test", "pytests/math/complexTest");
-test("Mixed Arithmetic test", "pytests/math/mixedMathTest");
 test("Unary operations test", "pytests/math/unaryOpsTest");
+test("Binary operations test", "pytests/math/binaryOpsTest");
+test("Mixed Arithmetic test", "pytests/math/mixedMathTest");
 console.log(`\n--- Function tests ---`);
 test("Keyword and default arguments test","pytests/functions/keywordargs");
 test("Numeric comparison test", "pytests/functions/comparisonTest");

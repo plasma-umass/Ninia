@@ -356,13 +356,13 @@ export class Py_Long extends Py_Object implements IPy_Number {
     // res[i] = a[i] | b[i]
     // But might need to treat negative numbers differently?
     and(other: Py_Long): Py_Long | typeof NIError {
-        return NIError;
+        throw new Error('Py_Long __and__ is NYI');
     }
     xor(other: Py_Long): Py_Long | typeof NIError {
-        return NIError;
+        throw new Error('Py_Long __xor__ is NYI');
     }
     or(other: Py_Long): Py_Long | typeof NIError {
-        return NIError;
+        throw new Error('Py_Long __or__ is NYI');
     }
 
     __neg__(): Py_Long {
