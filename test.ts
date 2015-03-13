@@ -83,4 +83,5 @@ test("Range test", "pytests/rangeTest");
 test("Recursion test", "pytests/recursionTest");
 console.log(`\n--- Other tests ---`);
 test("Strings test", "pytests/stringTest");
+test("Slice test", "pytests/sliceTest");
 printResults()
