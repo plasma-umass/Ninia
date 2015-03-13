@@ -417,7 +417,7 @@ export class Py_Long extends Py_Object implements IPy_Number {
     }
 
     asBool(): boolean {
-       return !this.eq(Py_Long.fromNumber(0));
+      return this.toNumber() !== 0;
     }
 }
 

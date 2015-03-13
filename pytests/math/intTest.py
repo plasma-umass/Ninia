@@ -1,6 +1,6 @@
 from __future__ import division
 
-# Basic math
+# Binary operations
 print 5 + 1
 print 5 + (-2)
 print 5 - 1
@@ -18,4 +18,3 @@ print 5 >> 2
 print 5 & 3
 print 5 | 19
 print 5 ^ 14
-print ~5

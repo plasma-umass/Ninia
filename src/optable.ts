@@ -89,8 +89,7 @@ optable[opcodes.UNARY_NOT] = function(f: Py_FrameObject) {
 
 optable[opcodes.UNARY_CONVERT] = function(f: Py_FrameObject) {
     var a = f.pop();
-    // TODO: Correct?
-    f.push(a.__str__());
+    f.push(a.__repr__());
 }
 
 optable[opcodes.UNARY_INVERT] = function(f: Py_FrameObject) {
