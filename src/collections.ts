@@ -72,12 +72,6 @@ export class Py_List extends Py_Object implements Iterable {
   public asBool(): boolean {
     return this.len() !== 0;
   }
-  private standardizeKey(key: IPy_Object): number {
-    assert(key.getType() <= enums.Py_Type.LONG, `Py_List only accepts keys of type INT or LONG.`);
-    var fixedKey = (<Py_Int | Py_Long> key).toNumber();
-    if (fixedKey < 0) fixedKey += this._list.length;
-    return fixedKey;
-  }
 
   public __add__(other: IPy_Object): Py_List {
     if (other instanceof Py_List) {
@@ -104,18 +98,25 @@ export class Py_List extends Py_Object implements Iterable {
         return new Py_List(newArr);
       }
     } else {
-      return this._list[this.standardizeKey(key)];
+      return this._list[standardizeKey(key, this._list.length)];
     }
   }
   public __setitem__(key: IPy_Object, val: IPy_Object): IPy_Object {
-    this._list[this.standardizeKey(key)] = val;
+    this._list[standardizeKey(key, this._list.length)] = val;
     return None;
   }
   public __delitem__(key: IPy_Object): IPy_Object {
     // Delete is the same as splicing out the element and moving everything down
-    this._list.splice(this.standardizeKey(key), 1);
+    this._list.splice(standardizeKey(key, this._list.length), 1);
     return None;
   }
+}
+
+function standardizeKey(key: IPy_Object, len: number): number {
+  assert(key.getType() <= enums.Py_Type.LONG, `index only accepts keys of type INT or LONG.`);
+  var fixedKey = (<Py_Int | Py_Long> key).toNumber();
+  if (fixedKey < 0) fixedKey += len;
+  return fixedKey;
 }
 
 export class Py_Tuple extends Py_Object implements Iterable {
@@ -161,6 +162,24 @@ export class Py_Tuple extends Py_Object implements Iterable {
 
   public __len__(): Py_Int {
     return new Py_Int(this.len());
+  }
+  public __getitem__(key: IPy_Object): IPy_Object {
+    if (key.getType() === enums.Py_Type.SLICE) {
+      var slice = <Py_Slice> key,
+        start = slice.start === None ? 0 : (<Py_Int> slice.start).toNumber(),
+        stop = slice.stop === None ? this._tuple.length : (<Py_Int> slice.stop).toNumber();
+      if (slice.step === None) {
+        return new Py_Tuple(this._tuple.slice(start, stop));
+      } else {
+        var newArr: Py_Object[] = [], step = (<Py_Int> slice.step).toNumber(), i: number;
+        for (i = start; i < stop; i += step) {
+          newArr.push(this._tuple[i]);
+        }
+        return new Py_Tuple(newArr);
+      }
+    } else {
+      return this._tuple[standardizeKey(key, this._tuple.length)];
+    }
   }
 }
 
