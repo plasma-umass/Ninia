@@ -73,6 +73,47 @@ export class Py_Str extends Py_Object {
       }
       return singletons.NotImplemented;
     }
+    public __mod__(other: IPy_Object): Py_Str {
+      // string formatting!
+      // This arcane regex matches (most) valid format patterns
+      // TODO: support the * syntax in the field width / precision sections.
+      var p = /%(\(\w*\))?([#0`+ -])?(\d+)?(\.\d+)?[hlL]?([diouxXeDfFgGcrs%])/g;
+      var matches = this._str.match(p);
+      var num_matches = (matches === null)? 0 : matches.length;
+      var fmt;
+      var s = '', idx = 0, rhs_idx = 0;
+      while ((fmt = p.exec(this._str)) !== null) {
+        s += this._str.slice(idx, fmt.index);
+        var obj: IPy_Object;
+        if (rhs_idx == 0 && num_matches == 1) {
+          obj = other;
+        } else {
+          obj = other.__getitem__(new Py_Int(rhs_idx));
+          rhs_idx++;
+        }
+        s += format(fmt[1], fmt[2], fmt[3], fmt[4], fmt[5], obj);
+        idx = p.lastIndex;
+      }
+      s += this._str.slice(idx);
+      return Py_Str.fromJS(s);
+    }
+}
+
+function format(mapping: string, conv_flags: string, field_width: string,
+                precision: string, conv_type: string, obj: IPy_Object): string {
+  // XXX: really hacky attempt at covering the common cases
+  switch (conv_type) {
+    case 's': return obj.__str__().toString();
+    case 'r': return obj.__repr__().toString();
+    case 'd': return ((<IPy_Number>obj).asLong().toNumber()|0).toString();
+    case 'f':
+      var x = (<IPy_Number>obj).asFloat().toNumber();
+      if (precision !== undefined) {
+        return x.toFixed(+precision.slice(1));
+      }
+      return x.toString();
+  }
+  return '';
 }
 
 function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
@@ -451,6 +492,9 @@ export class Py_Float extends Py_Object implements IPy_Number {
     }
 
     getType(): enums.Py_Type { return enums.Py_Type.FLOAT; }
+    asFloat(): Py_Float {
+      return this;
+    }
     asComplex(): Py_Complex {
       return new Py_Complex(this, new Py_Float(0));
     }
