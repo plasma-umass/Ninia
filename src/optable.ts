@@ -490,7 +490,7 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject) {
 optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var name: string = f.codeObj.names[i].toString();
-    var val = f.globals[name];
+    var val = f.globals[name] || builtins[name];
     if (val === undefined) {
         throw new Error('undefined name: ' + name);
     }
@@ -766,13 +766,12 @@ optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
     var numDefault = f.readArg();
     var defaults: { [name: string]: any } = {};
 
-    var code = f.pop();
-
-    for (var i = (<Py_CodeObject> code).varnames.length-1; i >= 0; i--) {
-        defaults[(<Py_CodeObject> code).varnames[i].toString()] = f.pop();
+    var code = <Py_CodeObject> f.pop();
+    for (var i = code.argcount-1; i >= code.argcount - numDefault; i--) {
+        defaults[code.varnames[i].toString()] = f.pop();
     }
 
-    var func = new Py_FuncObject((<Py_CodeObject> code), f.globals, defaults, (<Py_CodeObject> code).name);
+    var func = new Py_FuncObject(code, f.globals, defaults, code.name);
     f.push(func);
 }
 
