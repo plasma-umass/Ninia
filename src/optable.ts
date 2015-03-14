@@ -499,6 +499,30 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
     f.push(val);
 }
 
+optable[opcodes.LOAD_DEREF] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var numCellvars = f.codeObj.cellvars.length;
+    if (i < numCellvars) {
+      var name = f.codeObj.cellvars[i].toString();
+      f.push(f.locals[name]);
+    } else {
+      throw new Error('LOAD_DEREF: this branch is NYI');
+    }
+}
+
+optable[opcodes.LOAD_CLOSURE] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    // Pushes a reference to the cell contained in slot i of the cell and free variable storage.
+    var numCellvars = f.codeObj.cellvars.length;
+    var name: primitives.Py_Str;
+    if (i < numCellvars) {
+      name = f.codeObj.cellvars[i];
+    } else {
+      name = f.codeObj.freevars[i - numCellvars];
+    }
+    f.push(name);
+}
+
 optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
     var comp_ops = ['<', '<=', '==', '!=', '>', '>=', 'in', 'not in',
                     'is', 'is not', 'exception match'];
@@ -772,6 +796,21 @@ optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
     }
 
     var func = new Py_FuncObject(code, f.globals, defaults, code.name);
+    f.push(func);
+}
+
+optable[opcodes.MAKE_CLOSURE] = function(f: Py_FrameObject) {
+    var numDefault = f.readArg();
+    var defaults: { [name: string]: any } = {};
+
+    var code = <Py_CodeObject> f.pop();
+    var freevars = <Py_Tuple> f.pop();
+    for (var i = code.argcount-1; i >= code.argcount - numDefault; i--) {
+        defaults[code.varnames[i].toString()] = f.pop();
+    }
+
+    var func = new Py_FuncObject(code, f.globals, defaults, code.name);
+    func.closure = freevars;
     f.push(func);
 }
 

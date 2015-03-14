@@ -13,6 +13,8 @@ import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
 import primitives = require('./primitives');
 import Py_Str = primitives.Py_Str;
+import collections = require('./collections');
+import Py_Tuple = collections.Py_Tuple;
 
 // Similar to frame objects, Function Objects wrap Python functions. However,
 // these are more the data representation of functions, and are transformed into
@@ -21,7 +23,7 @@ class Py_FuncObject implements IPy_Object {
     code: Py_CodeObject;
     globals: { [name: string]: IPy_Object };
     defaults: { [name: string]: IPy_Object };
-    //closure: ???
+    closure: Py_Tuple;
     name: Py_Str;
 
     constructor(code: Py_CodeObject,
