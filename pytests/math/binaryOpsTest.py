@@ -17,7 +17,25 @@ def binary_ops(x, integral=True, is_complex=False):
     print x << 2, x >> 2
     print x & 3, x | 19, x ^ 14
 
+def binary_cmp():
+  # hacky way of forcing the actual opcodes to get called
+  zero = 0
+  three = 3
+  ten = 10
+  tenf = 10.
+  tenl = 10L
+  print zero == -0
+  print ten == tenl
+  print tenf == tenl
+  print tenl > three
+  print zero < tenf
+  print three == (3 + 0j)
+  print tenl == (4 + 4j)
+  print three <= 3.0
+
 binary_ops(5)
 binary_ops(5L)
 binary_ops(5., integral=False)
 binary_ops(1+5j, integral=False, is_complex=True)
+binary_cmp()
+
