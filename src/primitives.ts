@@ -203,7 +203,8 @@ export class Py_Int extends Py_Object implements IPy_Number {
       var a = this.value, b = other.value;
       if (b === 0)
         throw new Error("Modulo by 0 is not allowed");
-      return new Py_Int((a - (b * ((a / b) | 0))) | 0);
+      var res = (a - (b * Math.floor(a / b))) | 0;
+      return new Py_Int(res);
     }
 
     divmod(other: Py_Int): [Py_Int, Py_Int] {
@@ -211,7 +212,11 @@ export class Py_Int extends Py_Object implements IPy_Number {
     }
 
     pow(other: Py_Int): Py_Float | Py_Int {
-      return new Py_Int(Math.pow(this.value, other.value) | 0);
+      var res = Math.pow(this.value, other.value);
+      if ((res|0) != res) {
+        return new Py_Float(res);
+      }
+      return new Py_Int(res | 0);
     }
 
     lshift(other: Py_Int): Py_Int {
