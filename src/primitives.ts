@@ -632,10 +632,19 @@ export class Py_Complex extends Py_Object implements IPy_Number {
       return this.floordiv(other).mod(other);
     }
 
-    // Powers with complex numbers are weird. Could easily do integer powers w/
-    // multiplication loops, but not negative or fractional powers.
-    pow(other: Py_Complex): Py_Complex | typeof NIError {
-      return NIError;
+    // Powers with complex numbers are weird.
+    // Fractional and complex powers are NYI.
+    pow(other: Py_Complex): Py_Complex {
+      var n = other.real.toNumber();
+      if (other.imag.toNumber() == 0 && ((n|0) == n)) {
+        var real = this.real.value;
+        var imag = this.imag.value;
+        // De Moivre's formula
+        var r_n = Math.pow(Math.sqrt(real*real + imag*imag), n);
+        var phi_n = Math.atan2(imag, real) * n;
+        return Py_Complex.fromNumber(r_n*Math.cos(phi_n), r_n*Math.sin(phi_n));
+      }
+      throw new Error('Py_Complex __pow__ for non-integer powers is NYI');
     }
 
     __neg__(): Py_Complex {
