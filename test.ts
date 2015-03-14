@@ -17,26 +17,27 @@ function test(name, file) {
     var testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
     if (isNaN(testFails[testName]))
         testFails[testName] = 0;  // initialize
-
+    var err = null;
     try {
         interp.interpret(u.value());
     } catch (e) {
-        process.stdout.write("Fail : ");
-        process.stdout.write(`${e}\n`);
         if (e.stack) {
-          process.stdout.write(`${e.stack}\n`);
+            err = `${e.stack}\n`;
+        } else {
+            err = `${e}\n`
         }
-        testFails[testName] += 1;
-        return;
     }
     var expectedOut = fs.readFileSync(file+'.out').toString();
-    if (testOut == expectedOut) {
+    if (!err && testOut == expectedOut) {
         process.stdout.write("Pass\n");
         numPassed += 1;
     } else {
         process.stdout.write("Fail\n");
         console.log('CPython output:\n', expectedOut);
         console.log('Ninia output:\n', testOut);
+        if (err) {
+            console.log(err);
+        }
         testFails[testName] += 1;
     }
 }
