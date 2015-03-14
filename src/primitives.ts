@@ -261,6 +261,9 @@ class Py_Boolean extends Py_Int {
 export var True = new Py_Boolean(true);
 export var False = new Py_Boolean(false);
 
+var MAX_INT = new Decimal('9007199254740991');
+var MIN_INT = new Decimal('-9007199254740991');
+
 export class Py_Long extends Py_Object implements IPy_Number {
     value: Decimal;
     constructor(val: Decimal) {
@@ -355,14 +358,28 @@ export class Py_Long extends Py_Object implements IPy_Number {
     // Future reference: Decimal's 'c' field is number[] (array of digits)
     // res[i] = a[i] | b[i]
     // But might need to treat negative numbers differently?
-    and(other: Py_Long): Py_Long | typeof NIError {
-        throw new Error('Py_Long __and__ is NYI');
+    and(other: Py_Long): Py_Long {
+      if (this.fitsInJsNumber() && other.fitsInJsNumber()) {
+        return Py_Long.fromNumber(this.toNumber() & other.toNumber());
+      }
+      throw new Error('Py_Long __and__ for wide numbers is NYI');
     }
-    xor(other: Py_Long): Py_Long | typeof NIError {
-        throw new Error('Py_Long __xor__ is NYI');
+    xor(other: Py_Long): Py_Long {
+      if (this.fitsInJsNumber() && other.fitsInJsNumber()) {
+        return Py_Long.fromNumber(this.toNumber() ^ other.toNumber());
+      }
+      throw new Error('Py_Long __xor__ for wide numbers is NYI');
     }
-    or(other: Py_Long): Py_Long | typeof NIError {
-        throw new Error('Py_Long __or__ is NYI');
+    or(other: Py_Long): Py_Long {
+      if (this.fitsInJsNumber() && other.fitsInJsNumber()) {
+        return Py_Long.fromNumber(this.toNumber() | other.toNumber());
+      }
+      throw new Error('Py_Long __or__ for wide numbers is NYI');
+    }
+
+    fitsInJsNumber(): boolean {
+      return (this.value.lessThanOrEqualTo(MAX_INT) &&
+              this.value.greaterThanOrEqualTo(MIN_INT));
     }
 
     __neg__(): Py_Long {
