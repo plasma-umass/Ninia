@@ -159,12 +159,12 @@ class Unmarshaller {
                 res = builtins.None;
                 break;
             case "F": // False
-                res = false;
+                res = builtins.False;
                 break;
             case "S": // StopIteration Exception (TODO: double check this)
                 throw new Error("StopIteration is pending investigation");
             case "T": // True
-                res = true;
+                res = builtins.True;
                 break;
             case ".": // Ellipsis object (TODO: double check this)
                 throw new Error("Ellipsis is not yet implemented");
