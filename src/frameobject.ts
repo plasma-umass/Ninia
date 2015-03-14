@@ -116,10 +116,17 @@ class Py_FrameObject {
 
     // clone a new frame off this one, for calling a child function.
     childFrame(func: Py_FuncObject, locals: { [name: string]: IPy_Object }): Py_FrameObject {
-        return new Py_FrameObject(this, func.code,
-            func.globals, -1, func.code.firstlineno, locals, false,
+      if(!this.back){
+          return new Py_FrameObject(this, func.code,
+            this.locals, -1, func.code.firstlineno, locals, false,
             this.outputDevice);
+    
+      }
+      else {
+        return new Py_FrameObject(this, func.code,
+          this.globals, -1, func.code.firstlineno, locals, false,
+          this.outputDevice);
+      }
     }
-
 }
 export = Py_FrameObject;
