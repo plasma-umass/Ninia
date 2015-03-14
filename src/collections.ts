@@ -27,6 +27,56 @@ export class Py_Slice extends Py_Object {
   public getType(): enums.Py_Type {
     return enums.Py_Type.SLICE;
   }
+
+  public getIndices(length: number) : {start: number; stop: number; step: number; length:number; }{
+    var res : {start: number; stop: number; step: number; length:number; } = {start: 0, stop: 0, step: 0, length: 0};
+    res.step = this.step === None ? 1 : (<Py_Int | Py_Long> this.step).toNumber();
+    var defstart = res.step < 0 ? length - 1 : 0;
+    var defstop = res.step < 0 ? -1 : length;
+    
+    if (this.start === None) {
+      res.start = defstart;
+    } else {
+      res.start = (<Py_Int | Py_Long> this.start).toNumber();
+      if (res.start < 0) {
+        res.start += length;
+      }
+      if (res.start < 0) {
+        res.start = (res.step < 0)  ? -1 : 0;
+      } 
+      if (res.start >= length){
+        res.start = (res.step < 0) ? length - 1 : length;
+      }
+    }
+
+    if (this.stop === None) {
+      res.stop = defstop;
+    } else {
+      res.stop = (<Py_Int | Py_Long> this.stop).toNumber();
+      if (res.stop < 0) {
+        res.stop += length; 
+      }
+      if (res.stop < 0) { 
+        res.stop = (res.step < 0) ? -1 : 0;
+      }
+      if (res.stop >= length) {
+        res.stop = (res.step < 0) ? length - 1 : length;
+      }
+    }
+    
+    if ((res.step < 0 && res.stop >= res.start)
+        || (res.step > 0 && res.start >= res.stop)) {
+      res.length = 0;
+    }
+    else if (res.step < 0) {
+      res.length = Math.floor((res.stop - res.start + 1)/res.step) + 1;
+    }
+    else {
+      res.length = Math.floor((res.stop-res.start-1)/res.step) + 1;
+    }
+    return res;
+  }
+
 }
 
 export class Py_List extends Py_Object implements Iterable {
@@ -92,29 +142,63 @@ export class Py_List extends Py_Object implements Iterable {
   public __getitem__(key: IPy_Object): IPy_Object {
     if (key.getType() === enums.Py_Type.SLICE) {
       var slice = <Py_Slice> key,
-        start = slice.start === None ? 0 : (<Py_Int> slice.start).toNumber(),
-        stop = slice.stop === None ? this._list.length : (<Py_Int> slice.stop).toNumber();
-      if (slice.step === None) {
-        return new Py_List(this._list.slice(start, stop));
-      } else {
-        var newArr: IPy_Object[] = [], step = (<Py_Int> slice.step).toNumber(), i: number;
-        for (i = start; i < stop; i += step) {
-          newArr.push(this._list[i]);
-        }
-        return new Py_List(newArr);
+        indices = slice.getIndices(this._list.length),
+        start = indices.start,
+        stop = indices.stop,
+        step = indices.step,
+        length = indices.length,
+        newArr: IPy_Object[] = [], 
+        i: number,
+        curr: number;
+      for (i = 0, curr = start; i < length; i += 1, curr += step) {
+        newArr.push(this._list[curr]);
       }
+        return new Py_List(newArr);
     } else {
       return this._list[this.standardizeKey(key)];
     }
   }
+
   public __setitem__(key: IPy_Object, val: IPy_Object): IPy_Object {
-    this._list[this.standardizeKey(key)] = val;
+    if (key.getType() === enums.Py_Type.SLICE) {
+      var slice = <Py_Slice> key,
+        step = slice.step === None ? 1 : (<Py_Int | Py_Long> slice.start).toNumber();
+      var rlist = <Py_List> Py_List.fromIterable(<Iterable> val);
+
+      if (step === 1){
+        var start = slice.start === None ? 0 : (<Py_Int> slice.start).toNumber(),
+          stop = slice.stop === None ? this._list.length : (<Py_Int> slice.stop).toNumber(),
+          len = stop - start < 0 ? 0 : stop - start;
+        Array.prototype.splice.apply(this._list, [start, len].concat(rlist.toArray()));
+
+      } else {
+        var indices = slice.getIndices(this._list.length);
+        var start = indices.start,
+          stop = indices.stop,
+          step = indices.step,
+          length = indices.length;
+        if(step !== 1 && rlist.len() !== length){
+          throw new Error('attempt to assign sequence of size ' + rlist.len() + ' to extended slice of size ' + length);
+        }
+        
+        for(var curr = start, i = 0; i < length; curr += step, i += 1){
+          this._list[curr] = rlist.__getitem__(new Py_Int(i));
+        }
+      }
+    } else {
+      this._list[this.standardizeKey(key)] = val;
+    }
+    
     return None;
   }
   public __delitem__(key: IPy_Object): IPy_Object {
     // Delete is the same as splicing out the element and moving everything down
     this._list.splice(this.standardizeKey(key), 1);
     return None;
+  }
+
+  public toArray(): any[] {
+    return this._list;
   }
 }
 
