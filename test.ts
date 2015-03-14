@@ -63,6 +63,7 @@ test("Mixed Arithmetic test", "pytests/math/mixedMathTest");
 console.log(`\n--- Function tests ---`);
 test("Keyword and default arguments test","pytests/functions/keywordargs");
 test("Recursion test", "pytests/functions/recursionTest");
+test("Scoping test", "pytests/functions/scopeTest");
 console.log(`\n--- Builtin tests ---`);
 test("Builtin Types test", "pytests/builtins/builtinTypes");
 test("Bin function test", "pytests/builtins/bin");
