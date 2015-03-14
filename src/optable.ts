@@ -8,6 +8,7 @@ import collections = require('./collections');
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
 import Py_List = collections.Py_List;
+import Py_Tuple = collections.Py_Tuple;
 import Py_Dict = collections.Py_Dict;
 import Py_CodeObject = require('./codeobject');
 import enums = require('./enums');
@@ -885,17 +886,15 @@ optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject) {
     f.push(b.splice(a,1));
 }
 
-// XXX: for now, is exactly the same as BUILD_LIST
 optable[opcodes.BUILD_TUPLE] = function(f: Py_FrameObject) {
     var count = f.readArg();
     var l = new Array(count);
     for (var i = count-1; i >= 0; i--){
         l[i] = f.pop();
     }
-    f.push(new Py_List(l));
+    f.push(new Py_Tuple(l));
 }
 
-//TODO: seems to work but need more testing
 optable[opcodes.BUILD_LIST] = function(f: Py_FrameObject) {
     var count = f.readArg();
     var l = new Array(count);
