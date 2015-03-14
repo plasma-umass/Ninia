@@ -229,7 +229,44 @@ function iter(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): inter
   if (args.length == 2) {
     throw new Error('NotImplementedError: iter(a,b) is NYI');
   }
-  throw new Error('TypeError: iter() take 1-2 arguments');
+  throw new Error('TypeError: iter() takes 1-2 arguments');
+}
+
+function hasattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): typeof True {
+  if (Object.keys(kwargs).length > 0) {
+    throw new Error('TypeError: hasattr() takes no keyword arguments');
+  }
+  if (args.length != 2) {
+    throw new Error('TypeError: hasattr() takes two arguments');
+  }
+  var obj = args[0];
+  var attr = args[1].toString();
+  return obj.hasOwnProperty(attr)? True : False;
+}
+
+function getattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): IPy_Object {
+  if (Object.keys(kwargs).length > 0) {
+    throw new Error('TypeError: getattr() takes no keyword arguments');
+  }
+  if (args.length != 2) {
+    throw new Error('TypeError: getattr() takes two arguments');
+  }
+  var obj = args[0];
+  var attr = args[1].toString();
+  return obj[attr];
+}
+
+function setattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): void {
+  if (Object.keys(kwargs).length > 0) {
+    throw new Error('TypeError: setattr() takes no keyword arguments');
+  }
+  if (args.length != 3) {
+    throw new Error('TypeError: setattr() takes three arguments');
+  }
+  var obj = args[0];
+  var attr = args[1].toString();
+  var x = args[2];
+  obj[attr] = x;
 }
 
 function pyfunc_wrapper_onearg(func, funcname: string) {
@@ -271,6 +308,9 @@ var builtins = {
     float: float,
     hex: pyfunc_wrapper_onearg(hex, 'hex'),
     int: int,
+    hasattr: hasattr,
+    getattr: getattr,
+    setattr: setattr,
 }, True = builtins.True, False = builtins.False;
 
 export = builtins
