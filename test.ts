@@ -73,6 +73,7 @@ test("Abs function test", "pytests/builtins/abs");
 test("Cmp function test", "pytests/builtins/cmp");
 test("All & Any functions test", "pytests/builtins/all_any");
 test("Chr & Ord functions test", "pytests/builtins/chr_ord");
+test("Attribute accessors test", "pytests/builtins/attrs");
 console.log(`\n--- Collection tests ---`);
 test("List test", "pytests/collections/lists");
 console.log(`\n--- Control flow tests ---`);
