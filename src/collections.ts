@@ -204,8 +204,8 @@ function standardizeKey(key: IPy_Object, len: number): number {
 
 export class Py_Tuple extends Py_Object implements Iterable {
   private _len: Py_Int;  // can't resize a tuple
-  private _tuple: Py_Object[];
-  constructor(t: Py_Object[]) {
+  private _tuple: IPy_Object[];
+  constructor(t: IPy_Object[]) {
     super();
     this._tuple = t;
     this._len = new Py_Int(t.length);
@@ -249,17 +249,18 @@ export class Py_Tuple extends Py_Object implements Iterable {
   public __getitem__(key: IPy_Object): IPy_Object {
     if (key.getType() === enums.Py_Type.SLICE) {
       var slice = <Py_Slice> key,
-        start = slice.start === None ? 0 : (<Py_Int> slice.start).toNumber(),
-        stop = slice.stop === None ? this._tuple.length : (<Py_Int> slice.stop).toNumber();
-      if (slice.step === None) {
-        return new Py_Tuple(this._tuple.slice(start, stop));
-      } else {
-        var newArr: Py_Object[] = [], step = (<Py_Int> slice.step).toNumber(), i: number;
-        for (i = start; i < stop; i += step) {
-          newArr.push(this._tuple[i]);
-        }
-        return new Py_Tuple(newArr);
+        indices = slice.getIndices(this._tuple.length),
+        start = indices.start,
+        stop = indices.stop,
+        step = indices.step,
+        length = indices.length,
+        newArr: IPy_Object[] = [],
+        i: number,
+        curr: number;
+      for (i = 0, curr = start; i < length; i += 1, curr += step) {
+        newArr.push(this._tuple[curr]);
       }
+      return new Py_Tuple(newArr);
     } else {
       return this._tuple[standardizeKey(key, this._tuple.length)];
     }
