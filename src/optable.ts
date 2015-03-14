@@ -15,6 +15,7 @@ import singletons = require('./singletons');
 import True = primitives.True;
 import False = primitives.False;
 import Iterator = interfaces.Iterator;
+import Iterable = interfaces.Iterable;
 import Py_Slice = collections.Py_Slice;
 import None = singletons.None;
 var NotImplemented = builtins.NotImplemented;
@@ -823,45 +824,60 @@ optable[opcodes.SLICE_3] = function(f: Py_FrameObject) {
   }
 }
 
-//TODO: store_slice is not working yet
 optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject) {
-    var a = <any> f.pop();
-    var b = f.pop();
-    var aux = a.slice(0);
-    aux = b;
+  var seq = f.pop();
+  var value = <Iterable> f.pop();
+  if (seq.__setitem__) {
+    seq.__setitem__(new Py_Slice(None, None, None), value);
+  } else {
+    throw new Error("Unsupported type.");
+  }
 }
 
 optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = <any> f.pop();
-    var c = f.pop();
-    var aux = b.slice(a);
-    aux = c;
+  var start = f.pop();
+  var seq = f.pop();
+  var value = <Iterable> f.pop();
+  if (seq.__setitem__) {
+    seq.__setitem__(new Py_Slice(start, None, None), value);
+  } else {
+    throw new Error("Unsupported type.");
+  }
 }
 
 optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = <any> f.pop();
-    var c = f.pop();
-    var aux = b.slice(0,a);
-    aux = c;
+  var end = f.pop();
+  var seq = <Py_List> f.pop();
+  var value = <Iterable> f.pop();
+  if (seq.__setitem__) {
+    seq.__setitem__(new Py_Slice(None, end, None), value);
+  } else {
+    throw new Error("Unsupported type.");
+  }
 }
 
 optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = f.pop();
-    var c = <any> f.pop();
-    var d = f.pop();
-    var aux = c.slice(b,a);
-    aux = d;
+  var end = f.pop();
+  var start = f.pop();
+  var seq = <Py_List> f.pop();
+  var value = <Iterable> f.pop();
+  if (seq.__setitem__) {
+    seq.__setitem__(new Py_Slice(start, end, None), value);
+  } else {
+    throw new Error("Unsupported type.");
+  }
 }
 
 // TODO: more testing
 optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject) {
-    var a = <any> f.pop();
-    var b = <any> f.pop();
-    var c = f.pop();
-    b[a] = c;
+  var key = <any> f.pop();
+  var obj = <any> f.pop();
+  var value = f.pop();
+  if (obj.__setitem__) {
+    obj.__setitem__(key, value);
+  } else {
+    throw new Error("Unsupported type.");
+  }
 }
 
 // TODO: more testing
