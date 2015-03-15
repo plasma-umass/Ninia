@@ -24,7 +24,7 @@ class Interpreter {
     interpret(code: Py_CodeObject) {
         var f = new Py_FrameObject(null, code, {}, -1,
                                    code.firstlineno, {}, false,
-                                   this.outputDevice)
+                                   this.outputDevice, [])
         return f.exec();
     }
 

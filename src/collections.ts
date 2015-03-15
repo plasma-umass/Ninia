@@ -265,6 +265,10 @@ export class Py_Tuple extends Py_Object implements Iterable {
       return this._tuple[standardizeKey(key, this._tuple.length)];
     }
   }
+
+  public toArray(): IPy_Object[] {
+    return this._tuple;
+  }
 }
 
 export class Py_Dict extends Py_Object {

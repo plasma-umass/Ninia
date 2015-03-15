@@ -514,12 +514,13 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_DEREF] = function(f: Py_FrameObject) {
     var i = f.readArg();
+
     var numCellvars = f.codeObj.cellvars.length;
     if (i < numCellvars) {
-      var name = f.codeObj.cellvars[i].toString();
-      f.push(f.locals[name]);
+        var name = f.codeObj.cellvars[i].toString();
+        f.push(f.locals[name]);
     } else {
-      throw new Error('LOAD_DEREF: this branch is NYI');
+        f.push(f.env[i - numCellvars]);
     }
 }
 
@@ -533,7 +534,7 @@ optable[opcodes.LOAD_CLOSURE] = function(f: Py_FrameObject) {
     } else {
       name = f.codeObj.freevars[i - numCellvars];
     }
-    f.push(name);
+    f.push(f.locals[name.toString()]);
 }
 
 optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
