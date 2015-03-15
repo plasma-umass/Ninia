@@ -467,6 +467,19 @@ optable[opcodes.STORE_NAME] = function(f: Py_FrameObject) {
     f.locals[name.toString()] = val;
 }
 
+optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject) {
+    var val = f.pop();
+    if(val.__getitem__ === undefined) {
+        throw new Error("Expected a list or tuple type.");
+    }
+    // Pop from stack, and reverse the order of elements, and push back into stack
+    // e.g. 1 2 3 -> 3 2 1
+    for (var i = f.readArg()-1; i >= 0; i--)
+    {
+        f.push(val.__getitem__(new Py_Int(i)));
+    }
+}
+
 optable[opcodes.STORE_GLOBAL] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var val = f.pop();

@@ -84,4 +84,5 @@ test("Range test", "pytests/rangeTest");
 console.log(`\n--- Other tests ---`);
 test("Strings test", "pytests/stringTest");
 test("Slice test", "pytests/sliceTest");
+test("Multiple Assignment test", "pytests/multipleAssignment");
 printResults()
