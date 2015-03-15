@@ -467,7 +467,7 @@ optable[opcodes.STORE_NAME] = function(f: Py_FrameObject) {
 
 optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject) {
     var val = f.pop();
-    if(val === undefined) {
+    if(val.__getitem__ === undefined) {
         throw new Error("Expected a list or tuple type.");
     }
     // Pop from stack, and reverse the order of elements, and push back into stack
