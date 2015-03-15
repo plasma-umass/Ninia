@@ -43,6 +43,8 @@ class Py_FrameObject {
     // Entries are [stackSize, startPos, endPos] tuples.
     // TODO: type this correctly
     blockStack: [number, number, number][];
+    // Lexical environment
+    env: IPy_Object[];
 
     constructor(back: Py_FrameObject,
                 code: Py_CodeObject,
@@ -51,7 +53,8 @@ class Py_FrameObject {
                 lineNum: number,
                 locals: { [name: string]: IPy_Object },
                 restricted: boolean,
-                outputDevice: any) {
+                outputDevice: any,
+                env: IPy_Object[]) {
         this.back = back;
         this.codeObj = code;
         this.globals = globals;
@@ -63,6 +66,7 @@ class Py_FrameObject {
         this.outputDevice = outputDevice;
         this.shouldWriteSpace = false;
         this.blockStack = [];
+        this.env = env;
     }
 
     // Stack handling operations.
@@ -117,8 +121,9 @@ class Py_FrameObject {
     // clone a new frame off this one, for calling a child function.
     childFrame(func: Py_FuncObject, locals: { [name: string]: IPy_Object }): Py_FrameObject {
       var scope = this.back ? this.globals : this.locals;
+      var env = func.closure ? func.closure.toArray() : [];
       return new Py_FrameObject(this, func.code, scope, -1,
-        func.code.firstlineno, locals, false, this.outputDevice);
+        func.code.firstlineno, locals, false, this.outputDevice, env);
     }
 }
 export = Py_FrameObject;
