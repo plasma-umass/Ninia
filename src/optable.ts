@@ -467,6 +467,12 @@ optable[opcodes.STORE_NAME] = function(f: Py_FrameObject) {
     f.locals[name.toString()] = val;
 }
 
+optable[opcodes.DELETE_NAME] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var name = f.codeObj.names[i];
+    delete f.locals[name.toString()]
+}
+
 optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject) {
     var val = f.pop();
     if(val.__getitem__ === undefined) {
