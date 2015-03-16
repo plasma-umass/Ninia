@@ -48,9 +48,6 @@ function printResults() {
         if (testFails[tName] > 0) {
             console.log(`${testFails[tName]} test failed in ${tName} tests.`);
         }
-        else {
-            console.log(`${tName} tests passed successfully!`);
-        }
     }
     console.log(`Passed ${numPassed}/${numTests} tests.`);
 }
