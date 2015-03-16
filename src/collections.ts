@@ -156,7 +156,7 @@ export class Py_List extends Py_Object implements Iterable {
   public __setitem__(key: IPy_Object, val: IPy_Object): IPy_Object {
     if (key.getType() === enums.Py_Type.SLICE) {
       var slice = <Py_Slice> key,
-        step = slice.step === None ? 1 : (<Py_Int | Py_Long> slice.start).toNumber();
+        step = slice.step === None ? 1 : (<Py_Int | Py_Long> slice.step).toNumber();
       var rlist = <Py_List> Py_List.fromIterable(<Iterable> val);
 
       if (step === 1){
