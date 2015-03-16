@@ -184,9 +184,49 @@ export class Py_List extends Py_Object implements Iterable {
     }
     return None;
   }
+
   public __delitem__(key: IPy_Object): IPy_Object {
     // Delete is the same as splicing out the element and moving everything down
-    this._list.splice(standardizeKey(key, this._list.length), 1);
+    if (key.getType() === enums.Py_Type.SLICE){
+      var slice = <Py_Slice> key,
+      step = slice.step === None ? 1 : (<Py_Int | Py_Long> slice.step).toNumber();
+      if (step === 1){
+        var start = slice.start === None ? 0 : (<Py_Int> slice.start).toNumber(),
+          stop = slice.stop === None ? this._list.length : (<Py_Int> slice.stop).toNumber(),
+          len = stop - start < 0 ? 0 : stop - start;
+        Array.prototype.splice.apply(this._list, [start, len]);
+
+      } else {
+        var indices = slice.getIndices(this._list.length);
+        var start = indices.start,
+          stop = indices.stop,
+          step = indices.step,
+          length = indices.length;
+        
+        if (length <= 0) {
+          return None;
+        }
+        if (step < 0) {
+          stop = start + 1;
+          start = stop + step*(length - 1) - 1;
+          step = -step;
+        }
+
+        for(var curr = start, i = 0; curr < stop; curr += step, i += 1){
+          var lim = step - 1
+          if (curr + step >= this._list.length){
+            lim = this._list.length - 1 - curr 
+          }
+          for (var j = 0; j < lim; j++){
+            this._list[curr - i + j] = this._list[curr + j + 1]
+          }
+        }
+        this._list.splice(this._list.length - length, length);
+        
+      }
+    } else {
+      this._list.splice(standardizeKey(key, this._list.length), 1);
+    }
     return None;
   }
 
