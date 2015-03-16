@@ -56,6 +56,7 @@ function printResults() {
 console.log(`\n--- Math tests ---`);
 test("Unary operations test", "pytests/math/unaryOpsTest");
 test("Binary operations test", "pytests/math/binaryOpsTest");
+test("In-place operations test", "pytests/math/inplaceTest");
 test("Mixed Arithmetic test", "pytests/math/mixedMathTest");
 console.log(`\n--- Function tests ---`);
 test("Keyword and default arguments test","pytests/functions/keywordargs");
