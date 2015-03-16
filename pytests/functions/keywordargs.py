@@ -10,3 +10,10 @@ print foo(x=4, y=64L), "x and y have arguments"
 print foo(z=-200.0, x=0), "z and x have arguments (reversed)"
 print foo(x=3, y=10.5, z=11), "All 3 have arguments"
 print foo(z=12.9, y=3, x=-30), "All 3 have arguments (scrambled order)"
+
+args = (2, 3)
+kwargs = dict(z=4)
+print foo(*args)
+print foo(**kwargs)
+print foo(*args, **kwargs)
+
