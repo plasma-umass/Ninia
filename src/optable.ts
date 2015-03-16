@@ -761,6 +761,11 @@ optable[opcodes.STORE_FAST] = function(f: Py_FrameObject) {
     f.locals[f.codeObj.varnames[i].toString()] = val;
 }
 
+optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    delete f.locals[f.codeObj.varnames[i].toString()];
+}
+
 optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
     var x = f.readArg()
     var num_args = x & 0xff;
