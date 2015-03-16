@@ -194,7 +194,7 @@ export class Py_List extends Py_Object implements Iterable {
         var start = slice.start === None ? 0 : (<Py_Int> slice.start).toNumber(),
           stop = slice.stop === None ? this._list.length : (<Py_Int> slice.stop).toNumber(),
           len = stop - start < 0 ? 0 : stop - start;
-        Array.prototype.splice.apply(this._list, [start, len]);
+        this._list.splice(start, len);
 
       } else {
         var indices = slice.getIndices(this._list.length);
