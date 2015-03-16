@@ -10,6 +10,10 @@ a = (1, 'x')
 b = tuple([1, 'x'])
 print a, b
 
+a = {3, 4}
+b = set((3, 4))
+print a, b
+
 # Non-exhaustive set of "easy" cases for builtin functions
 print float(5), float('5')
 print int(), int(5), int('1101', base=2)
