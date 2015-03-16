@@ -467,6 +467,12 @@ optable[opcodes.STORE_NAME] = function(f: Py_FrameObject) {
     f.locals[name.toString()] = val;
 }
 
+optable[opcodes.DELETE_NAME] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var name = f.codeObj.names[i];
+    delete f.locals[name.toString()]
+}
+
 optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject) {
     var val = f.pop();
     if(val.__getitem__ === undefined) {
@@ -755,6 +761,11 @@ optable[opcodes.STORE_FAST] = function(f: Py_FrameObject) {
     f.locals[f.codeObj.varnames[i].toString()] = val;
 }
 
+optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    delete f.locals[f.codeObj.varnames[i].toString()];
+}
+
 optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
     var x = f.readArg()
     var num_args = x & 0xff;
@@ -920,6 +931,47 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject) {
   }
 }
 
+optable[opcodes.DELETE_SLICE_0] = function(f: Py_FrameObject) {
+  var seq = f.pop();
+  if (seq.__delitem__) {
+    seq.__delitem__(new Py_Slice(None, None, None));
+  } else {
+    throw new Error("Unsupported type.");
+  }
+}
+
+optable[opcodes.DELETE_SLICE_1] = function(f: Py_FrameObject) {
+  var start = f.pop();
+  var seq = f.pop();
+  if (seq.__delitem__) {
+    seq.__delitem__(new Py_Slice(start, None, None));
+  } else {
+    throw new Error("Unsupported type.");
+  }
+}
+
+optable[opcodes.DELETE_SLICE_2] = function(f: Py_FrameObject) {
+  var end = f.pop();
+  var seq = <Py_List> f.pop();
+  if (seq.__delitem__) {
+    seq.__delitem__(new Py_Slice(None, end, None));
+  } else {
+    throw new Error("Unsupported type.");
+  }
+}
+
+optable[opcodes.DELETE_SLICE_3] = function(f: Py_FrameObject) {
+  var end = f.pop();
+  var start = f.pop();
+  var seq = <Py_List> f.pop();
+  if (seq.__delitem__) {
+    seq.__delitem__(new Py_Slice(start, end, None));
+  } else {
+    throw new Error("Unsupported type.");
+  }
+}
+
+
 // TODO: more testing
 optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject) {
   var key = <any> f.pop();
@@ -934,9 +986,14 @@ optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject) {
 
 // TODO: more testing
 optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = <any> f.pop();
-    f.push(b.splice(a,1));
+    var key = f.pop();
+    var obj = <any> f.pop();
+    if (obj.__delitem__) {
+        obj.__delitem__(key);
+    } else {
+        throw new Error("Unsupported type.");
+    }
+    
 }
 
 optable[opcodes.BUILD_TUPLE] = function(f: Py_FrameObject) {
