@@ -16,6 +16,9 @@ class SingletonClass implements IPy_Object {
     getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
     // XXX: Should be fixed.
     hash(): number { return -1; }
+    __str__(): primitives.Py_Str {
+        return primitives.Py_Str.fromJS(this.name);
+    }
 }
 
 // Python has a single null object called "None".
