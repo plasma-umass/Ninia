@@ -986,9 +986,14 @@ optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject) {
 
 // TODO: more testing
 optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject) {
-    var a = f.pop();
-    var b = <any> f.pop();
-    f.push(b.splice(a,1));
+    var key = f.pop();
+    var obj = <any> f.pop();
+    if (obj.__delitem__) {
+        obj.__delitem__(key);
+    } else {
+        throw new Error("Unsupported type.");
+    }
+    
 }
 
 optable[opcodes.BUILD_TUPLE] = function(f: Py_FrameObject) {
