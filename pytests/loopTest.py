@@ -16,3 +16,10 @@ for i in range(0, 10, 2):
 
 for i in range(0, -10, -2):
     print i
+
+for i in range(4, 7):
+    print i
+    break
+else:
+    print 'should not print this'
+
