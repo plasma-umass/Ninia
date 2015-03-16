@@ -23,3 +23,8 @@ for i in range(4, 7):
 else:
     print 'should not print this'
 
+for i in ['a', 'b']:
+    print i
+    continue
+    print 'should not print this'
+
