@@ -474,6 +474,23 @@ optable[opcodes.DELETE_NAME] = function(f: Py_FrameObject) {
     delete f.locals[name.toString()]
 }
 
+optable[opcodes.STORE_ATTR] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var obj = f.pop();
+    var attr = f.pop();
+    var name = f.codeObj.names[i];
+    // TODO: use __setattr__ here
+    obj[name.toString()] = attr;
+}
+
+optable[opcodes.DELETE_ATTR] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var obj = f.pop();
+    var name = f.codeObj.names[i];
+    // TODO: use __delattr__ here
+    delete obj[name.toString()];
+}
+
 optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject) {
     var val = f.pop();
     if(val.__getitem__ === undefined) {

@@ -253,6 +253,7 @@ function getattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): IP
   }
   var obj = args[0];
   var attr = args[1].toString();
+  // TODO: use __getattr__ here
   return obj[attr];
 }
 
@@ -266,6 +267,7 @@ function setattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): vo
   var obj = args[0];
   var attr = args[1].toString();
   var x = args[2];
+  // TODO: use __setattr__ here
   obj[attr] = x;
 }
 
