@@ -521,21 +521,7 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_DEREF] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    var cell = <Py_Cell> f.env[i];
-    
-    if (cell.ob_ref === null) {
-        var name;
-        var numCellvars = f.codeObj.cellvars.length;
-        if (i < numCellvars) {
-            name = f.codeObj.cellvars[i].toString();
-
-        } else {
-            name = f.codeObj.freevars[i - numCellvars].toString();
-        }
-        cell.ob_ref = f.locals[name];
-    }
-    f.push(cell.ob_ref);
-
+    f.push(f.getDeref(i).ob_ref);
 }
 
 optable[opcodes.STORE_DEREF] = function(f: Py_FrameObject) {
@@ -546,20 +532,7 @@ optable[opcodes.STORE_DEREF] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_CLOSURE] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    // Pushes a reference to the cell contained in slot i of the cell and free variable storage
-    var cell = <Py_Cell> f.env[i];
-    if (cell.ob_ref === null) {
-        var name;
-        var numCellvars = f.codeObj.cellvars.length;
-        if (i < numCellvars) {
-            name = f.codeObj.cellvars[i].toString();
-
-        } else {
-            name = f.codeObj.freevars[i - numCellvars].toString();
-        }
-        cell.ob_ref = f.locals[name];
-    }
-    f.push(cell);
+    f.push(f.getDeref(i));
 }
 
 optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {

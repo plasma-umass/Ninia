@@ -136,5 +136,21 @@ class Py_FrameObject {
       return new Py_FrameObject(this, func.code, scope, -1,
         func.code.firstlineno, locals, false, this.outputDevice, env);
     }
+
+    getDeref(i: number) {
+        var cell: Py_Cell = this.env[i];
+        if (cell.ob_ref === null) {
+            var name: string;
+            var numCellvars = this.codeObj.cellvars.length;
+            if (i < numCellvars) {
+                name = this.codeObj.cellvars[i].toString();
+
+            } else {
+                name = this.codeObj.freevars[i - numCellvars].toString();
+            }
+            cell.ob_ref = this.locals[name];
+        }
+        return cell;
+    }
 }
 export = Py_FrameObject;
