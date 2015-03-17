@@ -1026,6 +1026,17 @@ optable[opcodes.SETUP_LOOP] = function(f: Py_FrameObject) {
     f.blockStack.push([stackSize, loopPos, loopPos+delta]);
 }
 
+optable[opcodes.BREAK_LOOP] = function(f: Py_FrameObject) {
+    var b = f.blockStack.pop();
+    // Entries are [stackSize, startPos, endPos] tuples.
+    var stackSize: number = b[0];
+    var endPos: number = b[2];
+    // unwind the stack to clear loop variables
+    f.stack.splice(stackSize, f.stack.length - stackSize);
+    // jump to the end of the loop
+    f.lastInst = endPos;
+}
+
 optable[opcodes.POP_BLOCK] = function(f: Py_FrameObject) {
     // removes a block from the block stack
     f.blockStack.pop();
