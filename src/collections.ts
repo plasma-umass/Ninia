@@ -313,7 +313,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
 
 export class Py_Dict extends Py_Object {
   private _keys: IPy_Object[];
-  private _vals: { [name: string]: IPy_Object };
+  private _vals: { [hash: number]: IPy_Object };
   constructor() {
     super();
     this._keys = [];
@@ -334,12 +334,22 @@ export class Py_Dict extends Py_Object {
   public len(): number {
       return this._keys.length;
   }
+  public toPairs(): [IPy_Object,IPy_Object][] {
+    var pairs = [];
+    for (var i = 0; i < this._keys.length; i++) {
+      var key = this._keys[i];
+      var h = key.hash();
+      var val = this._vals[h];
+      pairs.push([key, val]);
+    }
+    return pairs;
+  }
   public toString(): string {
     if (this._keys.length == 0) {
       return '{}';
     }
     var s = '{';
-    for (var i=0; i<this._keys.length; i++) {
+    for (var i = 0; i < this._keys.length; i++) {
       var key = this._keys[i];
       var h = key.hash();
       var val = this._vals[h];

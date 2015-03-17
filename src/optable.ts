@@ -781,12 +781,20 @@ optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
     delete f.locals[f.codeObj.varnames[i].toString()];
 }
 
-optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
-    var x = f.readArg()
+// Helper function for all the CALL_FUNCTION* opcodes
+function call_func(f: Py_FrameObject, has_kw: boolean, has_varargs: boolean) {
+    var x = f.readArg();
     var num_args = x & 0xff;
     var num_kwargs = (x >> 8) & 0xff;
     var args = new Array(num_args);
     var kwargs: { [name: string]: IPy_Object } = {};
+
+    if (has_kw) {
+        var kw = (<Py_Dict> f.pop()).toPairs();
+    }
+    if (has_varargs) {
+        var varargs = (<Py_Tuple> f.pop()).toArray();
+    }
 
     for (var i = 0; i < num_kwargs; i++) {
         var val = f.pop();
@@ -799,6 +807,15 @@ optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
         args[i] = f.pop();
     }
 
+    if (has_kw) {
+        for (var i = 0; i < kw.length; i++) {
+           var item = kw[i];
+           kwargs[item[0].toString()] = item[1];
+        }
+    }
+    if (has_varargs) {
+        Array.prototype.push.apply(args, varargs);
+    }
     var func = f.pop();
 
     // Hacky check for native functions
@@ -824,6 +841,22 @@ optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
     } else {
       throw new Error("Invalid object.");
     }
+}
+
+optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
+    call_func(f, false, false);
+}
+
+optable[opcodes.CALL_FUNCTION_VAR] = function(f: Py_FrameObject) {
+    call_func(f, false, true);
+}
+
+optable[opcodes.CALL_FUNCTION_KW] = function(f: Py_FrameObject) {
+    call_func(f, true, false);
+}
+
+optable[opcodes.CALL_FUNCTION_VAR_KW] = function(f: Py_FrameObject) {
+    call_func(f, true, true);
 }
 
 optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
