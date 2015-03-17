@@ -12,3 +12,12 @@ def outer(arg=5):
 
 outer()
 
+def o():
+  a = 0
+  def i():
+    return a
+  a += 1
+  return i
+
+i = o()
+print i()

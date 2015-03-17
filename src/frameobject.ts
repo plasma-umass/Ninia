@@ -4,6 +4,7 @@ import Py_CodeObject = require('./codeobject');
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
+import Py_Cell = require('./cell');
 
 // Frame Objects are basically stack frames for functions, except they carry
 // extra context (e.g. globals, local scope, etc.). This class is not simplified
@@ -44,7 +45,8 @@ class Py_FrameObject {
     // TODO: type this correctly
     blockStack: [number, number, number][];
     // Lexical environment
-    env: IPy_Object[];
+    // cellvars followed by freevars
+    env: Py_Cell[];
 
     constructor(back: Py_FrameObject,
                 code: Py_CodeObject,
@@ -54,7 +56,7 @@ class Py_FrameObject {
                 locals: { [name: string]: IPy_Object },
                 restricted: boolean,
                 outputDevice: any,
-                env: IPy_Object[]) {
+                closure: IPy_Object[]) {
         this.back = back;
         this.codeObj = code;
         this.globals = globals;
@@ -66,7 +68,16 @@ class Py_FrameObject {
         this.outputDevice = outputDevice;
         this.shouldWriteSpace = false;
         this.blockStack = [];
-        this.env = env;
+        this.env = [];
+        var i: number;
+        for (i = 0; i < code.cellvars.length; i++) {
+            this.env.push(new Py_Cell(null));
+        }
+
+        for (i = 0; i < code.freevars.length; i++) {
+            this.env.push(<Py_Cell>closure[i]);
+        }
+
     }
 
     // Stack handling operations.
@@ -124,6 +135,22 @@ class Py_FrameObject {
       var env = func.closure ? func.closure.toArray() : [];
       return new Py_FrameObject(this, func.code, scope, -1,
         func.code.firstlineno, locals, false, this.outputDevice, env);
+    }
+
+    getDeref(i: number) {
+        var cell: Py_Cell = this.env[i];
+        if (cell.ob_ref === null) {
+            var name: string;
+            var numCellvars = this.codeObj.cellvars.length;
+            if (i < numCellvars) {
+                name = this.codeObj.cellvars[i].toString();
+
+            } else {
+                name = this.codeObj.freevars[i - numCellvars].toString();
+            }
+            cell.ob_ref = this.locals[name];
+        }
+        return cell;
     }
 }
 export = Py_FrameObject;

@@ -19,6 +19,7 @@ import Iterator = interfaces.Iterator;
 import Iterable = interfaces.Iterable;
 import Py_Slice = collections.Py_Slice;
 import None = singletons.None;
+import Py_Cell = require('./cell');
 var NotImplemented = builtins.NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
@@ -520,27 +521,18 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_DEREF] = function(f: Py_FrameObject) {
     var i = f.readArg();
+    f.push(f.getDeref(i).ob_ref);
+}
 
-    var numCellvars = f.codeObj.cellvars.length;
-    if (i < numCellvars) {
-        var name = f.codeObj.cellvars[i].toString();
-        f.push(f.locals[name]);
-    } else {
-        f.push(f.env[i - numCellvars]);
-    }
+optable[opcodes.STORE_DEREF] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var obj = f.pop();
+    f.env[i].ob_ref = obj;
 }
 
 optable[opcodes.LOAD_CLOSURE] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    // Pushes a reference to the cell contained in slot i of the cell and free variable storage.
-    var numCellvars = f.codeObj.cellvars.length;
-    var name: primitives.Py_Str;
-    if (i < numCellvars) {
-      name = f.codeObj.cellvars[i];
-    } else {
-      name = f.codeObj.freevars[i - numCellvars];
-    }
-    f.push(f.locals[name.toString()]);
+    f.push(f.getDeref(i));
 }
 
 optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
