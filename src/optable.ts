@@ -19,6 +19,7 @@ import Iterator = interfaces.Iterator;
 import Iterable = interfaces.Iterable;
 import Py_Slice = collections.Py_Slice;
 import None = singletons.None;
+import Py_Cell = require('./cell');
 var NotImplemented = builtins.NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
@@ -520,27 +521,45 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_DEREF] = function(f: Py_FrameObject) {
     var i = f.readArg();
+    var cell = <Py_Cell> f.env[i];
+    
+    if (cell.ob_ref === null) {
+        var name;
+        var numCellvars = f.codeObj.cellvars.length;
+        if (i < numCellvars) {
+            name = f.codeObj.cellvars[i].toString();
 
-    var numCellvars = f.codeObj.cellvars.length;
-    if (i < numCellvars) {
-        var name = f.codeObj.cellvars[i].toString();
-        f.push(f.locals[name]);
-    } else {
-        f.push(f.env[i - numCellvars]);
+        } else {
+            name = f.codeObj.freevars[i - numCellvars].toString();
+        }
+        cell.ob_ref = f.locals[name];
     }
+    f.push(cell.ob_ref);
+
+}
+
+optable[opcodes.STORE_DEREF] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var obj = f.pop();
+    f.env[i].ob_ref = obj;
 }
 
 optable[opcodes.LOAD_CLOSURE] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    // Pushes a reference to the cell contained in slot i of the cell and free variable storage.
-    var numCellvars = f.codeObj.cellvars.length;
-    var name: primitives.Py_Str;
-    if (i < numCellvars) {
-      name = f.codeObj.cellvars[i];
-    } else {
-      name = f.codeObj.freevars[i - numCellvars];
+    // Pushes a reference to the cell contained in slot i of the cell and free variable storage
+    var cell = <Py_Cell> f.env[i];
+    if (cell.ob_ref === null) {
+        var name;
+        var numCellvars = f.codeObj.cellvars.length;
+        if (i < numCellvars) {
+            name = f.codeObj.cellvars[i].toString();
+
+        } else {
+            name = f.codeObj.freevars[i - numCellvars].toString();
+        }
+        cell.ob_ref = f.locals[name];
     }
-    f.push(f.locals[name.toString()]);
+    f.push(cell);
 }
 
 optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
