@@ -511,6 +511,12 @@ optable[opcodes.STORE_GLOBAL] = function(f: Py_FrameObject) {
     f.globals[name.toString()] = val;
 }
 
+optable[opcodes.DELETE_GLOBAL] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var name = f.codeObj.names[i];
+    delete f.globals[name.toString()];
+}
+
 optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
     var i = f.readArg();
     f.push(f.codeObj.consts[i]);
