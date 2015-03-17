@@ -69,12 +69,12 @@ class Py_FrameObject {
         this.shouldWriteSpace = false;
         this.blockStack = [];
         this.env = [];
-        
-        for (var i = 0; i < code.cellvars.length; i++) {
+        var i: number;
+        for (i = 0; i < code.cellvars.length; i++) {
             this.env.push(new Py_Cell(null));
         }
 
-        for (var i = 0; i < code.freevars.length; i++) {
+        for (i = 0; i < code.freevars.length; i++) {
             this.env.push(<Py_Cell>closure[i]);
         }
 
