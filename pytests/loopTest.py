@@ -24,7 +24,9 @@ else:
     print 'should not print this'
 
 for i in ['a', 'b']:
-    print i
-    continue
-    print 'should not print this'
+    try:
+        continue
+        print 'should not print this'
+    finally:
+        print i
 
