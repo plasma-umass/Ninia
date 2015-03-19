@@ -887,8 +887,6 @@ optable[opcodes.MAKE_CLOSURE] = function(f: Py_FrameObject) {
     f.push(func);
 }
 
-//TODO: From here down to Opcodes: Check if this is the correct
-//implementation. (They should be Slice/Array objects, probably!)
 optable[opcodes.DUP_TOP] = function(f: Py_FrameObject) {
     f.push(f.peek());
 }
