@@ -89,6 +89,6 @@ test("Basic class test", "pytests/classes/userDefTest");
 console.log(`\n--- Other tests ---`);
 test("Strings test", "pytests/stringTest");
 test("Slice test", "pytests/sliceTest");
-test("Multiple Assignment test", "pytests/multipleAssignment");
+test("Assignment test", "pytests/assignmentTest");
 test("Deletion test", "pytests/delTest");
 printResults()
