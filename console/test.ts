@@ -1,6 +1,6 @@
 import fs = require('fs');
-import Unmarshaller = require('./src/unmarshal');
-import Interpreter = require('./src/interpreter');
+import Unmarshaller = require('../src/unmarshal');
+import Interpreter = require('../src/interpreter');
 
 var testOut: string = '';
 var mockStdout = {write: (data: string) => {testOut += data;}};
@@ -19,7 +19,7 @@ function test(name, file) {
         testFails[testName] = 0;  // initialize
     var err = null;
     try {
-        interp.interpret(u.value());
+        interp.interpret(u.value(), false);
     } catch (e) {
         if (e.stack) {
             err = `${e.stack}\n`;

@@ -21,13 +21,11 @@ class Interpreter {
 
     // Interpret wraps a code object in a frame and executes it.
     // This is the "base frame" and has no pointer to a previous frame.
-    interpret(code: Py_CodeObject) {
+    interpret(code: Py_CodeObject, debug: boolean) {
         var f = new Py_FrameObject(null, code, {}, -1,
                                    code.firstlineno, {}, false,
-                                   this.outputDevice, [])
+                                   this.outputDevice, [], debug)
         return f.exec();
     }
-
-
 }
 export = Interpreter;

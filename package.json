@@ -9,6 +9,7 @@
     "bower": "*",
     "npm": "*",
     "typescript": "1.4",
+    "minimist": "*",
     "browserify": "*",
     "decimal.js": "*",
     "tslint": "^2.1.1"

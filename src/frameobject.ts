@@ -47,6 +47,8 @@ class Py_FrameObject {
     // Lexical environment
     // cellvars followed by freevars
     env: Py_Cell[];
+    // flag to turn on debug output
+    debug: boolean;
 
     constructor(back: Py_FrameObject,
                 code: Py_CodeObject,
@@ -56,7 +58,8 @@ class Py_FrameObject {
                 locals: { [name: string]: IPy_Object },
                 restricted: boolean,
                 outputDevice: any,
-                closure: IPy_Object[]) {
+                closure: IPy_Object[],
+                debug: boolean) {
         this.back = back;
         this.codeObj = code;
         this.globals = globals;
@@ -69,6 +72,7 @@ class Py_FrameObject {
         this.shouldWriteSpace = false;
         this.blockStack = [];
         this.env = [];
+        this.debug = debug;
         var i: number;
         for (i = 0; i < code.cellvars.length; i++) {
             this.env.push(new Py_Cell(null));
@@ -110,17 +114,16 @@ class Py_FrameObject {
 
     // exec is the Fetch-Execute-Decode loop for the interpreter.
     exec(): void {
-        var debug = false;  // TODO: toggle this with a debug flag
         for (var op = this.readOp(); op != undefined; op = this.readOp()) {
             var func = optable[op];
             if (func == undefined) {
                 throw new Error("Unknown opcode: " + opcodes[op] + " ("+op+")");
             }
-            if (debug) {
+            if (this.debug) {
                 console.log(opcodes[op]);
             }
             func(this);
-            if (debug) {
+            if (this.debug) {
                 console.log(this.stack);
             }
             if (op == opcodes.RETURN_VALUE) {
@@ -134,7 +137,7 @@ class Py_FrameObject {
       var scope = this.back ? this.globals : this.locals;
       var env = func.closure ? func.closure.toArray() : [];
       return new Py_FrameObject(this, func.code, scope, -1,
-        func.code.firstlineno, locals, false, this.outputDevice, env);
+        func.code.firstlineno, locals, false, this.outputDevice, env, this.debug);
     }
 
     getDeref(i: number) {

@@ -7,8 +7,11 @@ TSCFLAGS=-t ES3 --sourceMap --module commonjs
 PYTHON=python2.7
 PYC=$(PYTHON) -m compileall
 BROWSERIFY=./node_modules/browserify/bin/cmd.js
+TSLINT=./node_modules/tslint/bin/tslint
 # Source files:
-TSSOURCES=$(wildcard $(SDIR)/*.ts) $(wildcard lib/*.ts)
+TSSOURCES=$(wildcard $(SDIR)/*.ts) $(wildcard lib/*.ts) $(wildcard console/*.ts)
+# Generated JS files (used for cleanup)
+GENJS=$(TSSOURCES:.ts=.js)
 # Test files:
 PYSOURCES=$(wildcard $(TDIR)/*.py) $(wildcard $(TDIR)/**/*.py)
 PYCS=$(PYSOURCES:.py=.pyc)
@@ -16,38 +19,37 @@ TESTOUTS=$(PYSOURCES:.py=.out)
 # Main library output file:
 MAININ=browser/demo-raw.js
 MAINOUT=browser/demo.js
-# Test application file:
-TEST=test.ts
-TESTJS=test.js
-# Console application file:
-RUNNER=runner.ts
-RUNNERJS=runner.js
-# Generated JS files (used for cleanup)
-GENJS=$(TSSOURCES:.ts=.js) $(TESTJS) $(RUNNERJS)
-# TSLINT
-TSLINT=./node_modules/tslint/bin/tslint
+# Console application files:
+TEST_RUNNER=console/test.js
+RUNNER=ninia
 
 .PHONY: main test coverage compile lint clean
-main: compile $(RUNNERJS)
-	$(BROWSERIFY) $(MAININ) > $(MAINOUT)
+main: compile $(MAINOUT) $(RUNNER)
 
-test: compile $(TESTJS) $(PYCS) $(TESTOUTS) $(RUNNERJS)
-	node $(TESTJS)
+test: compile $(PYCS) $(TESTOUTS)
+	node $(TEST_RUNNER)
 
-coverage: compile $(TESTJS) $(PYCS) $(TESTOUTS) $(RUNNERJS)
-	istanbul cover $(TESTJS)
+coverage: compile $(PYCS) $(TESTOUTS)
+	istanbul cover $(TEST_RUNNER)
 
 compile: $(TSSOURCES) $(TSC) bower_components
 	$(TSC) $(TSCFLAGS) $(TSSOURCES)
+
+lint:
+	$(TSLINT) $(foreach source,$(TSSOURCES), -f $(source))
+
+$(RUNNER):
+	@echo '#!/bin/sh\nnode console/runner.js $$@' >$(RUNNER)
+	@chmod +x $(RUNNER)
+
+$(MAINOUT): $(MAININ)
+	$(BROWSERIFY) $(MAININ) > $(MAINOUT)
 
 $(TSC):
 	npm install .
 
 bower_components:
 	bower install
-
-lint:
-	$(TSLINT) $(foreach source,$(TSSOURCES), -f $(source))
 
 %.js: %.ts
 	$(TSC) $(TSCFLAGS) $^
@@ -59,4 +61,4 @@ lint:
 	$(PYTHON) $^ > $@ 2>&1
 
 clean:
-	$(RM) $(GENJS) $(PYCS) $(MAINOUT) $(TESTOUTS)
+	$(RM) $(GENJS) $(PYCS) $(MAINOUT) $(TESTOUTS) $(RUNNER)
