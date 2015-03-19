@@ -115,137 +115,59 @@ optable[opcodes.UNARY_INVERT] = function(f: Py_FrameObject) {
 // 4. If this is the case, try the reverse operation (rop) function
 // 5. If rop is similarly undefined or returns NotImplemented, the
 //    operation is not permitted for the given types.
-
-optable[opcodes.BINARY_POWER] = function(f: Py_FrameObject) {
+function binary_op(f: Py_FrameObject, op: string, inplace: boolean) {
+    // TODO: use this to generate code
     var b = f.pop();
     var a = f.pop();
+    var res: IPy_Object;
 
-    var res;
-    var mess = "You cannot raise " + a + " to the power of " + b;
-
-    if (typeof a.__pow__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__pow__(b);
+    if (inplace && a[`__i${op}__`] !== undefined) {
+        a[`__i${op}__`](b);
+        f.push(a);
+        return;
+    }
+    if (a[`__${op}__`] === undefined) {
+        throw new Error(`TypeError: cannot __${op}__ ${a} and ${b}`);
+    }
+    res = a[`__${op}__`](b);
+    if (!inplace && res == NotImplemented) {
+        if (b[`__r${op}__`] === 'undefined') {
+            throw new Error(`TypeError: cannot __${op}__ ${a} and ${b}`);
+        }
+        res = b[`__r${op}__`](a);
+    }
     if (res == NotImplemented) {
-        if(typeof b.__rpow__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rpow__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
+        throw new Error(`TypeError: cannot __${op}__ ${a} and ${b}`);
     }
-
     f.push(res);
 }
 
-optable[opcodes.BINARY_MULTIPLY] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot multiply " + a + " and " + b;
-
-    if (typeof a.__mul__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__mul__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rmul__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rmul__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-}
-
-//used when from __future__ import division is not in effect
-optable[opcodes.BINARY_DIVIDE] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot divide " + a + " by " + b;
-
-    if (typeof a.__div__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__div__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rdiv__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rdiv__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-}
-
-optable[opcodes.BINARY_MODULO] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot modulo " + a + " by " + b;
-
-    if (typeof a.__mod__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__mod__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rmod__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rmod__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-}
-
-optable[opcodes.BINARY_ADD] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    if (typeof a.__add__ == 'undefined')
-        throw new Error(`You cannot add ${a} and ${b}`);
-
-    var res = a.__add__(b);
-    if (res === NotImplemented) {
-        if(typeof b.__radd__ == 'undefined')
-            throw new Error(`You cannot add ${a} and ${b}`);
-        res = b.__radd__(a);
-        if (res === NotImplemented)
-            throw new Error(`You cannot add ${a} and ${b}`);
-    }
-
-    f.push(res);
-}
-
-optable[opcodes.BINARY_SUBTRACT] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot subtract " + a + " and " + b;
-
-    if (typeof a.__sub__ === 'undefined')
-      throw new Error(mess);
-
-    res = a.__sub__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rsub__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rsub__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-
-}
+optable[opcodes.BINARY_POWER] = (f: Py_FrameObject) => binary_op(f, 'pow', false);
+optable[opcodes.INPLACE_POWER] = (f: Py_FrameObject) => binary_op(f, 'pow', true);
+optable[opcodes.BINARY_MULTIPLY] = (f: Py_FrameObject) => binary_op(f, 'mul', false);
+optable[opcodes.INPLACE_MULTIPLY] = (f: Py_FrameObject) => binary_op(f, 'mul', true);
+optable[opcodes.BINARY_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'div', false);
+optable[opcodes.INPLACE_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'div', true);
+optable[opcodes.BINARY_MODULO] = (f: Py_FrameObject) => binary_op(f, 'mod', false);
+optable[opcodes.INPLACE_MODULO] = (f: Py_FrameObject) => binary_op(f, 'mod', true);
+optable[opcodes.BINARY_ADD] = (f: Py_FrameObject) => binary_op(f, 'add', false);
+optable[opcodes.INPLACE_ADD] = (f: Py_FrameObject) => binary_op(f, 'add', true);
+optable[opcodes.BINARY_SUBTRACT] = (f: Py_FrameObject) => binary_op(f, 'sub', false);
+optable[opcodes.INPLACE_SUBTRACT] = (f: Py_FrameObject) => binary_op(f, 'sub', true);
+optable[opcodes.BINARY_FLOOR_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'floordiv', false);
+optable[opcodes.INPLACE_FLOOR_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'floordiv', true);
+optable[opcodes.BINARY_TRUE_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'truediv', false);
+optable[opcodes.INPLACE_TRUE_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'truediv', true);
+optable[opcodes.BINARY_LSHIFT] = (f: Py_FrameObject) => binary_op(f, 'lshift', false);
+optable[opcodes.INPLACE_LSHIFT] = (f: Py_FrameObject) => binary_op(f, 'lshift', true);
+optable[opcodes.BINARY_RSHIFT] = (f: Py_FrameObject) => binary_op(f, 'rshift', false);
+optable[opcodes.INPLACE_RSHIFT] = (f: Py_FrameObject) => binary_op(f, 'rshift', true);
+optable[opcodes.BINARY_AND] = (f: Py_FrameObject) => binary_op(f, 'and', false);
+optable[opcodes.INPLACE_AND] = (f: Py_FrameObject) => binary_op(f, 'and', true);
+optable[opcodes.BINARY_XOR] = (f: Py_FrameObject) => binary_op(f, 'xor', false);
+optable[opcodes.INPLACE_XOR] = (f: Py_FrameObject) => binary_op(f, 'xor', true);
+optable[opcodes.BINARY_OR] = (f: Py_FrameObject) => binary_op(f, 'or', false);
+optable[opcodes.INPLACE_OR] = (f: Py_FrameObject) => binary_op(f, 'or', true);
 
 optable[opcodes.BINARY_SUBSCR] = function(f: Py_FrameObject) {
     var b = f.pop();
@@ -253,188 +175,6 @@ optable[opcodes.BINARY_SUBSCR] = function(f: Py_FrameObject) {
     if (a.__getitem__) {
       f.push(a.__getitem__(b));
     }
-}
-
-optable[opcodes.BINARY_FLOOR_DIVIDE] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot divide " + a + " by " + b;
-
-    if (typeof a.__floordiv__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__floordiv__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rfloordiv__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rfloordiv__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-}
-
-// used when from __future__ import division is in effect
-// However, BINARY_DIV is forced to be TRUEDIVISION in the implementation of
-// the numeric types.
-optable[opcodes.BINARY_TRUE_DIVIDE] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot divide " + a + " and " + b;
-
-    if (typeof a.__truediv__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__truediv__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rtruediv__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rtruediv__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-}
-
-optable[opcodes.BINARY_LSHIFT] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot left-shift " + a + " by " + b;
-
-    if (typeof a.__lshift__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__lshift__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rlshift__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rlshift__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-}
-
-optable[opcodes.BINARY_RSHIFT] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot right-shift " + a + " by " + b;
-
-    if (typeof a.__rshift__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__rshift__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rrshift__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rrshift__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-}
-
-optable[opcodes.BINARY_AND] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot bitwise AND " + a + " and " + b;
-
-    if (typeof a.__and__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__and__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rand__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rand__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-
-}
-
-optable[opcodes.BINARY_XOR] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot bitwise XOR " + a + " and " + b;
-
-    if (typeof a.__xor__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__xor__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__rxor__ == 'undefined')
-            throw new Error(mess);
-        res = b.__rxor__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-
-}
-
-optable[opcodes.BINARY_OR] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var res;
-    var mess = "You cannot bitwise OR " + a + " and " + b;
-
-    if (typeof a.__or__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__or__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__ror__ == 'undefined')
-            throw new Error(mess);
-        res = b.__ror__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    f.push(res);
-}
-
-optable[opcodes.INPLACE_ADD] = function(f: Py_FrameObject) {
-    var b = f.pop();
-    var a = f.pop();
-
-    var mess = "You cannot add " + a + " and " + b;
-
-    if (typeof a.__iadd__ != 'undefined') {
-        a.__iadd__(b);
-        f.push(a);
-        return
-    }
-    if (typeof a.__add__ == 'undefined') {
-        throw new Error(mess);
-    }
-
-    var res = a.__add__(b);
-    if (res == NotImplemented) {
-        throw new Error(mess);
-    }
-
-    f.push(res);
 }
 
 optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject) {
