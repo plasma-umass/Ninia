@@ -9,6 +9,7 @@ import Py_Long = primitives.Py_Long;
 import Py_List = collections.Py_List;
 import Py_Dict = collections.Py_Dict;
 import Py_Tuple = collections.Py_Tuple;
+import Py_Set = collections.Py_Set;
 import Py_Str = primitives.Py_Str;
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
@@ -92,6 +93,24 @@ function tuple(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object
         return <Py_Tuple> x;
     }
     return Py_Tuple.fromIterable(x);
+}
+
+// set constructor
+function set(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object }): Py_Set {
+    if (Object.keys(kwargs).length > 0) {
+        throw new Error('TypeError: set() takes no keyword arguments')
+    }
+    if (args.length == 0) {
+        return new Py_Set();
+    }
+    if (args.length > 1) {
+        throw new Error('TypeError: set() take 0-1 arguments');
+    }
+    var x = args[0];
+    if (x instanceof Py_Set) {
+        return <Py_Set> x;
+    }
+    return Py_Set.fromIterable(x);
 }
 
 function abs(x: IPy_Object): IPy_Object {
@@ -297,6 +316,7 @@ var builtins = {
     list: list,
     dict: dict,
     tuple: tuple,
+    set: set,
     abs: pyfunc_wrapper_onearg(abs, 'abs'),
     all: pyfunc_wrapper_onearg(all, 'all'),
     any: pyfunc_wrapper_onearg(any, 'any'),

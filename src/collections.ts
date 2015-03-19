@@ -202,7 +202,7 @@ export class Py_List extends Py_Object implements Iterable {
           stop = indices.stop,
           step = indices.step,
           length = indices.length;
-        
+
         if (length <= 0) {
           return None;
         }
@@ -215,14 +215,14 @@ export class Py_List extends Py_Object implements Iterable {
         for(var curr = start, i = 0; curr < stop; curr += step, i += 1){
           var lim = step - 1
           if (curr + step >= this._list.length){
-            lim = this._list.length - 1 - curr 
+            lim = this._list.length - 1 - curr;
           }
           for (var j = 0; j < lim; j++){
-            this._list[curr - i + j] = this._list[curr + j + 1]
+            this._list[curr - i + j] = this._list[curr + j + 1];
           }
         }
         this._list.splice(this._list.length - length, length);
-        
+
       }
     } else {
       this._list.splice(standardizeKey(key, this._list.length), 1);
@@ -311,9 +311,9 @@ export class Py_Tuple extends Py_Object implements Iterable {
   }
 }
 
-export class Py_Dict extends Py_Object {
-  private _keys: IPy_Object[];
-  private _vals: { [hash: number]: IPy_Object };
+export class Py_Dict extends Py_Object implements Iterable {
+  protected _keys: IPy_Object[];
+  protected _vals: { [hash: number]: IPy_Object };
   constructor() {
     super();
     this._keys = [];
@@ -330,7 +330,9 @@ export class Py_Dict extends Py_Object {
     }
     this._vals[h] = val;
   }
-
+  public iter(): Iterator {
+    return new iterator.ListIterator(this._keys);
+  }
   public len(): number {
       return this._keys.length;
   }
@@ -366,5 +368,27 @@ export class Py_Dict extends Py_Object {
 
   public __len__(): Py_Int {
     return new Py_Int(this.len());
+  }
+}
+
+export class Py_Set extends Py_Dict {
+  static fromIterable(x: Iterable) {
+    var set = new Py_Set();
+    var it = x.iter();
+    for (var val = it.next(); val != null; val = it.next()) {
+      set.set(val, val);
+    }
+    return set;
+  }
+  public toString(): string {
+    var s = 'set([';
+    for (var i = 0; i < this._keys.length; i++) {
+      s += this._keys[i].__repr__() + ', ';
+    }
+    if (this.len() > 0) {
+      // trim off last ', '
+      s = s.slice(0, -2);
+    }
+    return s + '])';
   }
 }
