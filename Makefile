@@ -39,7 +39,7 @@ lint:
 	$(TSLINT) $(foreach source,$(TSSOURCES), -f $(source))
 
 $(RUNNER):
-	@echo '#!/bin/sh\nnode console/runner.js $$@' >$(RUNNER)
+	@echo '#!/bin/sh\nnode "$$(dirname $$0)/console/runner.js" $$@' >$(RUNNER)
 	@chmod +x $(RUNNER)
 
 $(MAINOUT): $(MAININ)

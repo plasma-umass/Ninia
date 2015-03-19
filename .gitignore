@@ -10,12 +10,13 @@ doc/report/*.*
 # generated JS files
 src/*.js
 src/*.js.map
-test.js
-test.js.map
-runner.js
+console/*.js
+console/*.js.map
 browser/demo.js
 # third party packages
 bower_components
 node_modules
 # istanbul generated coverage
 coverage
+# script runner
+ninia
