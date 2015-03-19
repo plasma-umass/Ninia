@@ -3,7 +3,7 @@ import Unmarshaller = require('../src/unmarshal');
 import Interpreter = require('../src/interpreter');
 var argv = require('minimist')(process.argv.slice(2), {
   alias: { 'h': 'help' },
-  default: { 'debug': false },
+  boolean: ['debug'],
 });
 
 if (argv._.length != 1 || argv.help) {
