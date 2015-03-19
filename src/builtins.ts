@@ -313,6 +313,8 @@ var builtins = {
     hasattr: hasattr,
     getattr: getattr,
     setattr: setattr,
+    __name__: Py_Str.fromJS('__main__'),
+    __package__: singletons.None,
 }, True = builtins.True, False = builtins.False;
 
 export = builtins
