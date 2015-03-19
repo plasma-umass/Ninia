@@ -318,6 +318,9 @@ export class Py_Long extends Py_Object implements IPy_Number {
     }
 
     getType(): enums.Py_Type { return enums.Py_Type.LONG; }
+    asLong(): Py_Long {
+      return this;
+    }
     asFloat(): Py_Float {
       return new Py_Float(this.value.toNumber());
     }
