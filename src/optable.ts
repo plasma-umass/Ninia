@@ -862,7 +862,7 @@ optable[opcodes.LIST_APPEND] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var x = f.pop();
     var lst = <Py_List> f.stack[f.stack.length - i];
-    lst.append(x);
+    lst.append([x], {});
 }
 
 optable[opcodes.END_FINALLY] = function(f: Py_FrameObject) {

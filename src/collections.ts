@@ -98,8 +98,8 @@ export class Py_List extends Py_Object implements Iterable {
     return this._list.length;
   }
 
-  public append(x: IPy_Object): IPy_Object {
-    this._list.push(x);
+  public append(args: IPy_Object[], kwargs: any): IPy_Object {
+    this._list.push(args[0]);
     return None;
   }
 
