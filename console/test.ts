@@ -79,6 +79,7 @@ test("Underscore names test", "pytests/builtins/underscoresTest");
 console.log(`\n--- Collection tests ---`);
 test("List test", "pytests/collections/lists");
 test("Set test", "pytests/collections/sets");
+test("Dict test", "pytests/collections/dicts");
 console.log(`\n--- Control flow tests ---`);
 test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");
