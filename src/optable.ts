@@ -1118,6 +1118,13 @@ optable[opcodes.CONTINUE_LOOP] = function(f: Py_FrameObject) {
     }
 }
 
+optable[opcodes.LIST_APPEND] = function(f: Py_FrameObject) {
+    var i = f.readArg();
+    var x = f.pop();
+    var lst = <Py_List> f.stack[f.stack.length - i];
+    lst.append(x);
+}
+
 optable[opcodes.END_FINALLY] = function(f: Py_FrameObject) {
     // TODO: The interpreter recalls whether the exception has to be re-raised,
     // or whether the function returns, and continues with the outer-next block.

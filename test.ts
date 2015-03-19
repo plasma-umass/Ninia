@@ -81,6 +81,7 @@ test("List test", "pytests/collections/lists");
 console.log(`\n--- Control flow tests ---`);
 test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");
+test("Comprehension test", "pytests/comprehensionTest");
 console.log(`\n--- Class tests ---`);
 test("Basic class test", "pytests/classes/userDefTest");
 console.log(`\n--- Other tests ---`);
