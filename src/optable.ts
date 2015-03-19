@@ -761,7 +761,7 @@ optable[opcodes.POP_JUMP_IF_FALSE] = function(f: Py_FrameObject) {
 optable[opcodes.POP_JUMP_IF_TRUE] = function(f: Py_FrameObject) {
     var target = f.readArg();
     if (bool(f.pop()) === True)
-      f.lastInst = target;
+        f.lastInst = target-1;
 }
 
 optable[opcodes.LOAD_FAST] = function(f: Py_FrameObject) {
@@ -1074,13 +1074,17 @@ optable[opcodes.STORE_MAP] = function(f: Py_FrameObject) {
     var d = <Py_Dict> f.peek();
     d.set(key, val);
 }
-optable[opcodes.SETUP_LOOP] = function(f: Py_FrameObject) {
+
+function setup_block(f: Py_FrameObject) {
     var delta = f.readArg();
     // push a block to the block stack
     var stackSize = f.stack.length;
     var loopPos = f.lastInst;
     f.blockStack.push([stackSize, loopPos, loopPos+delta]);
 }
+optable[opcodes.SETUP_LOOP] = setup_block;
+optable[opcodes.SETUP_EXCEPT] = setup_block;
+optable[opcodes.SETUP_FINALLY] = setup_block;
 
 optable[opcodes.BREAK_LOOP] = function(f: Py_FrameObject) {
     var b = f.blockStack.pop();
@@ -1092,6 +1096,27 @@ optable[opcodes.BREAK_LOOP] = function(f: Py_FrameObject) {
     // jump to the end of the loop
     f.lastInst = endPos;
 }
+
+optable[opcodes.CONTINUE_LOOP] = function(f: Py_FrameObject) {
+    var target = f.readArg();
+    var b = f.blockStack[f.blockStack.length-1];
+    if (b[1] === target) {
+        // we continue back to the loop start
+        f.lastInst = target-1;
+    } else {
+        // unwind and jump to block end (as with BREAK_LOOP, but doesn't pop)
+        f.stack.splice(b[0], f.stack.length - b[0]);
+        f.lastInst = b[2];
+    }
+}
+
+optable[opcodes.END_FINALLY] = function(f: Py_FrameObject) {
+    // TODO: The interpreter recalls whether the exception has to be re-raised,
+    // or whether the function returns, and continues with the outer-next block.
+    // As of now, we always assume that no exception needs to be re-raised.
+    f.blockStack.pop();
+}
+
 
 optable[opcodes.POP_BLOCK] = function(f: Py_FrameObject) {
     // removes a block from the block stack
