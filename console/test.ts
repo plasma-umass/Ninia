@@ -78,6 +78,7 @@ test("Attribute accessors test", "pytests/builtins/attrs");
 test("Underscore names test", "pytests/builtins/underscoresTest");
 console.log(`\n--- Collection tests ---`);
 test("List test", "pytests/collections/lists");
+test("Set test", "pytests/collections/sets");
 console.log(`\n--- Control flow tests ---`);
 test("Loop test", "pytests/loopTest");
 test("Range test", "pytests/rangeTest");
