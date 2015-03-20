@@ -7,6 +7,7 @@ import assert = require('./assert');
 import Py_Object = primitives.Py_Object;
 import Py_Int = primitives.Py_Int;
 import Py_Long = primitives.Py_Long;
+import Py_Slice = primitives.Py_Slice;
 import True = primitives.True;
 import False = primitives.False;
 import Iterable = interfaces.Iterable;
@@ -15,72 +16,6 @@ import IPy_Object = interfaces.IPy_Object;
 import None = singletons.None;
 import NotImplemented = singletons.NotImplemented;
 
-export class Py_Slice extends Py_Object {
-  public start: IPy_Object;
-  public stop: IPy_Object;
-  public step: IPy_Object;
-
-  constructor(start: IPy_Object, stop: IPy_Object, step: IPy_Object) {
-    super();
-    this.start = start;
-    this.stop = stop;
-    this.step = step;
-  }
-
-  public getType(): enums.Py_Type {
-    return enums.Py_Type.SLICE;
-  }
-
-  public getIndices(length: number) : {start: number; stop: number; step: number; length:number; }{
-    var res : {start: number; stop: number; step: number; length:number; } = {start: 0, stop: 0, step: 0, length: 0};
-    res.step = this.step === None ? 1 : (<Py_Int | Py_Long> this.step).toNumber();
-    var defstart = res.step < 0 ? length - 1 : 0;
-    var defstop = res.step < 0 ? -1 : length;
-
-    if (this.start === None) {
-      res.start = defstart;
-    } else {
-      res.start = (<Py_Int | Py_Long> this.start).toNumber();
-      if (res.start < 0) {
-        res.start += length;
-      }
-      if (res.start < 0) {
-        res.start = (res.step < 0)  ? -1 : 0;
-      }
-      if (res.start >= length){
-        res.start = (res.step < 0) ? length - 1 : length;
-      }
-    }
-
-    if (this.stop === None) {
-      res.stop = defstop;
-    } else {
-      res.stop = (<Py_Int | Py_Long> this.stop).toNumber();
-      if (res.stop < 0) {
-        res.stop += length;
-      }
-      if (res.stop < 0) {
-        res.stop = (res.step < 0) ? -1 : 0;
-      }
-      if (res.stop >= length) {
-        res.stop = (res.step < 0) ? length - 1 : length;
-      }
-    }
-
-    if ((res.step < 0 && res.stop >= res.start)
-        || (res.step > 0 && res.start >= res.stop)) {
-      res.length = 0;
-    }
-    else if (res.step < 0) {
-      res.length = Math.floor((res.stop - res.start + 1)/res.step) + 1;
-    }
-    else {
-      res.length = Math.floor((res.stop-res.start-1)/res.step) + 1;
-    }
-    return res;
-  }
-
-}
 
 export class Py_List extends Py_Object implements Iterable {
   private _list: IPy_Object[];
