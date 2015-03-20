@@ -134,6 +134,22 @@ export class Py_Str extends Py_Object {
     public __len__(): Py_Int {
         return new Py_Int(this._str.length);
     }
+    public __getitem__(idx: IPy_Object): IPy_Object {
+      if (idx instanceof Py_Int) {
+        var i = (<Py_Int> idx).toNumber();
+        if (i < 0) {
+          i += this.len();
+        }
+        return Py_Str.fromJS(this._str[i]);
+      } else if (idx instanceof Py_Slice) {
+        var indices = (<Py_Slice> idx).getIndices(this.len());
+        if (indices.step !== 1) {
+          throw new Error('String slicing with step != 1 is NYI');
+        }
+        return Py_Str.fromJS(this._str.slice(indices.start, indices.stop));
+      }
+      throw new Error(`ValueError: cannot subscript str with ${idx}`);
+    }
     public __add__(other: IPy_Object): IPy_Object {
       if (other instanceof Py_Str) {
         return Py_Str.fromJS(this._str + other.toString());
