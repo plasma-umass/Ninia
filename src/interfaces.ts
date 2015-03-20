@@ -55,12 +55,12 @@ export interface IPy_Object {
   __add__?(a: IPy_Object): IPy_Object;
 
   // Comparison functions
-  __lt__?(a: IPy_Object): typeof primitives.True;
-  __le__?(a: IPy_Object): typeof primitives.True;
-  __eq__?(a: IPy_Object): typeof primitives.True;
-  __ne__?(a: IPy_Object): typeof primitives.True;
-  __gt__?(a: IPy_Object): typeof primitives.True;
-  __ge__?(a: IPy_Object): typeof primitives.True;
+  __lt__?(a: IPy_Object): IPy_Object;
+  __le__?(a: IPy_Object): IPy_Object;
+  __eq__?(a: IPy_Object): IPy_Object;
+  __ne__?(a: IPy_Object): IPy_Object;
+  __gt__?(a: IPy_Object): IPy_Object;
+  __ge__?(a: IPy_Object): IPy_Object;
 
   // Sequence / mapping types
   /**
