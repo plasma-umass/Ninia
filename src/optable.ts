@@ -474,14 +474,14 @@ optable[opcodes.JUMP_IF_FALSE_OR_POP] = function(f: Py_FrameObject) {
     if (bool(f.peek()) === True) {
         f.pop();
     } else {
-        f.lastInst = target;
+        f.lastInst = target-1;
     }
 }
 
 optable[opcodes.JUMP_IF_TRUE_OR_POP] = function(f: Py_FrameObject) {
     var target = f.readArg();
     if (bool(f.peek()) === True) {
-        f.lastInst = target;
+        f.lastInst = target-1;
     } else {
         f.pop();
     }
