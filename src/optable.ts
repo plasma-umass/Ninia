@@ -649,7 +649,7 @@ optable[opcodes.SLICE_1] = function(f: Py_FrameObject) {
   if (b.__getitem__) {
     f.push(b.__getitem__(new Py_Slice(a, b.__len__(), None)));
   } else {
-    throw new Error("TypeError: ${b} does not support __getitem__");
+    throw new Error(`TypeError: ${b} does not support __getitem__`);
   }
 }
 
@@ -659,7 +659,7 @@ optable[opcodes.SLICE_2] = function(f: Py_FrameObject) {
   if (b.__getitem__) {
     f.push(b.__getitem__(new Py_Slice(new Py_Int(0), a, None)));
   } else {
-    throw new Error("TypeError: ${b} does not support __getitem__");
+    throw new Error(`TypeError: ${b} does not support __getitem__`);
   }
 }
 
@@ -670,7 +670,7 @@ optable[opcodes.SLICE_3] = function(f: Py_FrameObject) {
   if (c.__getitem__) {
     f.push(c.__getitem__(new Py_Slice(b, a, None)));
   } else {
-    throw new Error("TypeError: ${b} does not support __getitem__");
+    throw new Error(`TypeError: ${b} does not support __getitem__`);
   }
 }
 
@@ -680,7 +680,7 @@ optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject) {
   if (seq.__setitem__) {
     seq.__setitem__(new Py_Slice(None, None, None), value);
   } else {
-    throw new Error("TypeError: ${seq} does not support __setitem__");
+    throw new Error(`TypeError: ${seq} does not support __setitem__`);
   }
 }
 
@@ -691,7 +691,7 @@ optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject) {
   if (seq.__setitem__) {
     seq.__setitem__(new Py_Slice(start, None, None), value);
   } else {
-    throw new Error("TypeError: ${seq} does not support __setitem__");
+    throw new Error(`TypeError: ${seq} does not support __setitem__`);
   }
 }
 
@@ -702,7 +702,7 @@ optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject) {
   if (seq.__setitem__) {
     seq.__setitem__(new Py_Slice(None, end, None), value);
   } else {
-    throw new Error("TypeError: ${seq} does not support __setitem__");
+    throw new Error(`TypeError: ${seq} does not support __setitem__`);
   }
 }
 
@@ -714,7 +714,7 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject) {
   if (seq.__setitem__) {
     seq.__setitem__(new Py_Slice(start, end, None), value);
   } else {
-    throw new Error("TypeError: ${seq} does not support __setitem__");
+    throw new Error(`TypeError: ${seq} does not support __setitem__`);
   }
 }
 
@@ -723,7 +723,7 @@ optable[opcodes.DELETE_SLICE_0] = function(f: Py_FrameObject) {
   if (seq.__delitem__) {
     seq.__delitem__(new Py_Slice(None, None, None));
   } else {
-    throw new Error("TypeError: ${seq} does not support __delitem__");
+    throw new Error(`TypeError: ${seq} does not support __delitem__`);
   }
 }
 
@@ -733,7 +733,7 @@ optable[opcodes.DELETE_SLICE_1] = function(f: Py_FrameObject) {
   if (seq.__delitem__) {
     seq.__delitem__(new Py_Slice(start, None, None));
   } else {
-    throw new Error("TypeError: ${seq} does not support __delitem__");
+    throw new Error(`TypeError: ${seq} does not support __delitem__`);
   }
 }
 
@@ -743,7 +743,7 @@ optable[opcodes.DELETE_SLICE_2] = function(f: Py_FrameObject) {
   if (seq.__delitem__) {
     seq.__delitem__(new Py_Slice(None, end, None));
   } else {
-    throw new Error("TypeError: ${seq} does not support __delitem__");
+    throw new Error(`TypeError: ${seq} does not support __delitem__`);
   }
 }
 
@@ -754,7 +754,7 @@ optable[opcodes.DELETE_SLICE_3] = function(f: Py_FrameObject) {
   if (seq.__delitem__) {
     seq.__delitem__(new Py_Slice(start, end, None));
   } else {
-    throw new Error("TypeError: ${seq} does not support __delitem__");
+    throw new Error(`TypeError: ${seq} does not support __delitem__`);
   }
 }
 
