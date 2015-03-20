@@ -402,10 +402,59 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       return NotImplemented;
     }
     var res = new Py_Set();
-    var counts = this._count_hashes(<Py_Set> x);
-    for (var h in counts) {
-      if (counts.hasOwnProperty(h) && counts[h] == 2) {
+    var h, xvals = (<Py_Set> x)._vals;
+    for (h in this._vals) {
+      if (this._vals.hasOwnProperty(h) && xvals.hasOwnProperty(h)) {
         var val = this._vals[h];
+        res._keys.push(val);
+        res._vals[h] = val;
+      }
+    }
+    return res;
+  }
+
+  // set difference
+  public __sub__(x: IPy_Object): IPy_Object {
+    if (!(x instanceof Py_Set)) {
+      return NotImplemented;
+    }
+    var res = new Py_Set();
+    var h, xvals = (<Py_Set> x)._vals;
+    for (h in this._vals) {
+      if (this._vals.hasOwnProperty(h) && !xvals.hasOwnProperty(h)) {
+        var val = this._vals[h];
+        res._keys.push(val);
+        res._vals[h] = val;
+      }
+    }
+    return res;
+  }
+
+  // set symmetric difference
+  public __xor__(x: IPy_Object): IPy_Object {
+    // TODO: implement this directly
+    var left = this.__sub__(x);
+    var right = x.__sub__(this);
+    return left.__or__(right);
+  }
+
+  // set union
+  public __or__(x: IPy_Object): IPy_Object {
+    if (!(x instanceof Py_Set)) {
+      return NotImplemented;
+    }
+    var res = new Py_Set();
+    var h, xvals = (<Py_Set> x)._vals;
+    for (h in this._vals) {
+      if (this._vals.hasOwnProperty(h)) {
+        var val = this._vals[h];
+        res._keys.push(val);
+        res._vals[h] = val;
+      }
+    }
+    for (h in xvals) {
+      if (xvals.hasOwnProperty(h) && !this._vals.hasOwnProperty(h)) {
+        var val = xvals[h];
         res._keys.push(val);
         res._vals[h] = val;
       }
@@ -426,20 +475,5 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     }
     // make sure we're not equal
     return (this._keys.length == (<Py_Set> x)._keys.length)? False : True;
-  }
-
-  private _count_hashes(x: Py_Set): {[hash: number]: number} {
-    var h, counts: {[hash: number]: number} = {};
-    for (h in this._vals) {
-      if (this._vals.hasOwnProperty(h)) {
-        counts[h] = (counts[h] === undefined)? 1 : counts[h] + 1;
-      }
-    }
-    for (h in x._vals) {
-      if (x._vals.hasOwnProperty(h)) {
-        counts[h] = (counts[h] === undefined)? 1 : counts[h] + 1;
-      }
-    }
-    return counts;
   }
 }
