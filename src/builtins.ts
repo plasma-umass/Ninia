@@ -157,6 +157,14 @@ function ord(x: IPy_Object): Py_Int {
   return new Py_Int(x.toString().charCodeAt(0));
 }
 
+function str(x: IPy_Object): Py_Str {
+  return x.__str__();
+}
+
+function repr(x: IPy_Object): Py_Str {
+  return x.__repr__();
+}
+
 function cmp(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
   var x = args[0];
   var y = args[1];
@@ -324,6 +332,8 @@ var builtins = {
     bool: pyfunc_wrapper_onearg(bool, 'bool'),
     chr: pyfunc_wrapper_onearg(chr, 'chr'),
     ord: pyfunc_wrapper_onearg(ord, 'ord'),
+    str: pyfunc_wrapper_onearg(str, 'str'),
+    repr: pyfunc_wrapper_onearg(repr, 'repr'),
     cmp: cmp,
     complex: complex,
     divmod: divmod,
