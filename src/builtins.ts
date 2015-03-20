@@ -43,7 +43,7 @@ function range(args: Py_Int[], kwargs: { [name: string]: IPy_Object }): Py_List 
             throw new Error('TypeError: range() expects 1-3 int arguments')
     }
     var it = iterator.xrange([new Py_Int(start), new Py_Int(stop), new Py_Int(step)], {});
-    return list([it], {});
+    return Py_List.fromIterable(it);
 }
 
 // list constructor
@@ -165,18 +165,20 @@ function repr(x: IPy_Object): Py_Str {
   return x.__repr__();
 }
 
+// guts of the cmp() builtin, used by sorted() as well
+function cmp2(x: IPy_Object, y: IPy_Object): number {
+  if (x.__eq__(y) === True) {
+    return 0;
+  } else if (x.__lt__(y) === True) {
+    return -1;
+  }
+  return 1;
+}
+
 function cmp(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
   var x = args[0];
   var y = args[1];
-  if (x instanceof Py_Str) {
-    return new Py_Int(x.toString().localeCompare(y.toString()));
-  }
-  if (x.__eq__(y) === True) {
-    return new Py_Int(0);
-  } else if (x.__lt__(y) === True) {
-    return new Py_Int(-1);
-  }
-  return new Py_Int(1);
+  return new Py_Int(cmp2(x, y));
 }
 
 function complex(args: Py_Float[], kwargs: { [name: string]: IPy_Object }): Py_Complex {
@@ -257,6 +259,29 @@ function iter(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): inter
     throw new Error('NotImplementedError: iter(a,b) is NYI');
   }
   throw new Error('TypeError: iter() takes 1-2 arguments');
+}
+
+function sorted(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_List {
+  // sorted(iterable, cmp=None, key=None, reverse=False) --> new sorted list
+  if (args.length !== 1) {
+    throw new Error('TypeError: sorted() takes 1 positional argument');
+  }
+  if (kwargs['cmp'] !== undefined && kwargs['cmp'] !== singletons.None) {
+    throw new Error('sorted() with non-None cmp kwarg is NYI');
+  }
+  if (kwargs['key'] !== undefined && kwargs['key'] !== singletons.None) {
+    throw new Error('sorted() with non-None key kwarg is NYI');
+  }
+  var it = (<interfaces.Iterable> args[0]).iter();
+  var list = [];
+  for (var val = it.next(); val != null; val = it.next()) {
+    list.push(val);
+  }
+  list.sort(cmp2);
+  if (kwargs['reverse'] !== undefined && bool(kwargs['reverse']).asBool()) {
+    list.reverse();
+  }
+  return new Py_List(list);
 }
 
 function hasattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): typeof True {
@@ -340,6 +365,7 @@ var builtins = {
     float: float,
     hex: pyfunc_wrapper_onearg(hex, 'hex'),
     int: int,
+    sorted: sorted,
     hasattr: hasattr,
     getattr: getattr,
     setattr: setattr,

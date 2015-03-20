@@ -134,6 +134,20 @@ export class Py_Str extends Py_Object {
     public __len__(): Py_Int {
         return new Py_Int(this._str.length);
     }
+    public __eq__(other: IPy_Object): IPy_Object {
+      if (other instanceof Py_Str) {
+        var cmp = this._str.localeCompare(other.toString());
+        return Py_Boolean.fromJS(cmp == 0);
+      }
+      return NIError;
+    }
+    public __lt__(other: IPy_Object): IPy_Object {
+      if (other instanceof Py_Str) {
+        var cmp = this._str.localeCompare(other.toString());
+        return Py_Boolean.fromJS(cmp < 0);
+      }
+      return NIError;
+    }
     public __getitem__(idx: IPy_Object): IPy_Object {
       if (idx instanceof Py_Int) {
         var i = (<Py_Int> idx).toNumber();
@@ -380,7 +394,9 @@ class Py_Boolean extends Py_Int {
   constructor(val: boolean) {
     super(val ? 1 : 0);
   }
-
+  static fromJS(x: boolean): Py_Boolean {
+    return x? True : False;
+  }
   toString(): string {
     return this.value === 1 ? 'True' : 'False';
   }
