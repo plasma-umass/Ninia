@@ -35,6 +35,7 @@ export class Thread{
 		// Use cumulative moving average to calculate to estimate number of methodResumes in one second
 	}
 
+	// TODO: Change status, followed by setImmediate callback to run()
 	public setStatus(status: enums.ThreadStatus): void {
 		// Change status of thread to running/runnable or async_waiting
 		// Yield to main javascript loop after doing so, with a callback to run()
@@ -50,5 +51,20 @@ export class Thread{
 	
 	public framePush(frame: Py_FrameObject): void {
 		this.stack.push(frame);
+	}	
+
+	// TODO: Handle exceptions when exception support is added
+	public throwException(): void {
+
+	}
+
+	// TODO: Push the return value from a finished function's stack frame onto the calling function's stack frame.
+	public asyncReturn(rv?: any, rv2?: any): void {
+
+	}
+
+	// TODO: Terminate thread
+	public exit(): void {
+
 	}
 }
