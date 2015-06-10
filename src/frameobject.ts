@@ -5,6 +5,7 @@ import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
+import Thread = require('./threading');
 
 // Frame Objects are basically stack frames for functions, except they carry
 // extra context (e.g. globals, local scope, etc.). This class is not simplified
@@ -49,6 +50,8 @@ class Py_FrameObject {
     env: Py_Cell[];
     // flag to turn on debug output
     debug: boolean;
+    // thread object
+    threadObject: Thread;
 
     constructor(back: Py_FrameObject,
                 code: Py_CodeObject,
@@ -103,6 +106,11 @@ class Py_FrameObject {
       return this.codeObj.code[this.lastInst];
     }
 
+    peekOp(): number {
+        // this.lastInst += 1;
+        return this.codeObj.code[this.lastInst];
+    }
+
     // Arguments are stored as 2 bytes, little-endian.
     readArg(): number {
       this.lastInst += 1;
@@ -127,6 +135,36 @@ class Py_FrameObject {
                 console.log(this.stack);
             }
             if (op == opcodes.RETURN_VALUE) {
+                return;
+
+            }
+        }
+    }
+
+    // Return the Thread Object assoiciated with this frame
+    getThreadObject(): Thread {
+        return this.threadObject;
+    }
+
+    // Replacement of exec(), when using Thread
+    // Reads one instruction opcode and runs the bytecode associated with it
+    new_exec(t: Thread): void {
+        // Store Thread object, used by CALL_FUNC when creating childframes
+        this.threadObject = t;
+        var op = this.readOp();
+        if (op!= undefined){
+            // console.log("OP: ", opcodes[op]);
+            var func = optable[op];
+            if (func == undefined) {
+                throw new Error("Unknown opcode: " + opcodes[op] + " ("+op+")");
+            }
+            if (this.debug) {
+                console.log(opcodes[op]);
+            }
+            func(this);
+            // Pop Py_FrameObject off the Thread Object, whenever return is encountered
+            if (op == opcodes.RETURN_VALUE) {
+                t.framePop();
                 return;
             }
         }
