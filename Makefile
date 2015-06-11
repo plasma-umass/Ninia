@@ -21,7 +21,6 @@ MAININ=browser/demo-raw.js
 MAINOUT=browser/demo.js
 # Console application files:
 TEST_RUNNER=console/test.js
-THREAD_TEST_RUNNER = console/thread_test.js
 RUNNER=ninia
 
 .PHONY: main test coverage compile lint clean
@@ -29,9 +28,6 @@ main: compile $(MAINOUT) $(RUNNER)
 
 test: compile $(PYCS) $(TESTOUTS)
 	node $(TEST_RUNNER)
-
-thread_test: compile $(PYCS) $(TESTOUTS)
-	node $(THREAD_TEST_RUNNER)
 
 coverage: compile $(PYCS) $(TESTOUTS)
 	istanbul cover $(TEST_RUNNER)

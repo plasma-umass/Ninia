@@ -579,12 +579,10 @@ function call_func(f: Py_FrameObject, has_kw: boolean, has_varargs: boolean) {
         }
 
         var newf = f.childFrame((<Py_FuncObject> func), kwargs);
-        // newf.exec();
         // Get the thread object from current Py_FrameObject and push it on
         // the top of the Thread object's stack
         var t: Thread = f.getThreadObject();
         t.framePush(newf);
-        // console.log("PUSHED TO THREAD");
     } else {
       throw new Error("Invalid object.");
     }

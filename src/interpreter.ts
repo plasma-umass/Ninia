@@ -25,12 +25,11 @@ class Interpreter {
         var f = new Py_FrameObject(null, code, {}, -1,
                                    code.firstlineno, {}, false,
                                    this.outputDevice, [], debug)
-        // return f.exec();
+
         // Create new Thread, push the Py_FrameObject on it and then run it
         var t: Thread = new Thread();
         t.framePush(f);
-        t.run();
-        
+        t.run();        
         return;
     }
 }
