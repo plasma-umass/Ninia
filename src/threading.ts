@@ -22,7 +22,7 @@ class Thread{
     private stack: Py_FrameObject[] = [];
 
     // Executes bytecode method calls
-    public run(): void {
+    private run(): void {
 
         var stack = this.stack,
             startTime: number = (new Date()).getTime(),
@@ -31,10 +31,6 @@ class Thread{
             estMaxMethodResumes: number;
 
         methodResumesLeft = maxMethodResumes;
-
-        if (this.status === enums.ThreadStatus.NEW) {
-           this.setStatus(enums.ThreadStatus.RUNNABLE);
-        }
         // If methodResumes not exceeded, execute the Py_FrameObject
         // else, reset the counter, suspend thread and resume thread using setImmediate
         // Use cumulative moving average to calculate to estimate number of methodResumes in one second
@@ -66,17 +62,11 @@ class Thread{
 
     // Change Thread status
     public setStatus(status: enums.ThreadStatus): void {
-        // Transition RUNNABLE thread to RUNNING 
-        if (this.status === enums.ThreadStatus.NEW) {
-            this.status = status;
-            // Transition to RUNNING
-            status = enums.ThreadStatus.RUNNING;
-        }
         this.status = status;
         switch (this.status) {
             // If thread is runnable, yield to JS event loop and then change the thread to running
             case enums.ThreadStatus.RUNNABLE:
-                setImmediate(() => { this.setStatus(enums.ThreadStatus.RUNNING); });                
+                this.setStatus(enums.ThreadStatus.RUNNING);
                 break;
             case enums.ThreadStatus.RUNNING:
                 // I'm scheduled to run!
