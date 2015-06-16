@@ -21,6 +21,7 @@ import Iterator = interfaces.Iterator;
 import Iterable = interfaces.Iterable;
 import None = singletons.None;
 import Py_Cell = require('./cell');
+import Thread = require('./threading');
 var NotImplemented = builtins.NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
@@ -578,7 +579,10 @@ function call_func(f: Py_FrameObject, has_kw: boolean, has_varargs: boolean) {
         }
 
         var newf = f.childFrame((<Py_FuncObject> func), kwargs);
-        newf.exec();
+        // Get the thread object from current Py_FrameObject and push it on
+        // the top of the Thread object's stack
+        var t: Thread = f.getThreadObject();
+        t.framePush(newf);
     } else {
       throw new Error("Invalid object.");
     }

@@ -1,6 +1,7 @@
 import Py_FrameObject = require('./frameobject');
 import Py_CodeObject = require('./codeobject');
-
+import enums = require('./enums');
+import Thread = require('./threading');
 // The Interpreter uses a simple Fetch-Decode-Execute loop to execute Python
 // code. Each program is first unmarshalled into a Py_CodeObject. The
 // interpreter then wraps the code object inside a frame object, which tracks
@@ -25,7 +26,13 @@ class Interpreter {
         var f = new Py_FrameObject(null, code, {}, -1,
                                    code.firstlineno, {}, false,
                                    this.outputDevice, [], debug)
-        return f.exec();
+
+        // Create new Thread, push the Py_FrameObject on it and then run it
+        var t: Thread = new Thread();
+        t.framePush(f);
+        // Change Thread status to RUNNABLE
+        t.setStatus(enums.ThreadStatus.RUNNABLE);     
+        return;
     }
 }
 export = Interpreter;
