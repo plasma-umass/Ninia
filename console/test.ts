@@ -91,4 +91,5 @@ test("Strings test", "pytests/stringTest");
 test("Slice test", "pytests/sliceTest");
 test("Assignment test", "pytests/assignmentTest");
 test("Deletion test", "pytests/delTest");
+test("Termination test", "pytests/threads/terminationTest");
 printResults()
