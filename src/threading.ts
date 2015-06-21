@@ -102,6 +102,10 @@ class Thread{
 
     // TODO: Terminate thread
     public exit(): void {
+        this.status = enums.ThreadStatus.TERMINATED;
+        while(this.stack.length !==0) {
+            this.framePop();
+        }
 
     }
 }
