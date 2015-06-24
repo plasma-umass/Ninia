@@ -5,7 +5,7 @@ import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
-import Py_FrameObject = require('./frameobject');
+import IPy_FrameObj = interfaces.IPy_FrameObj;
 import enums = require('./enums');
 
 var maxMethodResumes: number = 10000,
@@ -19,7 +19,7 @@ var maxMethodResumes: number = 10000,
 class Thread{
     // Current state of Thread
     private status: enums.ThreadStatus = enums.ThreadStatus.NEW;
-    private stack: Py_FrameObject[] = [];
+    private stack: IPy_FrameObj[] = [];
 
     // Executes bytecode method calls
     private run(): void {
@@ -35,7 +35,7 @@ class Thread{
         // else, reset the counter, suspend thread and resume thread using setImmediate
         // Use cumulative moving average to calculate to estimate number of methodResumes in one second
         while (this.status === enums.ThreadStatus.RUNNING && stack.length > 0) {
-            var bytecodeMethod: Py_FrameObject = stack[stack.length - 1];
+            var bytecodeMethod: IPy_FrameObj = stack[stack.length - 1];
             // Execute python bytecode methods
             bytecodeMethod.exec(this);          
 
@@ -86,7 +86,7 @@ class Thread{
         this.stack.pop();
     }
     
-    public framePush(frame: Py_FrameObject): void {
+    public framePush(frame: IPy_FrameObj): void {
         this.stack.push(frame);
     }   
 

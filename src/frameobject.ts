@@ -6,15 +6,19 @@ import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
 import Thread = require('./threading');
+import enums = require('./enums');
+import collections = require('./collections');
+import Py_Dict = collections.Py_Dict;
+import IPy_FrameObj = interfaces.IPy_FrameObj;
 
 // Frame Objects are basically stack frames for functions, except they carry
 // extra context (e.g. globals, local scope, etc.). This class is not simplified
 // in order to keep the fairly neat documentation.
 // Frame objects maintain their own stack and scope. This allows for easier
 // handling of function calls and other scoping actions.
-class Py_FrameObject {
+class Py_FrameObject implements IPy_FrameObj {
     // Previous stack frame (this frame's caller, may be None)
-    back: Py_FrameObject;
+    back: IPy_FrameObj;
     // Code object executed in this frame
     codeObj: Py_CodeObject;
     // traceback for debugging -- TODO: Implement
@@ -24,21 +28,18 @@ class Py_FrameObject {
     // Exception value, if raised in this frame
     // exc_value
     // List of global values (global namespace!)
-    globals: { [name: string]: IPy_Object };
+    globals: Py_Dict;
     // Last attempted instruction
-    lastInst: number;
+    lastInst: number = -1;
     // Current line number
-    lineNum: number;
+    // XXX: Lazily update.
+    lineNum: number = -1;
     // Local namespace
-    locals: { [name: string]: IPy_Object };
+    locals: Py_Dict;
     // Flag: 1 if running in restricted mode (TODO: What?)
-    restricted: boolean;
+    restricted: boolean = false;
     // This frame's stack
     stack: IPy_Object[];
-    // Tracing function for this frame
-    // trace:
-    // Stdout stream (hack!)
-    outputDevice: any;
     // see https://docs.python.org/2/reference/simple_stmts.html#print
     shouldWriteSpace: boolean;
     // block stack, for loops and such.
@@ -48,34 +49,22 @@ class Py_FrameObject {
     // Lexical environment
     // cellvars followed by freevars
     env: Py_Cell[];
-    // flag to turn on debug output
-    debug: boolean;
-    // thread object
-    threadObject: Thread;
+    // Signifies that the bytecode loop should return to the thread loop.
+    returnToThread: boolean;
 
-    constructor(back: Py_FrameObject,
+    constructor(back: IPy_FrameObj,
                 code: Py_CodeObject,
-                globals: { [name: string]: IPy_Object },
-                lastInst: number,
-                lineNum: number,
-                locals: { [name: string]: IPy_Object },
-                restricted: boolean,
-                outputDevice: any,
-                closure: IPy_Object[],
-                debug: boolean) {
+                globals: Py_Dict,
+                locals: Py_Dict,
+                closure: IPy_Object[]) {
         this.back = back;
         this.codeObj = code;
         this.globals = globals;
-        this.lastInst = lastInst;
-        this.lineNum = lineNum;
         this.locals = locals;
-        this.restricted = restricted;
         this.stack = [];
-        this.outputDevice = outputDevice;
         this.shouldWriteSpace = false;
         this.blockStack = [];
         this.env = [];
-        this.debug = debug;
         var i: number;
         for (i = 0; i < code.cellvars.length; i++) {
             this.env.push(new Py_Cell(null));
@@ -85,6 +74,16 @@ class Py_FrameObject {
             this.env.push(<Py_Cell>closure[i]);
         }
 
+    }
+    
+    getType(): enums.Py_Type {
+        // XXX
+        return enums.Py_Type.OTHER;
+    }
+    
+    // XXX
+    hash() {
+        return -1;
     }
 
     // Stack handling operations.
@@ -121,40 +120,27 @@ class Py_FrameObject {
     }
 
     // exec is the Fetch-Execute-Decode loop for the interpreter.
-    // Reads one instruction opcode and runs the bytecode associated with it
     exec(t: Thread): void {
-        // Store Thread object. Used by CALL_FUNC when creating childframes
-        this.threadObject = t;
-        var op = this.readOp();
-        if (op!= undefined){
+        this.returnToThread = false;
+        for (var op = this.readOp(); op != undefined; op = this.readOp()) {
             // console.log("OP: ", opcodes[op]);
             var func = optable[op];
             if (func == undefined) {
                 throw new Error("Unknown opcode: " + opcodes[op] + " ("+op+")");
             }
-            if (this.debug) {
+            /*if (this.debug) {
                 console.log(opcodes[op]);
-            }
-            func(this);
-            // Pop Py_FrameObject off the Thread Object, whenever return is encountered
-            if (op == opcodes.RETURN_VALUE) {
-                t.framePop();
-                return;
+            }*/
+            func(this, t);
+            if (this.returnToThread) {
+                // End the bytecode loop; return to thread loop.
+                break;
             }
         }
     }
-
-    // Return the Thread Object assoiciated with this frame
-    getThreadObject(): Thread {
-        return this.threadObject;
-    }
-
-    // clone a new frame off this one, for calling a child function.
-    childFrame(func: Py_FuncObject, locals: { [name: string]: IPy_Object }): Py_FrameObject {
-      var scope = this.back ? this.globals : this.locals;
-      var env = func.closure ? func.closure.toArray() : [];
-      return new Py_FrameObject(this, func.code, scope, -1,
-        func.code.firstlineno, locals, false, this.outputDevice, env, this.debug);
+    
+    resume(rv: IPy_Object): void {
+        this.push(rv);
     }
 
     getDeref(i: number) {

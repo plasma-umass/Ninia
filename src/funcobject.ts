@@ -15,28 +15,63 @@ import primitives = require('./primitives');
 import Py_Str = primitives.Py_Str;
 import collections = require('./collections');
 import Py_Tuple = collections.Py_Tuple;
+import IPy_Function = interfaces.IPy_Function;
+import Thread = require('./threading');
+import Py_Dict = collections.Py_Dict;
+import Py_FrameObject = require('./frameobject');
+import nativefuncobject = require('./nativefuncobject');
 
 // Similar to frame objects, Function Objects wrap Python functions. However,
 // these are more the data representation of functions, and are transformed into
 // Frame Objects when the function is called.
-class Py_FuncObject implements IPy_Object {
+class Py_FuncObject implements IPy_Function {
     code: Py_CodeObject;
-    globals: { [name: string]: IPy_Object };
-    defaults: { [name: string]: IPy_Object };
+    globals: Py_Dict;
+    defaults: {[name: string]: IPy_Object};
     closure: Py_Tuple;
     name: Py_Str;
 
     constructor(code: Py_CodeObject,
-                globals: { [name: string]: IPy_Object },
-                defaults: { [name: string]: IPy_Object },
-                name: Py_Str) {
+                globals: Py_Dict,
+                defaults: {[name: string]: IPy_Object},
+                name: Py_Str,
+                closure: Py_Tuple = null) {
         this.code = code;
         this.globals = globals;
         this.defaults = defaults;
-        this.name = name
+        this.name = name;
+        this.closure = closure;
     }
     getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
     // XXX: Fix.
     hash(): number { return -1; }
+    
+    /**
+     * Folds arguments to the function into a locals dictionary.
+     */
+    private args2locals(args: IPy_Object[], locals: Py_Dict) {
+        var varnames = this.code.varnames;
+        for (var i = 0; i < varnames.length; i++) {
+            var name = varnames[i];
+            if (locals.get(name) !== undefined) {
+                if (args.length > 0) {
+                    locals.set(name, args.shift());
+                } else {
+                    locals.set(name, this.defaults[name.toString()]);
+                }
+            }
+        }
+    }
+    
+    exec(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) {
+        this.args2locals(args, kwargs);
+        t.framePush(new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), kwargs, (this.closure ? this.closure.toArray() : [])));
+    }
+
+    exec_from_native(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object) => void) {
+        this.args2locals(args, kwargs);
+        t.framePush(new nativefuncobject.Py_TrampolineFrameObject(caller, kwargs, cb))
+        t.framePush(new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), kwargs, (this.closure ? this.closure.toArray() : [])));
+    }
 }
 export = Py_FuncObject;

@@ -1,3 +1,4 @@
+/// <reference path="../bower_components/DefinitelyTyped/node/node.d.ts" />
 import primitives = require('./primitives');
 import Py_FrameObject = require('./frameobject');
 import Py_Int = primitives.Py_Int;
@@ -33,7 +34,7 @@ function bool(x: IPy_Object): typeof True {
 }
 
 // Big mapping from opcode enum to function
-var optable: { [op: number]: (f: Py_FrameObject)=>void } = {};
+var optable: { [op: number]: (f: Py_FrameObject, t: Thread)=>void } = {};
 
 optable[opcodes.STOP_CODE] = function(f: Py_FrameObject) {
     throw new Error("Indicates end-of-code to the compiler, not used by the interpreter.");
@@ -70,21 +71,25 @@ optable[opcodes.ROT_FOUR] = function(f: Py_FrameObject) {
     f.push(b);
 }
 
-optable[opcodes.UNARY_POSITIVE] = function(f: Py_FrameObject) {
+optable[opcodes.UNARY_POSITIVE] = function(f: Py_FrameObject, t: Thread) {
   var a = f.pop();
-  if (a.__pos__)
-    f.push(a.__pos__());
-  else
+  if (a.$__pos__) {
+      f.returnToThread = true;
+      a.$__pos__.exec(t, f, [a], new Py_Dict());
+  } else {
     throw new Error("No unary_+ for " + a);
+  }
 }
 
-optable[opcodes.UNARY_NEGATIVE] = function(f: Py_FrameObject) {
+optable[opcodes.UNARY_NEGATIVE] = function(f: Py_FrameObject, t: Thread) {
     var a = f.pop();
 
-    if (a.__neg__)
-        f.push(a.__neg__());
-    else
+    if (a.$__neg__) {
+        f.returnToThread = true;
+        a.$__neg__.exec(t, f, [a], new Py_Dict());
+    } else {
         throw new Error("No unary_- for " + a);
+    }
 }
 
 optable[opcodes.UNARY_NOT] = function(f: Py_FrameObject) {
@@ -92,18 +97,21 @@ optable[opcodes.UNARY_NOT] = function(f: Py_FrameObject) {
     f.push(bool(a) === True ? False : True);
 }
 
-optable[opcodes.UNARY_CONVERT] = function(f: Py_FrameObject) {
+optable[opcodes.UNARY_CONVERT] = function(f: Py_FrameObject, t: Thread) {
     var a = f.pop();
-    f.push(a.__repr__());
+    f.returnToThread = true;
+    a.$__repr__.exec(t, f, [a], new Py_Dict());
 }
 
-optable[opcodes.UNARY_INVERT] = function(f: Py_FrameObject) {
+optable[opcodes.UNARY_INVERT] = function(f: Py_FrameObject, t: Thread) {
     var a = f.pop();
 
-    if (a.__invert__)
-        f.push(a.__invert__());
-    else
+    if (a.$__invert__) {
+        f.returnToThread = true;
+        a.$__invert__.exec(t, f, [a], new Py_Dict());
+    } else {
         throw new Error("No inversion function for " + a);
+    }
 }
 
 // All of the binary functions follow the same chain of logic:
@@ -170,11 +178,12 @@ optable[opcodes.INPLACE_XOR] = (f: Py_FrameObject) => binary_op(f, 'xor', true);
 optable[opcodes.BINARY_OR] = (f: Py_FrameObject) => binary_op(f, 'or', false);
 optable[opcodes.INPLACE_OR] = (f: Py_FrameObject) => binary_op(f, 'or', true);
 
-optable[opcodes.BINARY_SUBSCR] = function(f: Py_FrameObject) {
+optable[opcodes.BINARY_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
     var b = f.pop();
     var a = f.pop();
-    if (a.__getitem__) {
-      f.push(a.__getitem__(b));
+    if (a.$__getitem__) {
+        f.returnToThread = true;
+        a.$__getitem__.exec(t, f, [a, b], new Py_Dict());        
     }
 }
 
@@ -182,25 +191,22 @@ optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject) {
     var a = f.pop();
     // see https://docs.python.org/2/reference/simple_stmts.html#print
     if (f.shouldWriteSpace) {
-        f.outputDevice.write(' ');
+        process.stdout.write(' ');
     }
     var s: string = a.__str__().toString();
-    f.outputDevice.write(s);
+    process.stdout.write(s);
     var lastChar = s.slice(-1);
     f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
 }
 
 optable[opcodes.PRINT_NEWLINE] = function(f: Py_FrameObject) {
-    f.outputDevice.write("\n");
+    process.stdout.write("\n");
     f.shouldWriteSpace = false;
 }
 
-optable[opcodes.RETURN_VALUE] = function(f: Py_FrameObject) {
-    var r = f.pop();
-    if (f.back) {
-      f.back.push(r);
-    }
-    return r;
+optable[opcodes.RETURN_VALUE] = function(f: Py_FrameObject, t: Thread) {
+    t.asyncReturn(f.pop());
+    f.returnToThread = true;
 }
 
 optable[opcodes.STORE_NAME] = function(f: Py_FrameObject) {
@@ -524,16 +530,13 @@ optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
 }
 
 // Helper function for all the CALL_FUNCTION* opcodes
-function call_func(f: Py_FrameObject, has_kw: boolean, has_varargs: boolean) {
+function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: boolean) {
     var x = f.readArg();
     var num_args = x & 0xff;
     var num_kwargs = (x >> 8) & 0xff;
     var args = new Array(num_args);
-    var kwargs: { [name: string]: IPy_Object } = {};
+    var kwargs: Py_Dict = has_kw ? <Py_Dict> f.pop() : new Py_Dict();
 
-    if (has_kw) {
-        var kw = (<Py_Dict> f.pop()).toPairs();
-    }
     if (has_varargs) {
         var varargs = (<Py_Tuple> f.pop()).toArray();
     }
@@ -541,7 +544,7 @@ function call_func(f: Py_FrameObject, has_kw: boolean, has_varargs: boolean) {
     for (var i = 0; i < num_kwargs; i++) {
         var val = f.pop();
         var key = f.pop();
-        kwargs[key.toString()] = val;
+        kwargs.set(key, val);
     }
 
     // positional args come in backwards (stack) order
@@ -549,59 +552,28 @@ function call_func(f: Py_FrameObject, has_kw: boolean, has_varargs: boolean) {
         args[i] = f.pop();
     }
 
-    if (has_kw) {
-        for (var i = 0; i < kw.length; i++) {
-           var item = kw[i];
-           kwargs[item[0].toString()] = item[1];
-        }
-    }
     if (has_varargs) {
-        Array.prototype.push.apply(args, varargs);
+        args = args.concat(varargs);
     }
+
     var func = f.pop();
-
-    // Hacky check for native functions
-    if (typeof func === 'function') {
-        // XXX: not async! Any async native will kill the interpreter.
-        f.push((<any> func)(args, kwargs));
-    } else if (func instanceof Py_FuncObject) {
-        // convert kwargs into local variables for the function
-        var varnames = (<Py_FuncObject> func).code.varnames;
-        for (var i = 0; i < varnames.length; i++) {
-            var name = varnames[i].toString();
-            if (kwargs[name] == undefined) {
-                if (args.length > 0) {
-                    kwargs[name] = args.shift();
-                } else {
-                    kwargs[name] = (<Py_FuncObject> func).defaults[name];
-                }
-            }
-        }
-
-        var newf = f.childFrame((<Py_FuncObject> func), kwargs);
-        // Get the thread object from current Py_FrameObject and push it on
-        // the top of the Thread object's stack
-        var t: Thread = f.getThreadObject();
-        t.framePush(newf);
-    } else {
-      throw new Error("Invalid object.");
-    }
+    (<interfaces.IPy_Function> func).exec(t, f, args, kwargs);
 }
 
-optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject) {
-    call_func(f, false, false);
+optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject, t: Thread) {
+    call_func(f, t, false, false);
 }
 
-optable[opcodes.CALL_FUNCTION_VAR] = function(f: Py_FrameObject) {
-    call_func(f, false, true);
+optable[opcodes.CALL_FUNCTION_VAR] = function(f: Py_FrameObject, t: Thread) {
+    call_func(f, t, false, true);
 }
 
-optable[opcodes.CALL_FUNCTION_KW] = function(f: Py_FrameObject) {
-    call_func(f, true, false);
+optable[opcodes.CALL_FUNCTION_KW] = function(f: Py_FrameObject, t: Thread) {
+    call_func(f, t, true, false);
 }
 
-optable[opcodes.CALL_FUNCTION_VAR_KW] = function(f: Py_FrameObject) {
-    call_func(f, true, true);
+optable[opcodes.CALL_FUNCTION_VAR_KW] = function(f: Py_FrameObject, t: Thread) {
+    call_func(f, t, true, true);
 }
 
 optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {

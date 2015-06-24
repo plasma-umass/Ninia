@@ -3,14 +3,19 @@ import Unmarshaller = require('../src/unmarshal');
 import Interpreter = require('../src/interpreter');
 
 var testOut: string = '';
-var mockStdout = {write: (data: string) => {testOut += data;}};
-var interp = new Interpreter(mockStdout);
+var oldStdout = process.stdout.write;
+process.stdout.write = <any> ((data: string) => {testOut += data;});
+var interp = new Interpreter();
 var numTests = 0;
 var numPassed = 0;
 var testFails: { [testName: string]: number; } = { };
 
+function realPrint(text: string) {
+    oldStdout.apply(process.stdout, [text]);
+}
+
 function test(name, file) {
-    process.stdout.write(`Running ${name}... `);
+    realPrint(`Running ${name}... `);
     numTests += 1;
     var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
     testOut = '';  // reset the output catcher
@@ -29,10 +34,10 @@ function test(name, file) {
     }
     var expectedOut = fs.readFileSync(file+'.out').toString();
     if (!err && testOut == expectedOut) {
-        process.stdout.write("Pass\n");
+        realPrint("Pass\n");
         numPassed += 1;
     } else {
-        process.stdout.write("Fail\n");
+        realPrint("Fail\n");
         console.log('CPython output:\n', expectedOut);
         console.log('Ninia output:\n', testOut);
         if (err) {
