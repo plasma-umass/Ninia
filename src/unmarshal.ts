@@ -1,4 +1,5 @@
 /// <reference path="../bower_components/DefinitelyTyped/node/node.d.ts" />
+/// <reference path="../bower_components/DefinitelyTyped/decimal.js/decimal.js.d.ts" />
 
 // An Unmarshaller takes a .pyc file (as a string of bytes, e.g. "\xXX") and
 // converts it into a Python code object. The marshal format is not officially
@@ -13,7 +14,7 @@ import builtins = require('./builtins');
 import fs = require('fs');
 import collections = require('./collections');
 import interfaces = require('./interfaces');
-var Decimal: DecimalStatic = require('../node_modules/decimal.js/decimal');
+import Decimal = require('decimal.js');
 import Py_Tuple = collections.Py_Tuple;
 import Py_List = collections.Py_List;
 import Py_Str = primitives.Py_Str;
@@ -96,7 +97,7 @@ class Unmarshaller {
     }
 
     // Reads a 64 bit integer
-    readInt64(): Decimal {
+    readInt64(): decimal.Decimal {
         var low = this.readInt32();
         var high = this.readInt32();
         var d = new Decimal(high);

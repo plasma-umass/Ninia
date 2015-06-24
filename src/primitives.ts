@@ -1,4 +1,4 @@
-/// <reference path="../lib/decimal.d.ts" />
+/// <reference path="../bower_components/DefinitelyTyped/decimal.js/decimal.js.d.ts" />
 import singletons = require('./singletons');
 import enums = require('./enums');
 import NIError = singletons.NotImplemented;
@@ -6,7 +6,7 @@ import None = singletons.None;
 import interfaces = require('./interfaces');
 import IPy_Number = interfaces.IPy_Number;
 import IPy_Object = interfaces.IPy_Object;
-var Decimal: DecimalStatic = require('../node_modules/decimal.js/decimal');
+import Decimal = require('decimal.js');
 
 var ref = 1;
 
@@ -410,8 +410,8 @@ var MAX_INT = new Decimal('9007199254740991');
 var MIN_INT = new Decimal('-9007199254740991');
 
 export class Py_Long extends Py_Object implements IPy_Number {
-    value: Decimal;
-    constructor(val: Decimal) {
+    value: decimal.Decimal;
+    constructor(val: decimal.Decimal) {
         super();
         this.value = val;
     }

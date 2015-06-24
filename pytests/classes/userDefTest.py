@@ -1,6 +1,7 @@
 
 class Foo:
-  pass
+  def __str__(self):
+    return "Hi, I'm a foo!"
 
 a = Foo()
 print a
