@@ -14,10 +14,13 @@ import Py_Str = primitives.Py_Str;
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
+import Thread = require('./threading');
+import IPy_FrameObj = interfaces.IPy_FrameObj;
+
 
 // range function
-function range(args: Py_Int[], kwargs: { [name: string]: IPy_Object }): Py_List {
-    if (Object.keys(kwargs).length > 0) {
+function range(t: Thread, f: IPy_FrameObj, args: Py_Int[], kwargs: Py_Dict): Py_List {
+    if (kwargs.len() > 0) {
         throw new Error('TypeError: range() takes no keyword arguments')
     }
     var start = 0, step = 1, stop: number;
@@ -47,8 +50,8 @@ function range(args: Py_Int[], kwargs: { [name: string]: IPy_Object }): Py_List 
 }
 
 // list constructor
-function list(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object }): Py_List {
-    if (Object.keys(kwargs).length > 0) {
+function list(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict): Py_List {
+    if (kwargs.len() > 0) {
         throw new Error('TypeError: list() takes no keyword arguments')
     }
     if (args.length == 0) {
@@ -66,20 +69,14 @@ function list(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object 
 }
 
 // dict constructor function
-function dict(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Dict {
-    // XXX: handles only the most basic case
-    var d = new Py_Dict();
-    for (var k in kwargs) {
-        if (kwargs.hasOwnProperty(k)) {
-            d.set(Py_Str.fromJS(k), kwargs[k]);
-        }
-    }
-    return d;
+function dict(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Dict {
+    // ???? apparently this is the most basic case.
+    return kwargs;
 }
 
 // tuple constructor
-function tuple(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object }): Py_Tuple {
-    if (Object.keys(kwargs).length > 0) {
+function tuple(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict): Py_Tuple {
+    if (kwargs.len() > 0) {
         throw new Error('TypeError: tuple() takes no keyword arguments')
     }
     if (args.length == 0) {
@@ -96,8 +93,8 @@ function tuple(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object
 }
 
 // set constructor
-function set(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object }): Py_Set {
-    if (Object.keys(kwargs).length > 0) {
+function set(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict): Py_Set {
+    if (kwargs.len() > 0) {
         throw new Error('TypeError: set() takes no keyword arguments')
     }
     if (args.length == 0) {
@@ -113,8 +110,8 @@ function set(args: interfaces.Iterable[], kwargs: { [name: string]: IPy_Object }
     return Py_Set.fromIterable(x);
 }
 
-function abs(x: IPy_Object): IPy_Object {
-    return x.__abs__();
+function abs(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+    args[0].$__abs__.exec_from_native(t, f, args, kwargs, cb);
 }
 
 function all(x: interfaces.Iterable): typeof True {
@@ -157,48 +154,44 @@ function ord(x: IPy_Object): Py_Int {
   return new Py_Int(x.toString().charCodeAt(0));
 }
 
-function str(x: IPy_Object): Py_Str {
-  return x.__str__();
+function str(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+  args[0].$__str__.exec_from_native(t, f, args, kwargs, cb);
 }
 
-function repr(x: IPy_Object): Py_Str {
-  return x.__repr__();
+function repr(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+  args[0].$__repr__.exec_from_native(t, f, args, kwargs, cb);
 }
 
-// guts of the cmp() builtin, used by sorted() as well
-function cmp2(x: IPy_Object, y: IPy_Object): number {
-  if (x.__eq__(y) === True) {
-    return 0;
-  } else if (x.__lt__(y) === True) {
-    return -1;
-  }
-  return 1;
+function cmp(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+  var x = args[0], y = args[1];
+  x.$__eq__.exec_from_native(t, f, args, kwargs, (rv: IPy_Object) => {
+    if (rv === True) {
+      cb(new Py_Int(0));
+    } else {
+      x.$__lt__.exec_from_native(t, f, args, kwargs, (rv: IPy_Object) => {
+        cb(new Py_Int(rv === True ? -1 : 1));
+      });
+    }
+  });
 }
 
-function cmp(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
-  var x = args[0];
-  var y = args[1];
-  return new Py_Int(cmp2(x, y));
-}
-
-function complex(args: Py_Float[], kwargs: { [name: string]: IPy_Object }): Py_Complex {
+function complex(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Complex {
   if (args.length === 0) {
     return Py_Complex.fromNumber(0);
   } else if (args.length === 1) {
-    return Py_Complex.fromNumber(args[0].toNumber());
+    return Py_Complex.fromNumber((<any> args[0]).toNumber());
   } else if (args.length === 2) {
-    return new Py_Complex(args[0], args[1]);
+    return new Py_Complex(<any> args[0], <any> args[1]);
   } else {
     throw new Error('TypeError: complex() takes 0-2 arguments');
   }
 }
 
-function divmod(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Tuple {
-  // XXX: __divmod__ should return a tuple.
-  return new Py_Tuple(args[0].__divmod__(args[1]));
+function divmod(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+  args[0].$__divmod__.exec_from_native(t, f, args, kwargs, cb);
 }
 
-function float(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Float {
+function float(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Float {
   if (args.length == 0) {
     return new Py_Float(0);
   } else if (args.length == 1) {
@@ -224,7 +217,7 @@ function hex(x: Py_Int): Py_Str {
   return Py_Str.fromJS(ret);
 }
 
-function int(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int {
+function int(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Int {
   if (kwargs['base'] !== undefined) {
     args.push(kwargs['base']);
   }
@@ -248,8 +241,8 @@ function int(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_Int
 }
 
 // builtin iter()
-function iter(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): interfaces.Iterator {
-  if (Object.keys(kwargs).length > 0) {
+function iter(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): interfaces.Iterator {
+  if (kwargs.len() > 0) {
     throw new Error('TypeError: iter() takes no keyword arguments');
   }
   if (args.length == 1) {
@@ -261,7 +254,7 @@ function iter(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): inter
   throw new Error('TypeError: iter() takes 1-2 arguments');
 }
 
-function sorted(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_List {
+function sorted(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): Py_List {
   // sorted(iterable, cmp=None, key=None, reverse=False) --> new sorted list
   if (args.length !== 1) {
     throw new Error('TypeError: sorted() takes 1 positional argument');
@@ -284,8 +277,8 @@ function sorted(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): Py_
   return new Py_List(list);
 }
 
-function hasattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): typeof True {
-  if (Object.keys(kwargs).length > 0) {
+function hasattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): typeof True {
+  if (kwargs.len() > 0) {
     throw new Error('TypeError: hasattr() takes no keyword arguments');
   }
   if (args.length != 2) {
@@ -296,8 +289,8 @@ function hasattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): ty
   return obj.hasOwnProperty(attr)? True : False;
 }
 
-function getattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): IPy_Object {
-  if (Object.keys(kwargs).length > 0) {
+function getattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): IPy_Object {
+  if (kwargs.len() > 0) {
     throw new Error('TypeError: getattr() takes no keyword arguments');
   }
   if (args.length != 2) {
@@ -309,8 +302,8 @@ function getattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): IP
   return obj[attr];
 }
 
-function setattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): void {
-  if (Object.keys(kwargs).length > 0) {
+function setattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+  if (kwargs.len() > 0) {
     throw new Error('TypeError: setattr() takes no keyword arguments');
   }
   if (args.length != 3) {
@@ -324,8 +317,8 @@ function setattr(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): vo
 }
 
 function pyfunc_wrapper_onearg(func, funcname: string) {
-  return function(args: IPy_Object[], kwargs: { [name: string]: IPy_Object }): IPy_Object {
-    if (Object.keys(kwargs).length > 0) {
+  return function(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): IPy_Object {
+    if (kwargs.len() > 0) {
       throw new Error('TypeError: ' + funcname +
                       '() takes no keyword arguments');
     }
