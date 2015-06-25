@@ -23,6 +23,7 @@ import Iterable = interfaces.Iterable;
 import None = singletons.None;
 import Py_Cell = require('./cell');
 import Thread = require('./threading');
+import IPy_Function = interfaces.IPy_Function;
 var NotImplemented = builtins.NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
@@ -124,59 +125,68 @@ optable[opcodes.UNARY_INVERT] = function(f: Py_FrameObject, t: Thread) {
 // 4. If this is the case, try the reverse operation (rop) function
 // 5. If rop is similarly undefined or returns NotImplemented, the
 //    operation is not permitted for the given types.
-function binary_op(f: Py_FrameObject, op: string, inplace: boolean) {
+function binary_op(f: Py_FrameObject, t: Thread, op: string, inplace: boolean) {
     // TODO: use this to generate code
     var b = f.pop();
     var a = f.pop();
     var res: IPy_Object;
 
-    if (inplace && a[`__i${op}__`] !== undefined) {
-        a[`__i${op}__`](b);
-        f.push(a);
+    if (inplace && a[`$__i${op}__`] !== undefined) {
+        f.returnToThread = true;
+        (<IPy_Function> a[`$__i${op}__`]).exec(t, f, [a, b], new Py_Dict());
         return;
     }
-    if (a[`__${op}__`] === undefined) {
+    if (a[`$__${op}__`] === undefined) {
         throw new Error(`TypeError: cannot __${op}__ ${a} and ${b}`);
     }
-    res = a[`__${op}__`](b);
-    if (!inplace && res == NotImplemented) {
-        if (b[`__r${op}__`] === 'undefined') {
-            throw new Error(`TypeError: cannot __${op}__ ${a} and ${b}`);
+    
+    f.returnToThread = true;
+    (<IPy_Function> a[`$__${op}__`]).exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
+        if (!inplace && res == NotImplemented) {
+            if (b[`$__r${op}__`] === 'undefined') {
+                throw new Error(`TypeError: cannot __${op}__ ${a} and ${b}`);
+            }
+            (<IPy_Function> b[`$__r${op}__`]).exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
+                if (res == NotImplemented) {
+                    throw new Error(`TypeError: cannot __${op}__ ${a} and ${b}`);
+                }
+                f.push(res);
+                t.setStatus(enums.ThreadStatus.RUNNABLE);
+            });
+        } else {
+            f.push(res);
+            // Resume thread.
+            t.setStatus(enums.ThreadStatus.RUNNABLE);
         }
-        res = b[`__r${op}__`](a);
-    }
-    if (res == NotImplemented) {
-        throw new Error(`TypeError: cannot __${op}__ ${a} and ${b}`);
-    }
-    f.push(res);
+    });
 }
 
-optable[opcodes.BINARY_POWER] = (f: Py_FrameObject) => binary_op(f, 'pow', false);
-optable[opcodes.INPLACE_POWER] = (f: Py_FrameObject) => binary_op(f, 'pow', true);
-optable[opcodes.BINARY_MULTIPLY] = (f: Py_FrameObject) => binary_op(f, 'mul', false);
-optable[opcodes.INPLACE_MULTIPLY] = (f: Py_FrameObject) => binary_op(f, 'mul', true);
-optable[opcodes.BINARY_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'div', false);
-optable[opcodes.INPLACE_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'div', true);
-optable[opcodes.BINARY_MODULO] = (f: Py_FrameObject) => binary_op(f, 'mod', false);
-optable[opcodes.INPLACE_MODULO] = (f: Py_FrameObject) => binary_op(f, 'mod', true);
-optable[opcodes.BINARY_ADD] = (f: Py_FrameObject) => binary_op(f, 'add', false);
-optable[opcodes.INPLACE_ADD] = (f: Py_FrameObject) => binary_op(f, 'add', true);
-optable[opcodes.BINARY_SUBTRACT] = (f: Py_FrameObject) => binary_op(f, 'sub', false);
-optable[opcodes.INPLACE_SUBTRACT] = (f: Py_FrameObject) => binary_op(f, 'sub', true);
-optable[opcodes.BINARY_FLOOR_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'floordiv', false);
-optable[opcodes.INPLACE_FLOOR_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'floordiv', true);
-optable[opcodes.BINARY_TRUE_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'truediv', false);
-optable[opcodes.INPLACE_TRUE_DIVIDE] = (f: Py_FrameObject) => binary_op(f, 'truediv', true);
-optable[opcodes.BINARY_LSHIFT] = (f: Py_FrameObject) => binary_op(f, 'lshift', false);
-optable[opcodes.INPLACE_LSHIFT] = (f: Py_FrameObject) => binary_op(f, 'lshift', true);
-optable[opcodes.BINARY_RSHIFT] = (f: Py_FrameObject) => binary_op(f, 'rshift', false);
-optable[opcodes.INPLACE_RSHIFT] = (f: Py_FrameObject) => binary_op(f, 'rshift', true);
-optable[opcodes.BINARY_AND] = (f: Py_FrameObject) => binary_op(f, 'and', false);
-optable[opcodes.INPLACE_AND] = (f: Py_FrameObject) => binary_op(f, 'and', true);
-optable[opcodes.BINARY_XOR] = (f: Py_FrameObject) => binary_op(f, 'xor', false);
-optable[opcodes.INPLACE_XOR] = (f: Py_FrameObject) => binary_op(f, 'xor', true);
-optable[opcodes.BINARY_OR] = (f: Py_FrameObject) => binary_op(f, 'or', false);
-optable[opcodes.INPLACE_OR] = (f: Py_FrameObject) => binary_op(f, 'or', true);
+optable[opcodes.BINARY_POWER] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'pow', false);
+optable[opcodes.INPLACE_POWER] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'pow', true);
+optable[opcodes.BINARY_MULTIPLY] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'mul', false);
+optable[opcodes.INPLACE_MULTIPLY] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'mul', true);
+optable[opcodes.BINARY_DIVIDE] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'div', false);
+optable[opcodes.INPLACE_DIVIDE] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'div', true);
+optable[opcodes.BINARY_MODULO] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'mod', false);
+optable[opcodes.INPLACE_MODULO] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'mod', true);
+optable[opcodes.BINARY_ADD] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'add', false);
+optable[opcodes.INPLACE_ADD] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'add', true);
+optable[opcodes.BINARY_SUBTRACT] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'sub', false);
+optable[opcodes.INPLACE_SUBTRACT] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'sub', true);
+optable[opcodes.BINARY_FLOOR_DIVIDE] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'floordiv', false);
+optable[opcodes.INPLACE_FLOOR_DIVIDE] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'floordiv', true);
+optable[opcodes.BINARY_TRUE_DIVIDE] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'truediv', false);
+optable[opcodes.INPLACE_TRUE_DIVIDE] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'truediv', true);
+optable[opcodes.BINARY_LSHIFT] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'lshift', false);
+optable[opcodes.INPLACE_LSHIFT] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'lshift', true);
+optable[opcodes.BINARY_RSHIFT] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'rshift', false);
+optable[opcodes.INPLACE_RSHIFT] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'rshift', true);
+optable[opcodes.BINARY_AND] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'and', false);
+optable[opcodes.INPLACE_AND] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'and', true);
+optable[opcodes.BINARY_XOR] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'xor', false);
+optable[opcodes.INPLACE_XOR] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'xor', true);
+optable[opcodes.BINARY_OR] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'or', false);
+optable[opcodes.INPLACE_OR] = (f: Py_FrameObject, t: Thread) => binary_op(f, t, 'or', true);
 
 optable[opcodes.BINARY_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
     var b = f.pop();
@@ -187,16 +197,20 @@ optable[opcodes.BINARY_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
     }
 }
 
-optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject) {
+optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject, t: Thread) {
     var a = f.pop();
     // see https://docs.python.org/2/reference/simple_stmts.html#print
     if (f.shouldWriteSpace) {
         process.stdout.write(' ');
     }
-    var s: string = a.__str__().toString();
-    process.stdout.write(s);
-    var lastChar = s.slice(-1);
-    f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
+    f.returnToThread = true;
+    a.$__str__.exec_from_native(t, f, [a], new Py_Dict(), (str: primitives.Py_Str) => {
+        var s: string = str.toString();
+        process.stdout.write(s);
+        var lastChar = s.slice(-1);
+        f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
+        t.setStatus(enums.ThreadStatus.RUNNABLE);
+    });
 }
 
 optable[opcodes.PRINT_NEWLINE] = function(f: Py_FrameObject) {
@@ -239,17 +253,26 @@ optable[opcodes.DELETE_ATTR] = function(f: Py_FrameObject) {
     delete obj[name.toString()];
 }
 
-optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject) {
+optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject, t: Thread) {
     var val = f.pop();
-    if(val.__getitem__ === undefined) {
+    if(val.$__getitem__ === undefined) {
         throw new Error("Expected a list or tuple type.");
     }
     // Pop from stack, and reverse the order of elements, and push back into stack
     // e.g. 1 2 3 -> 3 2 1
-    for (var i = f.readArg()-1; i >= 0; i--)
-    {
-        f.push(val.__getitem__(new Py_Int(i)));
+    var i = f.readArg() - 1;
+    function processNext() {
+        if (i >= 0) {
+            val.$__getitem__.exec_from_native(t, f, [val, new Py_Int(i--)], new Py_Dict(), (res: IPy_Object) => {
+                f.push(res);
+                processNext();
+            });
+        } else {
+            t.setStatus(enums.ThreadStatus.RUNNABLE);
+        }
     }
+    f.returnToThread = true;
+    processNext();
 }
 
 optable[opcodes.STORE_GLOBAL] = function(f: Py_FrameObject) {
@@ -306,32 +329,43 @@ optable[opcodes.LOAD_CLOSURE] = function(f: Py_FrameObject) {
     f.push(f.getDeref(i));
 }
 
-optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
-    var comp_ops = ['<', '<=', '==', '!=', '>', '>=', 'in', 'not in',
-                    'is', 'is not', 'exception match'];
-    var opidx = f.readArg();
-    var op = comp_ops[opidx];
+enum ComparisonOp {
+    LT = 0,
+    LTE = 1,
+    EQ = 2,
+    NEQ = 3,
+    GT = 4,
+    GTE = 5,
+    IN = 6,
+    NOT_IN = 7,
+    IS = 8,
+    IS_NOT = 9,
+    EXC_MATCH = 10
+}
+
+optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
+    var op = <ComparisonOp> f.readArg();
     var b = f.pop();
     var a = f.pop();
 
     switch(op) {
-        case '<':
-            f.push(doLT(a,b));
+        case ComparisonOp.LT:
+            doCmpOp(t, f, a, b, '$__lt__', '$__gt__');
             break;
-        case '<=':
-            f.push(doLE(a,b));
+        case ComparisonOp.LTE:
+            doCmpOp(t, f, a, b, '$__le__', '$__ge__');
             break;
-        case '==':
-            f.push(doEQ(a,b));
+        case ComparisonOp.EQ:
+            doCmpOp(t, f, a, b, '$__eq__', '$__eq__');
             break;
-        case '!=':
-            f.push(doNE(a,b));
+        case ComparisonOp.NEQ:
+            doCmpOp(t, f, a, b, '$__ne__', '$__ne__');
             break;
-        case '>':
-            f.push(doGT(a,b));
+        case ComparisonOp.GT:
+            doCmpOp(t, f, a, b, '$__gt__', '$__lt__');
             break;
-        case '>=':
-            f.push(doGE(a,b));
+        case ComparisonOp.GTE:
+            doCmpOp(t, f, a, b, '$__gte__', '$__lte__');
             break;
             // Comparisons of sequences and types are not implemented
         // case 'in':
@@ -344,10 +378,13 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
         //         return elem != a;
         //     });
         //     break;
-        case 'is':
+        case ComparisonOp.IS:
+            // TODO: Python does pointer comparison.
+            // Does this mean IS fails for integers...???
+            // https://github.com/python/cpython/blob/2.7/Python/ceval.c#L4786
             f.push(a.hash() === b.hash() ? True : False);
             break;
-        case 'is not':
+        case ComparisonOp.IS_NOT:
             f.push(a.hash() !== b.hash() ? True : False);
             break;
         // case 'exception match':
@@ -357,118 +394,23 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject) {
     }
 }
 
-function doLT(a: IPy_Object, b: IPy_Object): IPy_Object {
-    var res;
-    var mess = "There is no less-than ordering between " + a + " and " + b;
-
-    if (typeof a.__lt__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__lt__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__gt__ == 'undefined')
-            throw new Error(mess);
-        res = b.__gt__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    return res;
-}
-
-function doLE(a: IPy_Object, b: IPy_Object): IPy_Object {
-    var res;
-    var mess = "There is no '<=' (LTE) ordering between " + a + " and " + b;
-
-    if (typeof a.__le__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__le__(b);
-    if (res === NotImplemented) {
-        if(typeof b.__ge__ == 'undefined')
-            throw new Error(mess);
-        res = b.__ge__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    return res;
-}
-
-function doEQ(a: IPy_Object, b: IPy_Object): IPy_Object {
-    var res;
-    var mess = "There is no equality operation between " + a + " and " + b;
-
-    if (typeof a.__eq__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__eq__(b);
-    if (res === NotImplemented) {
-        if(typeof b.__eq__ == 'undefined')
-            throw new Error(mess);
-        res = b.__eq__(a);
-        if (res === NotImplemented)
-            throw new Error(mess);
-    }
-
-    return res;
-}
-
-function doNE(a: IPy_Object, b: IPy_Object): IPy_Object {
-    var res;
-    var mess = "There is no inequality operation between "+ a + " and " + b;
-
-    if (typeof a.__ne__ === 'undefined')
-        throw new Error(mess);
-
-    res = a.__ne__(b);
-    if (res === NotImplemented) {
-        if(typeof b.__ne__ == 'undefined')
-            throw new Error(mess);
-        res = b.__ne__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    return res;
-}
-
-function doGT(a: IPy_Object, b: IPy_Object): IPy_Object {
-    var res;
-    var mess = "There is no greater-than ordering between "+ a +" and " + b;
-
-    if (typeof a.__gt__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__gt__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__lt__ == 'undefined')
-            throw new Error(mess);
-        res = b.__lt__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    return res;
-}
-
-function doGE(a: IPy_Object, b: IPy_Object): IPy_Object {
-    var res;
-    var mess = "There is no >= (GTE) ordering between "+ a + " and " + b;
-
-    if (typeof a.__ge__ == 'undefined')
-        throw new Error(mess);
-
-    res = a.__ge__(b);
-    if (res == NotImplemented) {
-        if(typeof b.__le__ == 'undefined')
-            throw new Error(mess);
-        res = b.__le__(a);
-        if (res == NotImplemented)
-            throw new Error(mess);
-    }
-
-    return res;
+function doCmpOp(t: Thread, f: Py_FrameObject, a: IPy_Object, b: IPy_Object, funcA: string, funcB: string) {
+    if (typeof a[funcA] == 'undefined')
+        throw new Error(`Object lacks ${funcA.slice(1)} property.`);
+    
+    f.returnToThread = true;
+    (<IPy_Function> a[funcA]).exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
+        if (res == NotImplemented) {
+            if(typeof b[funcB] == 'undefined')
+                throw new Error(`Object lacks ${funcB.slice(1)} property.`);
+            (<IPy_Function> b[funcB]).exec_from_native(t, f, [b, a], new Py_Dict(), (res: IPy_Object) => {
+                if (res == NotImplemented)
+                    throw new Error(`Objects cannot be compared.`);
+                f.push(res);
+                t.setStatus(enums.ThreadStatus.RUNNABLE);
+            });            
+        } 
+    });
 }
 
 optable[opcodes.JUMP_FORWARD] = function(f: Py_FrameObject) {
@@ -610,149 +552,173 @@ optable[opcodes.DUP_TOP] = function(f: Py_FrameObject) {
 
 optable[opcodes.NOP] = function(f: Py_FrameObject) {}
 
-optable[opcodes.SLICE_0] = function(f: Py_FrameObject) {
+optable[opcodes.SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var a = f.pop();
-    if (a.__getitem__) {
-      f.push(a.__getitem__(new Py_Slice(new Py_Int(0), a.__len__(), None)));
+    if (a.$__getitem__ && a.$__len__) {
+        f.returnToThread = true;
+        a.$__len__.exec_from_native(t, f, [a], new Py_Dict(), (rv: IPy_Object) => {
+            a.$__getitem__.exec_from_native(t, f, [a, new Py_Slice(new Py_Int(0), rv, None)], new Py_Dict(), (rv: IPy_Object) => {
+                f.push(rv);
+                t.setStatus(enums.ThreadStatus.RUNNABLE);
+            });
+        });
     } else {
-      throw new Error("Unsupported type.");
+        throw new Error("Unsupported type.");
     }
 }
 
-optable[opcodes.SLICE_1] = function(f: Py_FrameObject) {
-  var a = f.pop();
-  var b = f.pop();
-  if (b.__getitem__) {
-    f.push(b.__getitem__(new Py_Slice(a, b.__len__(), None)));
-  } else {
-    throw new Error(`TypeError: ${b} does not support __getitem__`);
-  }
+optable[opcodes.SLICE_1] = function(f: Py_FrameObject, t: Thread) {
+    var b = f.pop();
+    var a = f.pop();
+    if (a.$__getitem__ && a.$__len__) {
+        f.returnToThread = true;
+        a.$__len__.exec_from_native(t, f, [a], new Py_Dict(), (rv: IPy_Object) => {
+            a.$__getitem__.exec_from_native(t, f, [a, new Py_Slice(b, rv, None)], new Py_Dict(), (rv: IPy_Object) => {
+                f.push(rv);
+                t.setStatus(enums.ThreadStatus.RUNNABLE);
+            });
+        });
+    } else {
+        throw new Error("Unsupported type.");
+    }
 }
 
-optable[opcodes.SLICE_2] = function(f: Py_FrameObject) {
-  var a = f.pop();
-  var b = f.pop();
-  if (b.__getitem__) {
-    f.push(b.__getitem__(new Py_Slice(new Py_Int(0), a, None)));
-  } else {
-    throw new Error(`TypeError: ${b} does not support __getitem__`);
-  }
+optable[opcodes.SLICE_2] = function(f: Py_FrameObject, t: Thread) {
+    var b = f.pop();
+    var a = f.pop();
+    if (a.$__getitem__) {
+        f.returnToThread = true;
+        a.$__getitem__.exec(t, f, [a, new Py_Slice(new Py_Int(0), b, None)], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${b} does not support __getitem__`);
+    }
 }
 
-optable[opcodes.SLICE_3] = function(f: Py_FrameObject) {
-  var a = f.pop();
-  var b = f.pop();
-  var c = f.pop();
-  if (c.__getitem__) {
-    f.push(c.__getitem__(new Py_Slice(b, a, None)));
-  } else {
-    throw new Error(`TypeError: ${b} does not support __getitem__`);
-  }
+optable[opcodes.SLICE_3] = function(f: Py_FrameObject, t: Thread) {
+    var a = f.pop();
+    var b = f.pop();
+    var c = f.pop();
+    if (c.$__getitem__) {
+        f.returnToThread = true;
+        c.$__getitem__.exec(t, f, [c, new Py_Slice(b, a, None)], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${b} does not support __getitem__`);
+    }
 }
 
-optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject) {
-  var seq = f.pop();
-  var value = <Iterable> f.pop();
-  if (seq.__setitem__) {
-    seq.__setitem__(new Py_Slice(None, None, None), value);
-  } else {
-    throw new Error(`TypeError: ${seq} does not support __setitem__`);
-  }
+optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
+    var seq = f.pop();
+    var value = <Iterable> f.pop();
+    if (seq.$__setitem__) {
+        f.returnToThread = true;
+        seq.$__setitem__.exec(t, f, [seq, new Py_Slice(None, None, None), value], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${seq} does not support __setitem__`);
+    }
 }
 
-optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject) {
-  var start = f.pop();
-  var seq = f.pop();
-  var value = <Iterable> f.pop();
-  if (seq.__setitem__) {
-    seq.__setitem__(new Py_Slice(start, None, None), value);
-  } else {
-    throw new Error(`TypeError: ${seq} does not support __setitem__`);
-  }
+optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
+    var start = f.pop();
+    var seq = f.pop();
+    var value = f.pop();
+    if (seq.$__setitem__) {
+        f.returnToThread = true;
+        seq.$__setitem__.exec(t, f, [seq, new Py_Slice(start, None, None), value], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${seq} does not support __setitem__`);
+    }
 }
 
-optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject) {
-  var end = f.pop();
-  var seq = <Py_List> f.pop();
-  var value = <Iterable> f.pop();
-  if (seq.__setitem__) {
-    seq.__setitem__(new Py_Slice(None, end, None), value);
-  } else {
-    throw new Error(`TypeError: ${seq} does not support __setitem__`);
-  }
+optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
+    var end = f.pop();
+    var seq = f.pop();
+    var value = f.pop();
+    if (seq.$__setitem__) {
+        f.returnToThread = true;
+        seq.$__setitem__.exec(t, f, [seq, new Py_Slice(None, end, None), value], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${seq} does not support __setitem__`);
+    }
 }
 
-optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject) {
-  var end = f.pop();
-  var start = f.pop();
-  var seq = <Py_List> f.pop();
-  var value = <Iterable> f.pop();
-  if (seq.__setitem__) {
-    seq.__setitem__(new Py_Slice(start, end, None), value);
-  } else {
-    throw new Error(`TypeError: ${seq} does not support __setitem__`);
-  }
+optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
+    var end = f.pop();
+    var start = f.pop();
+    var seq = f.pop();
+    var value = f.pop();
+    if (seq.$__setitem__) {
+        f.returnToThread = true;
+        seq.$__setitem__.exec(t, f, [seq, new Py_Slice(start, end, None), value], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${seq} does not support __setitem__`);
+    }
 }
 
-optable[opcodes.DELETE_SLICE_0] = function(f: Py_FrameObject) {
-  var seq = f.pop();
-  if (seq.__delitem__) {
-    seq.__delitem__(new Py_Slice(None, None, None));
-  } else {
-    throw new Error(`TypeError: ${seq} does not support __delitem__`);
-  }
+optable[opcodes.DELETE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
+    var seq = f.pop();
+    if (seq.$__delitem__) {
+        f.returnToThread = true;
+        seq.$__delitem__.exec(t, f, [seq, new Py_Slice(None, None, None)], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${seq} does not support __delitem__`);
+    }
 }
 
-optable[opcodes.DELETE_SLICE_1] = function(f: Py_FrameObject) {
-  var start = f.pop();
-  var seq = f.pop();
-  if (seq.__delitem__) {
-    seq.__delitem__(new Py_Slice(start, None, None));
-  } else {
-    throw new Error(`TypeError: ${seq} does not support __delitem__`);
-  }
+optable[opcodes.DELETE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
+    var start = f.pop();
+    var seq = f.pop();
+    if (seq.$__delitem__) {
+        f.returnToThread = true;
+        seq.$__delitem__.exec(t, f, [seq, new Py_Slice(start, None, None)], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${seq} does not support __delitem__`);
+    }
 }
 
-optable[opcodes.DELETE_SLICE_2] = function(f: Py_FrameObject) {
-  var end = f.pop();
-  var seq = <Py_List> f.pop();
-  if (seq.__delitem__) {
-    seq.__delitem__(new Py_Slice(None, end, None));
-  } else {
-    throw new Error(`TypeError: ${seq} does not support __delitem__`);
-  }
+optable[opcodes.DELETE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
+    var end = f.pop();
+    var seq = f.pop();
+    if (seq.$__delitem__) {
+        f.returnToThread = true;
+        seq.$__delitem__.exec(t, f, [seq, new Py_Slice(None, end, None)], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${seq} does not support __delitem__`);
+    }
 }
 
-optable[opcodes.DELETE_SLICE_3] = function(f: Py_FrameObject) {
-  var end = f.pop();
-  var start = f.pop();
-  var seq = <Py_List> f.pop();
-  if (seq.__delitem__) {
-    seq.__delitem__(new Py_Slice(start, end, None));
-  } else {
-    throw new Error(`TypeError: ${seq} does not support __delitem__`);
-  }
+optable[opcodes.DELETE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
+    var end = f.pop();
+    var start = f.pop();
+    var seq = f.pop();
+    if (seq.$__delitem__) {
+        f.returnToThread = true;
+        seq.$__delitem__.exec(t, f, [seq, new Py_Slice(start, end, None)], new Py_Dict());
+    } else {
+        throw new Error(`TypeError: ${seq} does not support __delitem__`);
+    }
 }
 
 
 // TODO: more testing
-optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject) {
-  var key = <any> f.pop();
-  var obj = <any> f.pop();
-  var value = f.pop();
-  if (obj.__setitem__) {
-    obj.__setitem__(key, value);
-  } else {
-    throw new Error("Unsupported type.");
-  }
-}
-
-// TODO: more testing
-optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject) {
+optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
     var key = f.pop();
-    var obj = <any> f.pop();
-    if (obj.__delitem__) {
-        obj.__delitem__(key);
+    var obj = f.pop();
+    var value = f.pop();
+    if (obj.$__setitem__) {
+        f.returnToThread = true;
+        obj.$__setitem__.exec(t, f, [obj, key, value], new Py_Dict());
+    } else {
+        throw new Error("Unsupported type.");
+    }
+}
+
+// TODO: more testing
+optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
+    var key = f.pop();
+    var obj = f.pop();
+    if (obj.$__delitem__) {
+        f.returnToThread = true;
+        obj.$__delitem__.exec(t, f, [obj, key], new Py_Dict());
     } else {
         throw new Error("Unsupported type.");
     }
@@ -896,28 +862,27 @@ optable[opcodes.IMPORT_FROM] = function(f: Py_FrameObject) {
 
 // Replaces TOS with getattr(TOS, co_names[namei]).
 optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) {
-  var name = f.codeObj.names[f.readArg()].toString(), obj = <Py_List> f.pop(), val = obj[name];
-  // XXX: We need a better way to handle functions!
-  if (typeof(val) === 'function') {
-    // Create an anonymous function binding `obj` to this particular property.
-    f.push(<any> ((args: IPy_Object[], kwargs: { [name: string]: IPy_Object }) => obj[name](args, kwargs)));
-  } else if (val === undefined) {
-    throw new Error(`Invalid attribute: ${name}`);
-  } else {
-    f.push(val);
-  }
+    // TODO: Cache strings! 
+    var name = f.codeObj.names[f.readArg()].toString(),
+        obj = f.pop(),
+        val = obj[`$${name}`];
+    if (val === undefined) {
+        throw new Error(`Invalid attribute: ${name}`);
+    } else {
+        f.push(val);
+    }
 }
 
 optable[opcodes.BUILD_SLICE] = function(f: Py_FrameObject) {
-  var argv = f.readArg(), step: IPy_Object, start: IPy_Object, stop: IPy_Object;
-  if (argv === 3) {
-    step = f.pop();
-  } else {
-    step = None;
-  }
-  stop = f.pop();
-  start = f.pop();
-  f.push(new Py_Slice(start, stop, step));
+    var argv = f.readArg(), step: IPy_Object, start: IPy_Object, stop: IPy_Object;
+    if (argv === 3) {
+        step = f.pop();
+    } else {
+        step = None;
+    }
+    stop = f.pop();
+    start = f.pop();
+    f.push(new Py_Slice(start, stop, step));
 }
 
 export = optable;
