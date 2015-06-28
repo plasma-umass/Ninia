@@ -131,7 +131,6 @@ class Py_FrameObject implements IPy_FrameObj {
             /*if (this.debug) {
                 console.log(opcodes[op]);
             }*/
-            console.log(opcodes[op]);
             func(this, t);
             if (this.returnToThread) {
                 // End the bytecode loop; return to thread loop.

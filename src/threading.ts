@@ -23,7 +23,6 @@ class Thread{
 
     // Executes bytecode method calls
     private run(): void {
-
         var stack = this.stack,
             startTime: number = (new Date()).getTime(),
             endTime: number,
@@ -95,9 +94,19 @@ class Thread{
 
     }
 
-    // TODO: Push the return value from a finished function's stack frame onto the calling function's stack frame.
     public asyncReturn(rv?: any): void {
-
+        var stack = this.stack,
+          length: number;
+        // framePop
+        stack.pop();
+        length = stack.length;
+        if (length > 0) {
+            stack[length - 1].resume(rv);
+            this.setStatus(enums.ThreadStatus.RUNNABLE);
+        } else {
+            // Program has ended.
+            this.setStatus(enums.ThreadStatus.TERMINATED);
+        }
     }
 
     // Terminates execution of a Thread by changing its status and then emptying its stack

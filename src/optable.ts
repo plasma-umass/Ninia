@@ -528,6 +528,7 @@ function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: b
     }
 
     var func = f.pop();
+    f.returnToThread = true;
     (<interfaces.IPy_Function> func).exec(t, f, args, kwargs);
 }
 
