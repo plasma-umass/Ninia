@@ -27,13 +27,13 @@ import nativefuncobject = require('./nativefuncobject');
 class Py_FuncObject implements IPy_Function {
     code: Py_CodeObject;
     globals: Py_Dict;
-    defaults: {[name: string]: IPy_Object};
+    defaults: Py_Dict;
     closure: Py_Tuple;
     name: Py_Str;
 
     constructor(code: Py_CodeObject,
                 globals: Py_Dict,
-                defaults: {[name: string]: IPy_Object},
+                defaults: Py_Dict,
                 name: Py_Str,
                 closure: Py_Tuple = null) {
         this.code = code;
@@ -57,7 +57,7 @@ class Py_FuncObject implements IPy_Function {
                 if (args.length > 0) {
                     locals.set(name, args.shift());
                 } else {
-                    locals.set(name, this.defaults[name.toString()]);
+                    locals.set(name, this.defaults.get(name));
                 }
             }
         }

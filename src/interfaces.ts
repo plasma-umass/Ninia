@@ -36,12 +36,12 @@ export interface IPy_Function extends IPy_Object {
   /**
    * Call the function on the given thread.
    */
-  exec(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict);
+  exec(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): void;
   /**
    * [Helper function] Call the function on the given thread. Triggers the callback with the return value.
    * Primarily used in native functions.
    */
-  exec_from_native(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void);
+  exec_from_native(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void;
 }
 
 /**

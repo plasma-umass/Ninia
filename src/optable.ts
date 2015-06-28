@@ -238,13 +238,13 @@ optable[opcodes.STORE_NAME] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var val = f.pop();
     var name = f.codeObj.names[i];
-    f.locals[name.toString()] = val;
+    f.locals.set(name, val);
 }
 
 optable[opcodes.DELETE_NAME] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var name = f.codeObj.names[i];
-    delete f.locals[name.toString()]
+    f.locals.del(name);
 }
 
 optable[opcodes.STORE_ATTR] = function(f: Py_FrameObject) {
@@ -253,7 +253,7 @@ optable[opcodes.STORE_ATTR] = function(f: Py_FrameObject) {
     var attr = f.pop();
     var name = f.codeObj.names[i];
     // TODO: use __setattr__ here
-    obj[`$${name.toString()}`] = attr;
+    (<any> obj)[`$${name.toString()}`] = attr;
 }
 
 optable[opcodes.DELETE_ATTR] = function(f: Py_FrameObject) {
@@ -261,7 +261,7 @@ optable[opcodes.DELETE_ATTR] = function(f: Py_FrameObject) {
     var obj = f.pop();
     var name = f.codeObj.names[i];
     // TODO: use __delattr__ here
-    delete obj[`$${name.toString()}`];
+    delete (<any> obj)[`$${name.toString()}`];
 }
 
 optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject, t: Thread) {
@@ -300,13 +300,13 @@ optable[opcodes.STORE_GLOBAL] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var val = f.pop();
     var name = f.codeObj.names[i];
-    f.globals[name.toString()] = val;
+    f.globals.set(name, val);
 }
 
 optable[opcodes.DELETE_GLOBAL] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var name = f.codeObj.names[i];
-    delete f.globals[name.toString()];
+    f.globals.del(name);
 }
 
 optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
@@ -316,8 +316,8 @@ optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    var name: string = f.codeObj.names[i].toString();
-    var val = f.locals[name] || f.globals[name] || builtins[name];
+    var name = f.codeObj.names[i];
+    var val = f.locals.get(name) || f.globals.get(name) || (<any> builtins)[`$${name.toString()}`];
     if (val === undefined) {
         throw new Error('undefined name: ' + name);
     }
@@ -326,8 +326,8 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject) {
 
 optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    var name: string = f.codeObj.names[i].toString();
-    var val = f.globals[name] || builtins[name];
+    var name = f.codeObj.names[i];
+    var val = f.globals.get(name) || (<any> builtins)[`$${name.toString()}`];
     if (val === undefined) {
         throw new Error('undefined name: ' + name);
     }
@@ -416,17 +416,17 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
 }
 
 function doCmpOp(t: Thread, f: Py_FrameObject, a: IPy_Object, b: IPy_Object, funcA: string, funcB: string) {
-    if (a[funcA]) {
-        f.push((<(b: IPy_Object) => IPy_Object> a[funcA])(b));
-    } else if (a[`$${funcA}`]) {
+    if ((<any> a)[funcA]) {
+        f.push((<(b: IPy_Object) => IPy_Object> (<any> a)[funcA])(b));
+    } else if ((<any> a)[`$${funcA}`]) {
         f.returnToThread = true;
-        (<IPy_Function> a[`$${funcA}`]).exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
+        (<IPy_Function> (<any> a)[`$${funcA}`]).exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
             if (res == NotImplemented) {
-                if (b[funcB]) {
-                    f.push((<(a: IPy_Object) => IPy_Object> b[funcB])(a));
+                if ((<any> b)[funcB]) {
+                    f.push((<(a: IPy_Object) => IPy_Object> (<any> b)[funcB])(a));
                     t.setStatus(enums.ThreadStatus.RUNNABLE);
-                } else if (b[`$${funcB}`]) {
-                    (<IPy_Function> b[`$${funcB}`]).exec_from_native(t, f, [b, a], new Py_Dict(), (res: IPy_Object) => {
+                } else if ((<any> b)[`$${funcB}`]) {
+                    (<IPy_Function> (<any> b)[`$${funcB}`]).exec_from_native(t, f, [b, a], new Py_Dict(), (res: IPy_Object) => {
                         f.push(res);
                         t.setStatus(enums.ThreadStatus.RUNNABLE);
                     });
@@ -457,7 +457,7 @@ optable[opcodes.JUMP_IF_FALSE_OR_POP] = function(f: Py_FrameObject) {
 optable[opcodes.JUMP_IF_TRUE_OR_POP] = function(f: Py_FrameObject) {
     var target = f.readArg();
     if (bool(f.peek()) === True) {
-        f.lastInst = target-1;
+        f.lastInst = target - 1;
     } else {
         f.pop();
     }
@@ -471,31 +471,33 @@ optable[opcodes.JUMP_ABSOLUTE] = function(f: Py_FrameObject) {
 optable[opcodes.POP_JUMP_IF_FALSE] = function(f: Py_FrameObject) {
     var target = f.readArg();
 
-    if (bool(f.pop()) === False)
-        f.lastInst = target-1;
+    if (bool(f.pop()) === False) {
+        f.lastInst = target - 1;
+    }
 }
 
 optable[opcodes.POP_JUMP_IF_TRUE] = function(f: Py_FrameObject) {
     var target = f.readArg();
-    if (bool(f.pop()) === True)
-        f.lastInst = target-1;
+    if (bool(f.pop()) === True) {
+        f.lastInst = target - 1;
+    }
 }
 
 optable[opcodes.LOAD_FAST] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    var name = f.codeObj.varnames[i].toString();
-    f.push(f.locals[name]);
+    var name = f.codeObj.varnames[i];
+    f.push(f.locals.get(name));
 }
 
 optable[opcodes.STORE_FAST] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var val = f.pop();
-    f.locals[f.codeObj.varnames[i].toString()] = val;
+    f.locals.set(f.codeObj.varnames[i], val);
 }
 
 optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
     var i = f.readArg();
-    delete f.locals[f.codeObj.varnames[i].toString()];
+    f.locals.del(f.codeObj.varnames[i]);
 }
 
 // Helper function for all the CALL_FUNCTION* opcodes
@@ -546,12 +548,12 @@ optable[opcodes.CALL_FUNCTION_VAR_KW] = function(f: Py_FrameObject, t: Thread) {
 }
 
 optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
-    var numDefault = f.readArg();
-    var defaults: { [name: string]: any } = {};
+    var numDefault = f.readArg(),
+      defaults = new Py_Dict();
 
     var code = <Py_CodeObject> f.pop();
     for (var i = code.argcount-1; i >= code.argcount - numDefault; i--) {
-        defaults[code.varnames[i].toString()] = f.pop();
+        defaults.set(code.varnames[i], f.pop());
     }
 
     var func = new Py_FuncObject(code, f.globals, defaults, code.name);
@@ -560,12 +562,12 @@ optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
 
 optable[opcodes.MAKE_CLOSURE] = function(f: Py_FrameObject) {
     var numDefault = f.readArg();
-    var defaults: { [name: string]: any } = {};
+    var defaults = new Py_Dict();
 
     var code = <Py_CodeObject> f.pop();
     var freevars = <Py_Tuple> f.pop();
     for (var i = code.argcount-1; i >= code.argcount - numDefault; i--) {
-        defaults[code.varnames[i].toString()] = f.pop();
+        defaults.set(code.varnames[i], f.pop());
     }
 
     var func = new Py_FuncObject(code, f.globals, defaults, code.name);
@@ -646,7 +648,7 @@ optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        f.push(seq.__setitem__(new Py_Slice(None, None, None), value));
+        seq.__setitem__(new Py_Slice(None, None, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [seq, new Py_Slice(None, None, None), value], new Py_Dict());
@@ -660,7 +662,7 @@ optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        f.push(seq.__setitem__(new Py_Slice(start, None, None), value));
+        seq.__setitem__(new Py_Slice(start, None, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [seq, new Py_Slice(start, None, None), value], new Py_Dict());
@@ -674,7 +676,7 @@ optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        f.push(seq.__setitem__(new Py_Slice(None, end, None), value));
+        seq.__setitem__(new Py_Slice(None, end, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [seq, new Py_Slice(None, end, None), value], new Py_Dict());
@@ -689,7 +691,7 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        f.push(seq.__setitem__(new Py_Slice(start, end, None), value));
+        seq.__setitem__(new Py_Slice(start, end, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [seq, new Py_Slice(start, end, None), value], new Py_Dict());
@@ -701,7 +703,7 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
 optable[opcodes.DELETE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     if (seq.__delitem__) {
-        f.push(seq.__delitem__(new Py_Slice(None, None, None)));
+        seq.__delitem__(new Py_Slice(None, None, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [seq, new Py_Slice(None, None, None)], new Py_Dict());
@@ -714,7 +716,7 @@ optable[opcodes.DELETE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
     var start = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        f.push(seq.__delitem__(new Py_Slice(start, None, None)));
+        seq.__delitem__(new Py_Slice(start, None, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [seq, new Py_Slice(start, None, None)], new Py_Dict());
@@ -727,7 +729,7 @@ optable[opcodes.DELETE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
     var end = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        f.push(seq.__delitem__(new Py_Slice(None, end, None)));
+        seq.__delitem__(new Py_Slice(None, end, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [seq, new Py_Slice(None, end, None)], new Py_Dict());
@@ -741,7 +743,7 @@ optable[opcodes.DELETE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
     var start = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        f.push(seq.__delitem__(new Py_Slice(start, end, None)));
+        seq.__delitem__(new Py_Slice(start, end, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [seq, new Py_Slice(start, end, None)], new Py_Dict());
@@ -808,9 +810,9 @@ optable[opcodes.BUILD_SET] = function(f: Py_FrameObject) {
     f.push(Py_Set.fromIterable(new Py_List(l)));
 }
 
-optable[opcodes.BUILD_MAP] = function(f: Py_FrameObject) {
+optable[opcodes.BUILD_MAP] = function(f: Py_FrameObject, t: Thread) {
     var count = f.readArg();
-    var d = builtins.dict([], {});
+    var d = builtins.dict(t, f, [], new Py_Dict());
     f.push(d);
 }
 
@@ -876,10 +878,10 @@ optable[opcodes.POP_BLOCK] = function(f: Py_FrameObject) {
     f.blockStack.pop();
 }
 
-optable[opcodes.GET_ITER] = function(f: Py_FrameObject) {
+optable[opcodes.GET_ITER] = function(f: Py_FrameObject, t: Thread) {
     // replace TOS with iter(TOS)
     var tos = f.pop();
-    f.push(builtins.iter([tos],{}));
+    f.push(builtins.iter(t, f, [tos], new Py_Dict()));
 }
 
 optable[opcodes.FOR_ITER] = function(f: Py_FrameObject) {
@@ -895,7 +897,7 @@ optable[opcodes.FOR_ITER] = function(f: Py_FrameObject) {
     }
 }
 
-optable[opcodes.IMPORT_NAME] = function(f: Py_FrameObject) {
+/*optable[opcodes.IMPORT_NAME] = function(f: Py_FrameObject) {
     var name_idx = f.readArg();
     // see https://docs.python.org/2/library/functions.html#__import__
     var fromlist = f.pop();
@@ -905,23 +907,23 @@ optable[opcodes.IMPORT_NAME] = function(f: Py_FrameObject) {
     // TODO: implement this. For now, we no-op.
     // mod = builtins.__import__(name, f.globals, f.locals, fromlist, level)
     f.push(mod);
-}
+}*/
 
-optable[opcodes.IMPORT_FROM] = function(f: Py_FrameObject) {
+/*optable[opcodes.IMPORT_FROM] = function(f: Py_FrameObject) {
     var name_idx = f.readArg();
     var mod = f.pop();
     var attr;
     // TODO: implement this. For now, we no-op.
     // attr = mod.codeObj.names[name_idx]
     f.push(attr);
-}
+}*/
 
 // Replaces TOS with getattr(TOS, co_names[namei]).
 optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) {
     // TODO: Cache strings! 
     var name = f.codeObj.names[f.readArg()].toString(),
         obj = f.pop(),
-        val = obj[`$${name}`];
+        val = (<any> obj)[`$${name}`];
     if (val === undefined) {
         throw new Error(`Invalid attribute: ${name}`);
     } else {

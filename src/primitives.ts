@@ -177,7 +177,7 @@ export class Py_Str extends Py_Object {
       var p = /%(\(\w*\))?([#0`+ -])?(\d+)?(\.\d+)?[hlL]?([diouxXeDfFgGcrs%])/g;
       var matches = this._str.match(p);
       var num_matches = (matches === null)? 0 : matches.length;
-      var fmt;
+      var fmt: RegExpExecArray;
       var s = '', idx = 0, rhs_idx = 0;
       while ((fmt = p.exec(this._str)) !== null) {
         s += this._str.slice(idx, fmt.index);
@@ -731,7 +731,7 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     // Multiplication and division are weird on Complex numbers. Wikipedia is a
     // good primer on the subject.
     mul(other: Py_Complex): Py_Complex {
-      var r, i: Py_Float;
+      var r: Py_Float, i: Py_Float;
       r = this.real.mul(other.real).sub(this.imag.mul(other.imag));
       i = this.imag.mul(other.real).add(this.real.mul(other.imag));
       return new Py_Complex(r, i);
@@ -740,7 +740,7 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     floordiv(other: Py_Complex): Py_Complex {
       if (other.real.value == 0 && other.imag.value == 0)
         throw new Error("Division by 0")
-      var r, d: Py_Float;
+      var r: Py_Float, d: Py_Float;
       r = this.real.mul(other.real).add(this.imag.mul(other.imag));
       d = other.real.mul(other.real).add(other.imag.mul(other.imag));
       // Note: floor division always zeros the imaginary part
@@ -754,7 +754,7 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     truediv(other: Py_Complex): Py_Complex {
       if (other.real.value == 0 && other.imag.value == 0)
         throw new Error("Division by 0")
-      var r, i, d: Py_Float;
+      var r: Py_Float, i: Py_Float, d: Py_Float;
       r = this.real.mul(other.real).add(this.imag.mul(other.imag));
       i = this.imag.mul(other.real).sub(this.real.mul(other.imag));
       d = other.real.mul(other.real).add(other.imag.mul(other.imag));
@@ -814,11 +814,11 @@ export class Py_Complex extends Py_Object implements IPy_Number {
         return new Py_Float(Math.sqrt(r*r + i*i));
     }
 
-    eq(other): Py_Boolean {
+    eq(other: Py_Complex): Py_Boolean {
       return (this.real.eq(other.real) === True && this.imag.eq(other.imag) === True) ? True : False;
     }
 
-    ne(other): Py_Boolean {
+    ne(other: Py_Complex): Py_Boolean {
       return (this.real.ne(other.real) === True && this.imag.ne(other.imag) === True) ? True : False;
     }
 
@@ -842,8 +842,8 @@ export class Py_Complex extends Py_Object implements IPy_Number {
   ["add", "sub", "mul", "floordiv", "mod", "divmod", "pow", "lshift", "rshift",
    "and", "xor", "or", "div", "truediv", "lt", "le", "eq", "ne", "gt", "ge"]
    .forEach((opName) => {
-     if (numericType.prototype[opName] !== undefined) {
-       numericType.prototype[`__${opName}__`] = generateMathOp(opName);
+     if ((<any> numericType).prototype[opName] !== undefined) {
+       (<any> numericType).prototype[`__${opName}__`] = generateMathOp(opName);
      }
    });
 });

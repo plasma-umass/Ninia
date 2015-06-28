@@ -131,6 +131,7 @@ class Py_FrameObject implements IPy_FrameObj {
             /*if (this.debug) {
                 console.log(opcodes[op]);
             }*/
+            console.log(opcodes[op]);
             func(this, t);
             if (this.returnToThread) {
                 // End the bytecode loop; return to thread loop.
@@ -146,15 +147,15 @@ class Py_FrameObject implements IPy_FrameObj {
     getDeref(i: number) {
         var cell: Py_Cell = this.env[i];
         if (cell.ob_ref === null) {
-            var name: string;
+            var name: IPy_Object;
             var numCellvars = this.codeObj.cellvars.length;
             if (i < numCellvars) {
-                name = this.codeObj.cellvars[i].toString();
+                name = this.codeObj.cellvars[i];
 
             } else {
-                name = this.codeObj.freevars[i - numCellvars].toString();
+                name = this.codeObj.freevars[i - numCellvars];
             }
-            cell.ob_ref = this.locals[name];
+            cell.ob_ref = this.locals.get(name);
         }
         return cell;
     }

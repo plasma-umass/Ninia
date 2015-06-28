@@ -238,8 +238,8 @@ function hex(x: Py_Int): Py_Str {
 }
 
 function int(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Int {
-  if (kwargs['base'] !== undefined) {
-    args.push(kwargs['base']);
+  if (kwargs.get(new Py_Str('base')) !== undefined) {
+    args.push(kwargs.get(new Py_Str('base')));
   }
   switch (args.length) {
     case 0:
@@ -279,27 +279,27 @@ function sorted(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict)
   if (args.length !== 1) {
     throw new Error('TypeError: sorted() takes 1 positional argument');
   }
-  if (kwargs['cmp'] !== undefined && kwargs['cmp'] !== singletons.None) {
+  if (kwargs.get(new Py_Str('cmp')) !== undefined && kwargs.get(new Py_Str('cmp')) !== singletons.None) {
     throw new Error('sorted() with non-None cmp kwarg is NYI');
   }
-  if (kwargs['key'] !== undefined && kwargs['key'] !== singletons.None) {
+  if (kwargs.get(new Py_Str('key')) !== undefined && kwargs.get(new Py_Str('key')) !== singletons.None) {
     throw new Error('sorted() with non-None key kwarg is NYI');
   }
   var it = (<interfaces.Iterable> args[0]).iter();
-  var list = [];
+  var list: IPy_Object[] = [];
   /// XXX: Use appropriate __-prefixed iterator methods.
   for (var val = it.next(); val != null; val = it.next()) {
     list.push(val);
   }
-  list.sort((a, b) => {
-    var rv;
+  list.sort((a: interfaces.Iterable, b: interfaces.Iterable): number => {
+    var rv: IPy_Object;
     // SUPER HACK: Requires that we take synchronous path.
     cmp(t, f, [a, b], kwargs, (_rv) => {
       rv = _rv;
     });
-    return rv;
+    return (<Py_Int> rv).toNumber();
   });
-  if (kwargs['reverse'] !== undefined && bool(kwargs['reverse']) === True) {
+  if (kwargs.get(new Py_Str('reverse')) !== undefined && bool(kwargs.get(new Py_Str('reverse'))) === True) {
     list.reverse();
   }
   return new Py_List(list);
@@ -327,7 +327,7 @@ function getattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   var obj = args[0];
   var attr = args[1].toString();
   // TODO: use __getattr__ here
-  return obj[attr];
+  return (<any> obj)[`$${attr}`];
 }
 
 function setattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
@@ -341,11 +341,11 @@ function setattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   var attr = args[1].toString();
   var x = args[2];
   // TODO: use __setattr__ here
-  obj[attr] = x;
+  (<any> obj)[`$${attr}`] = x;
   return singletons.None;
 }
 
-function pyfunc_wrapper_onearg(func, funcname: string) {
+function pyfunc_wrapper_onearg(func: (a: IPy_Object) => IPy_Object, funcname: string) {
   return function(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
     if (kwargs.len() > 0) {
       throw new Error('TypeError: ' + funcname +
@@ -379,7 +379,7 @@ var builtins = {
     set: set,
     $set: new Py_SyncNativeFuncObject(set),
     abs: abs,
-    $abs: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(abs, 'abs')),
+    $abs: new Py_SyncNativeFuncObject(abs),
     all: all,
     $all: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(all, 'all')),
     any: any,
@@ -418,6 +418,6 @@ var builtins = {
     $setattr: new Py_SyncNativeFuncObject(setattr),
     __name__: Py_Str.fromJS('__main__'),
     __package__: singletons.None,
-}, True = builtins.True, False = builtins.False;
+}, True = primitives.True, False = primitives.False;
 
 export = builtins

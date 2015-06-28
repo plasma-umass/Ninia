@@ -190,7 +190,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
   }
   static fromIterable(x: Iterable) {
     var it = x.iter();
-    var tuple = [];
+    var tuple: IPy_Object[] = [];
     for (var val = it.next(); val != null; val = it.next()) {
         tuple.push(val);
     }
@@ -268,6 +268,13 @@ export class Py_Dict extends Py_Object implements Iterable {
     }
     this._vals[h] = val;
   }
+  public del(key: IPy_Object): void {
+    var h = key.hash();
+    if (this._vals[h] !== undefined) {
+      delete this._vals[h];
+    }
+    this._keys.splice(this._keys.indexOf(key), 1);
+  }
   public iter(): Iterator {
     return new iterator.ListIterator(this._keys);
   }
@@ -275,7 +282,7 @@ export class Py_Dict extends Py_Object implements Iterable {
       return this._keys.length;
   }
   public toPairs(): [IPy_Object,IPy_Object][] {
-    var pairs = [];
+    var pairs: [IPy_Object, IPy_Object][] = [];
     for (var i = 0; i < this._keys.length; i++) {
       var key = this._keys[i];
       var h = key.hash();
@@ -337,12 +344,12 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       return NotImplemented;
     }
     var res = new Py_Set();
-    var h, xvals = (<Py_Set> x)._vals;
+    var h: string, xvals = (<Py_Set> x)._vals;
     for (h in this._vals) {
       if (this._vals.hasOwnProperty(h) && xvals.hasOwnProperty(h)) {
-        var val = this._vals[h];
+        var val = this._vals[<any> h];
         res._keys.push(val);
-        res._vals[h] = val;
+        res._vals[<any> h] = val;
       }
     }
     return res;
@@ -354,12 +361,12 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       return NotImplemented;
     }
     var res = new Py_Set();
-    var h, xvals = (<Py_Set> x)._vals;
+    var h: string, xvals = (<Py_Set> x)._vals;
     for (h in this._vals) {
       if (this._vals.hasOwnProperty(h) && !xvals.hasOwnProperty(h)) {
-        var val = this._vals[h];
+        var val = this._vals[<any> h];
         res._keys.push(val);
-        res._vals[h] = val;
+        res._vals[<any> h] = val;
       }
     }
     return res;
@@ -379,19 +386,19 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       return NotImplemented;
     }
     var res = new Py_Set();
-    var h, xvals = (<Py_Set> x)._vals;
+    var h: string, xvals = (<Py_Set> x)._vals;
     for (h in this._vals) {
       if (this._vals.hasOwnProperty(h)) {
-        var val = this._vals[h];
+        var val = this._vals[<any> h];
         res._keys.push(val);
-        res._vals[h] = val;
+        res._vals[<any> h] = val;
       }
     }
     for (h in xvals) {
       if (xvals.hasOwnProperty(h) && !this._vals.hasOwnProperty(h)) {
-        var val = xvals[h];
+        var val = xvals[<any> h];
         res._keys.push(val);
-        res._vals[h] = val;
+        res._vals[<any> h] = val;
       }
     }
     return res;
@@ -402,7 +409,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var h, xvals = (<Py_Set> x)._vals;
+    var h: string, xvals = (<Py_Set> x)._vals;
     for (h in this._vals) {
       if (this._vals.hasOwnProperty(h) && !xvals.hasOwnProperty(h)) {
         return False;

@@ -14,7 +14,7 @@ function realPrint(text: string) {
     oldStdout.apply(process.stdout, [text]);
 }
 
-function test(name, file) {
+function test(name: string, file: string) {
     realPrint(`Running ${name}... `);
     numTests += 1;
     var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
@@ -22,7 +22,7 @@ function test(name, file) {
     var testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
     if (isNaN(testFails[testName]))
         testFails[testName] = 0;  // initialize
-    var err = null;
+    var err: string = null;
     try {
         interp.interpret(u.value(), false);
     } catch (e) {
