@@ -5,4 +5,4 @@ class Foo:
 
 a = Foo()
 print a
-
+print str(a)

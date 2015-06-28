@@ -16,7 +16,9 @@ import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
 import Thread = require('./threading');
 import IPy_FrameObj = interfaces.IPy_FrameObj;
-
+import nativefuncobj = require('./nativefuncobject');
+import Py_SyncNativeFuncObject = nativefuncobj.Py_SyncNativeFuncObject;
+import Py_AsyncNativeFuncObject = nativefuncobj.Py_AsyncNativeFuncObject;
 
 // range function
 function range(t: Thread, f: IPy_FrameObj, args: Py_Int[], kwargs: Py_Dict): Py_List {
@@ -110,8 +112,8 @@ function set(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py
     return Py_Set.fromIterable(x);
 }
 
-function abs(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
-    args[0].$__abs__.exec_from_native(t, f, args, kwargs, cb);
+function abs(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict): IPy_Object {
+    return args[0].__abs__();
 }
 
 function all(x: interfaces.Iterable): typeof True {
@@ -155,24 +157,42 @@ function ord(x: IPy_Object): Py_Int {
 }
 
 function str(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
-  args[0].$__str__.exec_from_native(t, f, args, kwargs, cb);
+  if (args[0].__str__) {
+    cb(args[0].__str__());
+  } else {
+    args[0].$__str__.exec_from_native(t, f, args, kwargs, cb); 
+  }
+  // TODO: Exception condition??
 }
 
 function repr(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
-  args[0].$__repr__.exec_from_native(t, f, args, kwargs, cb);
+  if (args[0].__repr__) {
+    cb(args[0].__repr__());
+  } else {
+    args[0].$__repr__.exec_from_native(t, f, args, kwargs, cb);
+  }
 }
 
 function cmp(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
-  var x = args[0], y = args[1];
-  x.$__eq__.exec_from_native(t, f, args, kwargs, (rv: IPy_Object) => {
-    if (rv === True) {
+  var x = args[0];
+  if (x.__eq__ && x.__lt__) {
+    var y = args[1];
+    if (x.__eq__(y) === True) {
       cb(new Py_Int(0));
     } else {
-      x.$__lt__.exec_from_native(t, f, args, kwargs, (rv: IPy_Object) => {
-        cb(new Py_Int(rv === True ? -1 : 1));
-      });
+      cb(new Py_Int(x.__lt__(y) === True ? -1 : 1));
     }
-  });
+  } else {
+    x.$__eq__.exec_from_native(t, f, args, kwargs, (rv: IPy_Object) => {
+      if (rv === True) {
+        cb(new Py_Int(0));
+      } else {
+        x.$__lt__.exec_from_native(t, f, args, kwargs, (rv: IPy_Object) => {
+          cb(new Py_Int(rv === True ? -1 : 1));
+        });
+      }
+    });
+  }
 }
 
 function complex(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Complex {
@@ -187,8 +207,8 @@ function complex(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   }
 }
 
-function divmod(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
-  args[0].$__divmod__.exec_from_native(t, f, args, kwargs, cb);
+function divmod(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
+  return args[0].__divmod__(args[1]);
 }
 
 function float(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Float {
@@ -254,7 +274,7 @@ function iter(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): 
   throw new Error('TypeError: iter() takes 1-2 arguments');
 }
 
-function sorted(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): Py_List {
+function sorted(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_List {
   // sorted(iterable, cmp=None, key=None, reverse=False) --> new sorted list
   if (args.length !== 1) {
     throw new Error('TypeError: sorted() takes 1 positional argument');
@@ -267,17 +287,25 @@ function sorted(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict,
   }
   var it = (<interfaces.Iterable> args[0]).iter();
   var list = [];
+  /// XXX: Use appropriate __-prefixed iterator methods.
   for (var val = it.next(); val != null; val = it.next()) {
     list.push(val);
   }
-  list.sort(cmp2);
-  if (kwargs['reverse'] !== undefined && bool(kwargs['reverse']).asBool()) {
+  list.sort((a, b) => {
+    var rv;
+    // SUPER HACK: Requires that we take synchronous path.
+    cmp(t, f, [a, b], kwargs, (_rv) => {
+      rv = _rv;
+    });
+    return rv;
+  });
+  if (kwargs['reverse'] !== undefined && bool(kwargs['reverse']) === True) {
     list.reverse();
   }
   return new Py_List(list);
 }
 
-function hasattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): typeof True {
+function hasattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): typeof True {
   if (kwargs.len() > 0) {
     throw new Error('TypeError: hasattr() takes no keyword arguments');
   }
@@ -289,7 +317,7 @@ function hasattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   return obj.hasOwnProperty(attr)? True : False;
 }
 
-function getattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): IPy_Object {
+function getattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
   if (kwargs.len() > 0) {
     throw new Error('TypeError: getattr() takes no keyword arguments');
   }
@@ -302,7 +330,7 @@ function getattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   return obj[attr];
 }
 
-function setattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+function setattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
   if (kwargs.len() > 0) {
     throw new Error('TypeError: setattr() takes no keyword arguments');
   }
@@ -314,10 +342,11 @@ function setattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   var x = args[2];
   // TODO: use __setattr__ here
   obj[attr] = x;
+  return singletons.None;
 }
 
 function pyfunc_wrapper_onearg(func, funcname: string) {
-  return function(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): IPy_Object {
+  return function(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
     if (kwargs.len() > 0) {
       throw new Error('TypeError: ' + funcname +
                       '() takes no keyword arguments');
@@ -337,31 +366,56 @@ var builtins = {
     NotImplemented: singletons.NotImplemented,
     Ellipsis: singletons.Ellipsis,
     iter: iter,
+    $iter: new Py_SyncNativeFuncObject(iter),
     xrange: iterator.xrange,
     range: range,
+    $range: new Py_SyncNativeFuncObject(range),
     list: list,
+    $list: new Py_SyncNativeFuncObject(list),
     dict: dict,
+    $dict: new Py_SyncNativeFuncObject(dict),
     tuple: tuple,
+    $tuple: new Py_SyncNativeFuncObject(tuple),
     set: set,
-    abs: pyfunc_wrapper_onearg(abs, 'abs'),
-    all: pyfunc_wrapper_onearg(all, 'all'),
-    any: pyfunc_wrapper_onearg(any, 'any'),
-    bin: pyfunc_wrapper_onearg(bin, 'bin'),
-    bool: pyfunc_wrapper_onearg(bool, 'bool'),
-    chr: pyfunc_wrapper_onearg(chr, 'chr'),
-    ord: pyfunc_wrapper_onearg(ord, 'ord'),
-    str: pyfunc_wrapper_onearg(str, 'str'),
-    repr: pyfunc_wrapper_onearg(repr, 'repr'),
+    $set: new Py_SyncNativeFuncObject(set),
+    abs: abs,
+    $abs: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(abs, 'abs')),
+    all: all,
+    $all: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(all, 'all')),
+    any: any,
+    $any: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(any, 'any')),
+    bin: bin,
+    $bin: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(bin, 'bin')),
+    bool: bool,
+    $bool: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(bool, 'bool')),
+    chr: chr,
+    $chr: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(chr, 'chr')),
+    ord: ord,
+    $ord: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(ord, 'ord')),
+    str: str,
+    $str: new Py_AsyncNativeFuncObject(str),
+    repr: repr,
+    $repr: new Py_AsyncNativeFuncObject(repr),
     cmp: cmp,
+    $cmp: new Py_AsyncNativeFuncObject(cmp),
     complex: complex,
+    $complex: new Py_SyncNativeFuncObject(complex),
     divmod: divmod,
+    $divmod: new Py_SyncNativeFuncObject(divmod),
     float: float,
-    hex: pyfunc_wrapper_onearg(hex, 'hex'),
+    $float: new Py_SyncNativeFuncObject(float),
+    hex: hex,
+    $hex: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(hex, 'hex')),
     int: int,
+    $int: new Py_SyncNativeFuncObject(int),
     sorted: sorted,
+    $sorted: new Py_SyncNativeFuncObject(sorted),
     hasattr: hasattr,
+    $hasattr: new Py_SyncNativeFuncObject(hasattr),
     getattr: getattr,
+    $getattr: new Py_SyncNativeFuncObject(getattr),
     setattr: setattr,
+    $setattr: new Py_SyncNativeFuncObject(setattr),
     __name__: Py_Str.fromJS('__main__'),
     __package__: singletons.None,
 }, True = builtins.True, False = builtins.False;
