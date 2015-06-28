@@ -123,10 +123,8 @@ optable[opcodes.UNARY_INVERT] = generateUnaryOpcode('__invert__');
 //    operation is not permitted for the given types.
 function generateBinaryOp(funcName: string, inplace: boolean, reversible: boolean): (f: Py_FrameObject, t: Thread) => void {
     return eval(`
-function BINARY_${funcName} {
-    var b = f.pop();
-    var a = f.${inplace ? 'peek' : 'pop'}();
-    var res: IPy_Object;
+function BINARY_${funcName}(f, t) {
+    var b = f.pop(), a = f.${inplace ? 'peek' : 'pop'}(), res;
     ${inplace ? `
     if (a['__i${funcName}__']) {
         a.__i${funcName}__(b);
@@ -144,14 +142,14 @@ function BINARY_${funcName} {
         return;
     } else if (a['$__${funcName}__']) {
         f.returnToThread = true;
-        a['$__${funcName}__'].exec_from_native(t, f, [a, b], new Py_Dict(), function(res: IPy_Object) {
+        a['$__${funcName}__'].exec_from_native(t, f, [a, b], new Py_Dict(), function(res) {
             if (res == NotImplemented) {
                 ${reversible ? `
                 if (b['__r${funcName}__']) {
                     f.push(b.__r${funcName}__(a));
                     t.setStatus(enums.ThreadStatus.RUNNABLE);
                 } else if (b['$__r${funcName}__']) {
-                    b['$__r${funcName}__'].exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
+                    b['$__r${funcName}__'].exec_from_native(t, f, [a, b], new Py_Dict(), function(res) {
                         if (res == NotImplemented) {
                             throw new Error('TypeError: cannot __$r${funcName}__.');
                         }
