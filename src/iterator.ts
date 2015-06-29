@@ -5,6 +5,8 @@ import Iterator = interfaces.Iterator;
 import Py_Int = primitives.Py_Int;
 import Py_Object = primitives.Py_Object;
 import IPy_Object = interfaces.IPy_Object;
+import IPy_FrameObj = interfaces.IPy_FrameObj;
+import Thread = require('./threading');
 
 export class ListIterator extends Py_Object implements Iterator {
     private pos: number = 0;
@@ -89,6 +91,6 @@ export class XRange extends Py_Object implements Iterator, interfaces.Iterable {
 }
 
 // builtin xrange()
-export function xrange(args: any[], kwargs: any): XRange {
+export function xrange(t: Thread, f: IPy_FrameObj, args: any[], kwargs: any): XRange {
     return new XRange(args, kwargs);
 }

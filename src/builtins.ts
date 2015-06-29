@@ -46,7 +46,7 @@ function range(t: Thread, f: IPy_FrameObj, args: Py_Int[], kwargs: Py_Dict): Py_
         default:
             throw new Error('TypeError: range() expects 1-3 int arguments')
     }
-    var it = iterator.xrange([new Py_Int(start), new Py_Int(stop), new Py_Int(step)], {});
+    var it = iterator.xrange(t, f, [new Py_Int(start), new Py_Int(stop), new Py_Int(step)], {});
     return Py_List.fromIterable(it);
 }
 
@@ -367,6 +367,7 @@ var builtins = {
     iter: iter,
     $iter: new Py_SyncNativeFuncObject(iter),
     xrange: iterator.xrange,
+    $xrange: new Py_SyncNativeFuncObject(iterator.xrange),
     range: range,
     $range: new Py_SyncNativeFuncObject(range),
     list: list,
