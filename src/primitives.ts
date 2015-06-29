@@ -736,12 +736,12 @@ export class Py_Float extends Py_Object implements IPy_Number {
 export class Py_Complex extends Py_Object implements IPy_Number {
     // TODO: Does it make sense to eagerly make these floats, or lazily construct
     // floats from JavaScript numbers?
-    real: Py_Float;
-    imag: Py_Float;
+    $real: Py_Float;
+    $imag: Py_Float;
     constructor(real: Py_Float, imag: Py_Float) {
       super();
-      this.real = real;
-      this.imag = imag;
+      this.$real = real;
+      this.$imag = imag;
     }
 
     getType(): enums.Py_Type { return enums.Py_Type.COMPLEX; }
@@ -754,28 +754,28 @@ export class Py_Complex extends Py_Object implements IPy_Number {
 
     // The following operations should be self explanatory.
     add(other: Py_Complex): Py_Complex {
-      return new Py_Complex(this.real.add(other.real), this.imag.add(other.imag));
+      return new Py_Complex(this.$real.add(other.$real), this.$imag.add(other.$imag));
     }
 
     sub(other: Py_Complex): Py_Complex {
-      return new Py_Complex(this.real.sub(other.real), this.imag.sub(other.imag));
+      return new Py_Complex(this.$real.sub(other.$real), this.$imag.sub(other.$imag));
     }
 
     // Multiplication and division are weird on Complex numbers. Wikipedia is a
     // good primer on the subject.
     mul(other: Py_Complex): Py_Complex {
       var r: Py_Float, i: Py_Float;
-      r = this.real.mul(other.real).sub(this.imag.mul(other.imag));
-      i = this.imag.mul(other.real).add(this.real.mul(other.imag));
+      r = this.$real.mul(other.$real).sub(this.$imag.mul(other.$imag));
+      i = this.$imag.mul(other.$real).add(this.$real.mul(other.$imag));
       return new Py_Complex(r, i);
     }
 
     floordiv(other: Py_Complex): Py_Complex {
-      if (other.real.value == 0 && other.imag.value == 0)
+      if (other.$real.value == 0 && other.$imag.value == 0)
         throw new Error("Division by 0")
       var r: Py_Float, d: Py_Float;
-      r = this.real.mul(other.real).add(this.imag.mul(other.imag));
-      d = other.real.mul(other.real).add(other.imag.mul(other.imag));
+      r = this.$real.mul(other.$real).add(this.$imag.mul(other.$imag));
+      d = other.$real.mul(other.$real).add(other.$imag.mul(other.$imag));
       // Note: floor division always zeros the imaginary part
       return new Py_Complex(r.floordiv(d), new Py_Float(0));
     }
@@ -785,12 +785,12 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     }
 
     truediv(other: Py_Complex): Py_Complex {
-      if (other.real.value == 0 && other.imag.value == 0)
+      if (other.$real.value == 0 && other.$imag.value == 0)
         throw new Error("Division by 0")
       var r: Py_Float, i: Py_Float, d: Py_Float;
-      r = this.real.mul(other.real).add(this.imag.mul(other.imag));
-      i = this.imag.mul(other.real).sub(this.real.mul(other.imag));
-      d = other.real.mul(other.real).add(other.imag.mul(other.imag));
+      r = this.$real.mul(other.$real).add(this.$imag.mul(other.$imag));
+      i = this.$imag.mul(other.$real).sub(this.$real.mul(other.$imag));
+      d = other.$real.mul(other.$real).add(other.$imag.mul(other.$imag));
       return new Py_Complex(r.truediv(d), i.truediv(d));
     }
 
@@ -798,14 +798,14 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     // and a = (a//b)*b + (a%b). Complex numbers make it worse, because they
     // only consider the real component of (a // b)
     mod(other: Py_Complex): Py_Complex {
-      if (other.real.value == 0 && other.imag.value == 0)
+      if (other.$real.value == 0 && other.$imag.value == 0)
         throw new Error("Modulo by 0");
-      else if (other.real.value == 0)
-        return new Py_Complex(this.real, this.imag.mod(other.imag));
-      else if (other.imag.value == 0)
-        return new Py_Complex(this.real.mod(other.real), this.imag);
+      else if (other.$real.value == 0)
+        return new Py_Complex(this.$real, this.$imag.mod(other.$imag));
+      else if (other.$imag.value == 0)
+        return new Py_Complex(this.$real.mod(other.$real), this.$imag);
       else {
-        var div = new Py_Complex(this.floordiv(other).real, new Py_Float(0));
+        var div = new Py_Complex(this.floordiv(other).$real, new Py_Float(0));
         // See complexobject.c, because Python is weird
         // See Wikipedia: Modulo_operation#Modulo_operation_expression
         return this.sub(other.mul(div));
@@ -819,10 +819,10 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     // Powers with complex numbers are weird.
     // Fractional and complex powers are NYI.
     pow(other: Py_Complex): Py_Complex {
-      var n = other.real.toNumber();
-      if (other.imag.toNumber() == 0 && ((n|0) == n)) {
-        var real = this.real.value;
-        var imag = this.imag.value;
+      var n = other.$real.toNumber();
+      if (other.$imag.toNumber() == 0 && ((n|0) == n)) {
+        var real = this.$real.value;
+        var imag = this.$imag.value;
         // De Moivre's formula
         var r_n = Math.pow(Math.sqrt(real*real + imag*imag), n);
         var phi_n = Math.atan2(imag, real) * n;
@@ -832,7 +832,7 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     }
 
     __neg__(): Py_Complex {
-      return new Py_Complex(this.real.__neg__(), this.imag.__neg__());
+      return new Py_Complex(this.$real.__neg__(), this.$imag.__neg__());
     }
 
     __pos__(): Py_Complex {
@@ -842,31 +842,31 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     // This is the standard definition for absolute value: The ABSOLUTE distance
     // of (a + bi) from 0. Therefore, hypotenuse.
     __abs__(): Py_Float {
-        var r = this.real.value;
-        var i = this.imag.value;
+        var r = this.$real.value;
+        var i = this.$imag.value;
         return new Py_Float(Math.sqrt(r*r + i*i));
     }
 
     eq(other: Py_Complex): Py_Boolean {
-      return (this.real.eq(other.real) === True && this.imag.eq(other.imag) === True) ? True : False;
+      return (this.$real.eq(other.$real) === True && this.$imag.eq(other.$imag) === True) ? True : False;
     }
 
     ne(other: Py_Complex): Py_Boolean {
-      return (this.real.ne(other.real) === True && this.imag.ne(other.imag) === True) ? True : False;
+      return (this.$real.ne(other.$real) === True && this.$imag.ne(other.$imag) === True) ? True : False;
     }
 
     toString(): string {
-      if (this.real.value == 0) {
-        return `${this.imag.value}j`;
+      if (this.$real.value == 0) {
+        return `${this.$imag.value}j`;
       }
-      if (this.imag.value < 0) {
-        return `(${this.real.value}-${-this.imag.value}j)`;
+      if (this.$imag.value < 0) {
+        return `(${this.$real.value}-${-this.$imag.value}j)`;
       }
-      return `(${this.real.value}+${this.imag.value}j)`;
+      return `(${this.$real.value}+${this.$imag.value}j)`;
     }
 
     asBool(): boolean {
-      return !(this.real.value === 0 && this.imag.value === 0);
+      return !(this.$real.value === 0 && this.$imag.value === 0);
     }
 }
 
