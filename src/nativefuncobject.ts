@@ -5,7 +5,7 @@ import collections = require('./collections');
 import Py_Dict = collections.Py_Dict;
 import enums = require('./enums');
 import assert = require('./assert');
-import singletons = require('./singletons');
+import primitives = require('./primitives');
 
 /**
  * A Trampoline frame object.
@@ -80,7 +80,7 @@ export class Py_SyncNativeFuncObject implements interfaces.IPy_Function {
         t.framePush(new Py_TrampolineFrameObject(f, kwargs, () => {}));
         var rv = this._f(t, f, args, kwargs);
         // XXX: Ensure the function returns an object!
-        t.asyncReturn(rv !== undefined ? rv : singletons.None);
+        t.asyncReturn(rv !== undefined ? rv : primitives.None);
     }
 
     public exec_from_native(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object) => void) {

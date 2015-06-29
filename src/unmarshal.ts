@@ -157,15 +157,15 @@ class Unmarshaller {
         switch (unit) {
             // Constants
             case "N": // None
-                res = builtins.None;
+                res = builtins.$None;
                 break;
             case "F": // False
-                res = builtins.False;
+                res = builtins.$False;
                 break;
             case "S": // StopIteration Exception (TODO: double check this)
                 throw new Error("StopIteration is pending investigation");
             case "T": // True
-                res = builtins.True;
+                res = builtins.$True;
                 break;
             case ".": // Ellipsis object (TODO: double check this)
                 throw new Error("Ellipsis is not yet implemented");

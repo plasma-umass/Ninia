@@ -128,9 +128,9 @@ class Py_FrameObject implements IPy_FrameObj {
             if (func == undefined) {
                 throw new Error("Unknown opcode: " + opcodes[op] + " ("+op+")");
             }
-            /*if (this.debug) {
+            //if (this.debug) {
                 console.log(opcodes[op]);
-            }*/
+            //}
             func(this, t);
             if (this.returnToThread) {
                 // End the bytecode loop; return to thread loop.

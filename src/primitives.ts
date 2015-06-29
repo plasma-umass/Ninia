@@ -1,12 +1,45 @@
 /// <reference path="../bower_components/DefinitelyTyped/decimal.js/decimal.js.d.ts" />
-import singletons = require('./singletons');
 import enums = require('./enums');
-import NIError = singletons.NotImplemented;
-import None = singletons.None;
 import interfaces = require('./interfaces');
 import IPy_Number = interfaces.IPy_Number;
 import IPy_Object = interfaces.IPy_Object;
 import Decimal = require('decimal.js');
+
+// Represents singleton types.
+class SingletonClass implements IPy_Object {
+    constructor(private name: string) {}
+    toString(): string {
+        return this.name;
+    }
+    getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
+    // XXX: Should be fixed.
+    hash(): number { return -1; }
+    __str__(): Py_Str {
+        return Py_Str.fromJS(this.name);
+    }
+}
+
+// Python has a single null object called "None".
+// Do not export! Should be a singleton.
+class NoneType extends SingletonClass {
+  constructor() {
+      super("None");
+  }
+    
+  asBool(): boolean {
+    return false;
+  }
+}
+export var None = new NoneType();
+
+// Ellipsis is the object corresponding to the ... syntax.
+export var Ellipsis = new SingletonClass("Ellipsis");
+
+// Python uses "NotImplemented" to signal that some operation (e.g. addition,
+// less-than) is not supported for a particular set of arguments. Typically the
+// reverse operation is tried (e.g. add => radd). If that also returns
+// NotImplemented, the interpreter throws an error.
+export var NotImplemented = new SingletonClass("NotImplemented");
 
 var ref = 1;
 
@@ -139,14 +172,14 @@ export class Py_Str extends Py_Object {
         var cmp = this._str.localeCompare(other.toString());
         return Py_Boolean.fromJS(cmp == 0);
       }
-      return NIError;
+      return NotImplemented;
     }
     public __lt__(other: IPy_Object): IPy_Object {
       if (other instanceof Py_Str) {
         var cmp = this._str.localeCompare(other.toString());
         return Py_Boolean.fromJS(cmp < 0);
       }
-      return NIError;
+      return NotImplemented;
     }
     public __getitem__(idx: IPy_Object): IPy_Object {
       if (idx instanceof Py_Int) {
@@ -168,7 +201,7 @@ export class Py_Str extends Py_Object {
       if (other instanceof Py_Str) {
         return Py_Str.fromJS(this._str + other.toString());
       }
-      return singletons.NotImplemented;
+      return NotImplemented;
     }
     public __mod__(other: IPy_Object): Py_Str {
       // string formatting!
@@ -230,7 +263,7 @@ function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
  * type before executing the math operation. We use a regular expression to
  * replace the function name in the generated version.
  */
-function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof NIError {
+function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof NotImplemented {
   return eval(`(function() { return function(b) {
       var a = this,
         bType = b.getType(),

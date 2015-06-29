@@ -14,17 +14,16 @@ import Py_Set = collections.Py_Set;
 import Py_Dict = collections.Py_Dict;
 import Py_CodeObject = require('./codeobject');
 import enums = require('./enums');
-import singletons = require('./singletons');
 import True = primitives.True;
 import False = primitives.False;
 import Py_Slice = primitives.Py_Slice;
 import Iterator = interfaces.Iterator;
 import Iterable = interfaces.Iterable;
-import None = singletons.None;
+import None = primitives.None;
 import Py_Cell = require('./cell');
 import Thread = require('./threading');
 import IPy_Function = interfaces.IPy_Function;
-var NotImplemented = builtins.NotImplemented;
+var NotImplemented = builtins.$NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
 function bool(x: IPy_Object): typeof True {
@@ -505,7 +504,7 @@ function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: b
     var x = f.readArg();
     var num_args = x & 0xff;
     var num_kwargs = (x >> 8) & 0xff;
-    var args = new Array(num_args);
+    var args: IPy_Object[] = new Array(num_args);
     var kwargs: Py_Dict = has_kw ? <Py_Dict> f.pop() : new Py_Dict();
 
     if (has_varargs) {

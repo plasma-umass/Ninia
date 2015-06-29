@@ -2,7 +2,6 @@ import primitives = require('./primitives');
 import iterator = require('./iterator');
 import interfaces = require('./interfaces');
 import enums = require('./enums');
-import singletons = require('./singletons');
 import assert = require('./assert');
 import Py_Object = primitives.Py_Object;
 import Py_Int = primitives.Py_Int;
@@ -13,8 +12,8 @@ import False = primitives.False;
 import Iterable = interfaces.Iterable;
 import Iterator = interfaces.Iterator;
 import IPy_Object = interfaces.IPy_Object;
-import None = singletons.None;
-import NotImplemented = singletons.NotImplemented;
+import None = primitives.None;
+import NotImplemented = primitives.NotImplemented;
 
 
 export class Py_List extends Py_Object implements Iterable {

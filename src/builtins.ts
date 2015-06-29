@@ -1,6 +1,5 @@
 import iterator = require('./iterator');
 import collections = require('./collections');
-import singletons = require('./singletons');
 import primitives = require('./primitives');
 import Py_Int = primitives.Py_Int;
 import Py_Complex = primitives.Py_Complex;
@@ -279,10 +278,10 @@ function sorted(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict)
   if (args.length !== 1) {
     throw new Error('TypeError: sorted() takes 1 positional argument');
   }
-  if (kwargs.get(new Py_Str('cmp')) !== undefined && kwargs.get(new Py_Str('cmp')) !== singletons.None) {
+  if (kwargs.get(new Py_Str('cmp')) !== undefined && kwargs.get(new Py_Str('cmp')) !== primitives.None) {
     throw new Error('sorted() with non-None cmp kwarg is NYI');
   }
-  if (kwargs.get(new Py_Str('key')) !== undefined && kwargs.get(new Py_Str('key')) !== singletons.None) {
+  if (kwargs.get(new Py_Str('key')) !== undefined && kwargs.get(new Py_Str('key')) !== primitives.None) {
     throw new Error('sorted() with non-None key kwarg is NYI');
   }
   var it = (<interfaces.Iterable> args[0]).iter();
@@ -342,7 +341,7 @@ function setattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   var x = args[2];
   // TODO: use __setattr__ here
   (<any> obj)[`$${attr}`] = x;
-  return singletons.None;
+  return primitives.None;
 }
 
 function pyfunc_wrapper_onearg(func: (a: IPy_Object) => IPy_Object, funcname: string) {
@@ -360,11 +359,11 @@ function pyfunc_wrapper_onearg(func: (a: IPy_Object) => IPy_Object, funcname: st
 
 // full mapping of builtin names to values.
 var builtins = {
-    True: primitives.True,
-    False: primitives.False,
-    None: singletons.None,
-    NotImplemented: singletons.NotImplemented,
-    Ellipsis: singletons.Ellipsis,
+    $True: primitives.True,
+    $False: primitives.False,
+    $None: primitives.None,
+    $NotImplemented: primitives.NotImplemented,
+    $Ellipsis: primitives.Ellipsis,
     iter: iter,
     $iter: new Py_SyncNativeFuncObject(iter),
     xrange: iterator.xrange,
@@ -416,8 +415,8 @@ var builtins = {
     $getattr: new Py_SyncNativeFuncObject(getattr),
     setattr: setattr,
     $setattr: new Py_SyncNativeFuncObject(setattr),
-    __name__: Py_Str.fromJS('__main__'),
-    __package__: singletons.None,
+    $__name__: Py_Str.fromJS('__main__'),
+    $__package__: primitives.None,
 }, True = primitives.True, False = primitives.False;
 
 export = builtins
