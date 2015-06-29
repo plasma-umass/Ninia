@@ -53,7 +53,7 @@ class Py_FuncObject implements IPy_Function {
         var varnames = this.code.varnames;
         for (var i = 0; i < varnames.length; i++) {
             var name = varnames[i];
-            if (locals.get(name) !== undefined) {
+            if (locals.get(name) === undefined) {
                 if (args.length > 0) {
                     locals.set(name, args.shift());
                 } else {

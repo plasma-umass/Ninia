@@ -52,7 +52,7 @@ var optable: { [op: number]: (f: Py_FrameObject, t: Thread)=>void } = {};
  */
 function generateUnaryOpcode(funcName: string): (f: Py_FrameObject, t: Thread) => void {
     return eval(`
-function UNARY${funcName}() {
+function UNARY${funcName}(f, t) {
     var a = f.pop();
     if (a.${funcName}) {
         f.push(a.${funcName}());

@@ -10,6 +10,7 @@ import enums = require('./enums');
 import collections = require('./collections');
 import Py_Dict = collections.Py_Dict;
 import IPy_FrameObj = interfaces.IPy_FrameObj;
+import assert = require('assert');
 
 // Frame Objects are basically stack frames for functions, except they carry
 // extra context (e.g. globals, local scope, etc.). This class is not simplified
@@ -88,6 +89,7 @@ class Py_FrameObject implements IPy_FrameObj {
 
     // Stack handling operations.
     push(v: IPy_Object) {
+      assert(v !== undefined, "Must be a Py_Object.");
       return this.stack.push(v);
     }
 
@@ -140,6 +142,7 @@ class Py_FrameObject implements IPy_FrameObj {
     }
     
     resume(rv: IPy_Object): void {
+        assert(rv !== undefined && rv !== null, "Must be a Py_Object.");
         this.push(rv);
     }
 
