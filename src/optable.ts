@@ -2,7 +2,9 @@
 import primitives = require('./primitives');
 import Py_FrameObject = require('./frameobject');
 import Py_Int = primitives.Py_Int;
-import Py_FuncObject = require('./funcobject');
+// XXX: Prevent a circular reference. Use this only for type info.
+import _Py_FuncObject = require('./funcobject');
+var Py_FuncObject: typeof _Py_FuncObject = null;
 import opcodes = require('./opcodes');
 import builtins = require('./builtins');
 import collections = require('./collections');
@@ -547,6 +549,13 @@ optable[opcodes.CALL_FUNCTION_VAR_KW] = function(f: Py_FrameObject, t: Thread) {
     call_func(f, t, true, true);
 }
 
+// XXX: Hack around circular reference.
+function initPyFuncObj() {
+    if (Py_FuncObject === null) {
+        Py_FuncObject = require('./funcobject')
+    }
+}
+
 optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
     var numDefault = f.readArg(),
       defaults = new Py_Dict();
@@ -556,6 +565,7 @@ optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
         defaults.set(code.varnames[i], f.pop());
     }
 
+    initPyFuncObj();
     var func = new Py_FuncObject(code, f.globals, defaults, code.name);
     f.push(func);
 }
@@ -570,6 +580,7 @@ optable[opcodes.MAKE_CLOSURE] = function(f: Py_FrameObject) {
         defaults.set(code.varnames[i], f.pop());
     }
 
+    initPyFuncObj();
     var func = new Py_FuncObject(code, f.globals, defaults, code.name);
     func.closure = freevars;
     f.push(func);

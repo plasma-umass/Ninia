@@ -129,7 +129,7 @@ class Py_FrameObject implements IPy_FrameObj {
                 throw new Error("Unknown opcode: " + opcodes[op] + " ("+op+")");
             }
             //if (this.debug) {
-                console.log(opcodes[op]);
+            //    console.log(opcodes[op]);
             //}
             func(this, t);
             if (this.returnToThread) {
