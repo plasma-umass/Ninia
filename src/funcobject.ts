@@ -63,15 +63,15 @@ class Py_FuncObject implements IPy_Function {
         }
     }
     
-    exec(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) {
-        this.args2locals(args, kwargs);
-        t.framePush(new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), kwargs, (this.closure ? this.closure.toArray() : [])));
+    exec(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
+        this.args2locals(args, locals);
+        t.framePush(new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), locals, (this.closure ? this.closure.toArray() : [])));
     }
 
-    exec_from_native(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object) => void) {
-        this.args2locals(args, kwargs);
-        t.framePush(new nativefuncobject.Py_TrampolineFrameObject(caller, kwargs, cb))
-        t.framePush(new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), kwargs, (this.closure ? this.closure.toArray() : [])));
+    exec_from_native(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict, cb: (rv?: IPy_Object) => void) {
+        this.args2locals(args, locals);
+        t.framePush(new nativefuncobject.Py_TrampolineFrameObject(caller, locals, cb))
+        t.framePush(new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), locals, (this.closure ? this.closure.toArray() : [])));
     }
 }
 export = Py_FuncObject;

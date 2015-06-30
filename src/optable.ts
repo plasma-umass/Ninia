@@ -507,7 +507,7 @@ function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: b
     var num_args = x & 0xff;
     var num_kwargs = (x >> 8) & 0xff;
     var args: IPy_Object[] = new Array(num_args);
-    var kwargs: Py_Dict = has_kw ? <Py_Dict> f.pop() : new Py_Dict();
+    var kwargs: Py_Dict = has_kw ? (<Py_Dict> f.pop()).clone() : new Py_Dict();
 
     if (has_varargs) {
         var varargs = (<Py_Tuple> f.pop()).toArray();

@@ -221,7 +221,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
   }
 
   public __len__(): Py_Int {
-    return new Py_Int(this.len());
+    return this._len;
   }
   public __getitem__(key: IPy_Object): IPy_Object {
     if (key.getType() === enums.Py_Type.SLICE) {
@@ -255,6 +255,16 @@ export class Py_Dict extends Py_Object implements Iterable {
     super();
     this._keys = [];
     this._vals = {};
+  }
+  public clone(): Py_Dict {
+    var clone = new Py_Dict(),
+      keys = Object.keys(this._vals), i: number, key: string;
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      clone._vals[<any> key] = this._vals[<any> key];
+    }
+    clone._keys = this._keys.slice(0);
+    return clone;
   }
   public get(key: IPy_Object): IPy_Object {
     var h = key.hash();

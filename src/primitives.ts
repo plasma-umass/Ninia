@@ -4,6 +4,13 @@ import interfaces = require('./interfaces');
 import IPy_Number = interfaces.IPy_Number;
 import IPy_Object = interfaces.IPy_Object;
 import Decimal = require('decimal.js');
+// Use for type information ONLY to avoid circular ref!
+import _collections = require('./collections');
+var collections: typeof _collections = null;
+
+export function circularRefHack() {
+  collections = require('./collections');
+};
 
 // Represents singleton types.
 class SingletonClass implements IPy_Object {
@@ -132,6 +139,7 @@ var string_pool: { [s: string]: Py_Str } = {};
 
 export class Py_Str extends Py_Object {
     private _str: string;
+    private _hash: number = -1;
     // No other class should call this constructor.
     constructor(s: string) {
         super();
@@ -145,6 +153,34 @@ export class Py_Str extends Py_Object {
         inst = new Py_Str(s);
         string_pool[s] = inst;
         return inst;
+    }
+    public hash(): number {
+        // Adapted from Python 2.7.8's string hash function.
+        var len: number, p: number, x: number, i: number = 0;
+    
+        if (this._hash !== -1) {
+            return this._hash;
+        }
+        len = this._str.length;
+        /*
+          We make the hash of the empty string be 0, rather than using
+          (prefix ^ suffix), since this slightly obfuscates the hash secret
+        */
+        if (len == 0) {
+            this._hash = 0;
+            return 0;
+        }
+        p = this._str.charCodeAt(i++);
+        x = 0;
+        x ^= p << 7;
+        while (--len >= 0)
+            x = (1000003*x) ^ this._str.charCodeAt(i++);
+        x ^= this._str.length;
+        // Avoid collisions with None's hash value.
+        if (x == -1)
+            x = -2;
+        this._hash = x;
+        return x;
     }
     public len(): number {
       return this._str.length;
@@ -337,8 +373,8 @@ export class Py_Int extends Py_Object implements IPy_Number {
       return new Py_Int(res);
     }
 
-    divmod(other: Py_Int): [Py_Int, Py_Int] {
-        return [this.floordiv(other), this.mod(other)];
+    divmod(other: Py_Int): _collections.Py_Tuple {
+        return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
     }
 
     pow(other: Py_Int): Py_Float | Py_Int {
@@ -516,8 +552,8 @@ export class Py_Long extends Py_Object implements IPy_Number {
       return this.sub(other.mul(this.floordiv(other)));
     }
 
-    divmod(other: Py_Long): Py_Long[] {
-      return [this.floordiv(other), this.mod(other)];
+    divmod(other: Py_Long): _collections.Py_Tuple {
+      return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
     }
 
     // Thankfully, Decimal has a toPower function.
@@ -670,8 +706,8 @@ export class Py_Float extends Py_Object implements IPy_Number {
       // TODO: Both are floats, can avoid creating unneeded intermediate objs.
       return this.sub(other.mul(this.floordiv(other)));
     }
-    divmod(other: Py_Float): [Py_Float, Py_Float] {
-      return [this.floordiv(other), this.mod(other)];
+    divmod(other: Py_Float): _collections.Py_Tuple {
+      return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
     }
     pow(other: Py_Float): Py_Float {
       return new Py_Float(Math.pow(this.value, other.value));
