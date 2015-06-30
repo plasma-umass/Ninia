@@ -58,7 +58,7 @@ function UNARY${funcName}(f, t) {
         f.push(a.${funcName}());
     } else if (a.$${funcName}) {
         f.returnToThread = true;
-        a.$${funcName}.exec(t, f, [a], new Py_Dict());
+        a.$${funcName}.exec(t, f, [], new Py_Dict());
     } else {
         throw new Error("Object lacks a ${funcName} function.");
     }
@@ -132,7 +132,7 @@ function BINARY_${funcName}(f, t) {
         return;
     } else if (a['$__i${funcName}__'] !== undefined) {
         f.returnToThread = true;
-        a['$__i${funcName}__'].exec(t, f, [a, b], new Py_Dict());
+        a['$__i${funcName}__'].exec(t, f, [b], new Py_Dict());
         return;
     }
     f.pop();
@@ -143,14 +143,14 @@ function BINARY_${funcName}(f, t) {
         return;
     } else if (a['$__${funcName}__']) {
         f.returnToThread = true;
-        a['$__${funcName}__'].exec_from_native(t, f, [a, b], new Py_Dict(), function(res) {
+        a['$__${funcName}__'].exec_from_native(t, f, [b], new Py_Dict(), function(res) {
             if (res == NotImplemented) {
                 ${reversible ? `
                 if (b['__r${funcName}__']) {
                     f.push(b.__r${funcName}__(a));
                     t.setStatus(enums.ThreadStatus.RUNNABLE);
                 } else if (b['$__r${funcName}__']) {
-                    b['$__r${funcName}__'].exec_from_native(t, f, [a, b], new Py_Dict(), function(res) {
+                    b['$__r${funcName}__'].exec_from_native(t, f, [a], new Py_Dict(), function(res) {
                         if (res == NotImplemented) {
                             throw new Error('TypeError: cannot __$r${funcName}__.');
                         }
@@ -215,7 +215,7 @@ optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject, t: Thread) {
         f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
     } else if (a.$__str__) {
         f.returnToThread = true;
-        a.$__str__.exec_from_native(t, f, [a], new Py_Dict(), (str: primitives.Py_Str) => {
+        a.$__str__.exec_from_native(t, f, [], new Py_Dict(), (str: primitives.Py_Str) => {
             var s: string = str.toString();
             process.stdout.write(s);
             var lastChar = s.slice(-1);
@@ -282,7 +282,7 @@ optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject, t: Thread) {
         // e.g. 1 2 3 -> 3 2 1
         function processNext() {
             if (i >= 0) {
-                val.$__getitem__.exec_from_native(t, f, [val, new Py_Int(i--)], new Py_Dict(), (res: IPy_Object) => {
+                val.$__getitem__.exec_from_native(t, f, [new Py_Int(i--)], new Py_Dict(), (res: IPy_Object) => {
                     f.push(res);
                     processNext();
                 });
@@ -599,8 +599,8 @@ optable[opcodes.SLICE_0] = function(f: Py_FrameObject, t: Thread) {
         f.push(a.__getitem__(new Py_Slice(new Py_Int(0), a.__len__(), None)));
     } else if (a.$__getitem__ && a.$__len__) {
         f.returnToThread = true;
-        a.$__len__.exec_from_native(t, f, [a], new Py_Dict(), (rv: IPy_Object) => {
-            a.$__getitem__.exec_from_native(t, f, [a, new Py_Slice(new Py_Int(0), rv, None)], new Py_Dict(), (rv: IPy_Object) => {
+        a.$__len__.exec_from_native(t, f, [], new Py_Dict(), (rv: IPy_Object) => {
+            a.$__getitem__.exec_from_native(t, f, [new Py_Slice(new Py_Int(0), rv, None)], new Py_Dict(), (rv: IPy_Object) => {
                 f.push(rv);
                 t.setStatus(enums.ThreadStatus.RUNNABLE);
             });
@@ -617,8 +617,8 @@ optable[opcodes.SLICE_1] = function(f: Py_FrameObject, t: Thread) {
         f.push(a.__getitem__(new Py_Slice(b, a.__len__(), None)));
     } else if (a.$__getitem__ && a.$__len__) {
         f.returnToThread = true;
-        a.$__len__.exec_from_native(t, f, [a], new Py_Dict(), (rv: IPy_Object) => {
-            a.$__getitem__.exec_from_native(t, f, [a, new Py_Slice(b, rv, None)], new Py_Dict(), (rv: IPy_Object) => {
+        a.$__len__.exec_from_native(t, f, [], new Py_Dict(), (rv: IPy_Object) => {
+            a.$__getitem__.exec_from_native(t, f, [new Py_Slice(b, rv, None)], new Py_Dict(), (rv: IPy_Object) => {
                 f.push(rv);
                 t.setStatus(enums.ThreadStatus.RUNNABLE);
             });
@@ -635,7 +635,7 @@ optable[opcodes.SLICE_2] = function(f: Py_FrameObject, t: Thread) {
         f.push(a.__getitem__(new Py_Slice(new Py_Int(0), b, None)));
     } else if (a.$__getitem__) {
         f.returnToThread = true;
-        a.$__getitem__.exec(t, f, [a, new Py_Slice(new Py_Int(0), b, None)], new Py_Dict());
+        a.$__getitem__.exec(t, f, [new Py_Slice(new Py_Int(0), b, None)], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${b} does not support __getitem__`);
     }
@@ -649,7 +649,7 @@ optable[opcodes.SLICE_3] = function(f: Py_FrameObject, t: Thread) {
         f.push(c.__getitem__(new Py_Slice(b, a, None)));
     } else if (c.$__getitem__) {
         f.returnToThread = true;
-        c.$__getitem__.exec(t, f, [c, new Py_Slice(b, a, None)], new Py_Dict());
+        c.$__getitem__.exec(t, f, [new Py_Slice(b, a, None)], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${b} does not support __getitem__`);
     }
@@ -662,7 +662,7 @@ optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
         seq.__setitem__(new Py_Slice(None, None, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
-        seq.$__setitem__.exec(t, f, [seq, new Py_Slice(None, None, None), value], new Py_Dict());
+        seq.$__setitem__.exec(t, f, [new Py_Slice(None, None, None), value], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${seq} does not support __setitem__`);
     }
@@ -676,7 +676,7 @@ optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
         seq.__setitem__(new Py_Slice(start, None, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
-        seq.$__setitem__.exec(t, f, [seq, new Py_Slice(start, None, None), value], new Py_Dict());
+        seq.$__setitem__.exec(t, f, [new Py_Slice(start, None, None), value], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${seq} does not support __setitem__`);
     }
@@ -690,7 +690,7 @@ optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
         seq.__setitem__(new Py_Slice(None, end, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
-        seq.$__setitem__.exec(t, f, [seq, new Py_Slice(None, end, None), value], new Py_Dict());
+        seq.$__setitem__.exec(t, f, [new Py_Slice(None, end, None), value], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${seq} does not support __setitem__`);
     }
@@ -705,7 +705,7 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
         seq.__setitem__(new Py_Slice(start, end, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
-        seq.$__setitem__.exec(t, f, [seq, new Py_Slice(start, end, None), value], new Py_Dict());
+        seq.$__setitem__.exec(t, f, [new Py_Slice(start, end, None), value], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${seq} does not support __setitem__`);
     }
@@ -717,7 +717,7 @@ optable[opcodes.DELETE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
         seq.__delitem__(new Py_Slice(None, None, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
-        seq.$__delitem__.exec(t, f, [seq, new Py_Slice(None, None, None)], new Py_Dict());
+        seq.$__delitem__.exec(t, f, [new Py_Slice(None, None, None)], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${seq} does not support __delitem__`);
     }
@@ -730,7 +730,7 @@ optable[opcodes.DELETE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
         seq.__delitem__(new Py_Slice(start, None, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
-        seq.$__delitem__.exec(t, f, [seq, new Py_Slice(start, None, None)], new Py_Dict());
+        seq.$__delitem__.exec(t, f, [new Py_Slice(start, None, None)], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${seq} does not support __delitem__`);
     }
@@ -743,7 +743,7 @@ optable[opcodes.DELETE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
         seq.__delitem__(new Py_Slice(None, end, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
-        seq.$__delitem__.exec(t, f, [seq, new Py_Slice(None, end, None)], new Py_Dict());
+        seq.$__delitem__.exec(t, f, [new Py_Slice(None, end, None)], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${seq} does not support __delitem__`);
     }
@@ -757,7 +757,7 @@ optable[opcodes.DELETE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
         seq.__delitem__(new Py_Slice(start, end, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
-        seq.$__delitem__.exec(t, f, [seq, new Py_Slice(start, end, None)], new Py_Dict());
+        seq.$__delitem__.exec(t, f, [new Py_Slice(start, end, None)], new Py_Dict());
     } else {
         throw new Error(`TypeError: ${seq} does not support __delitem__`);
     }
@@ -773,7 +773,7 @@ optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
         obj.__setitem__(key, value);
     } else if (obj.$__setitem__) {
         f.returnToThread = true;
-        obj.$__setitem__.exec(t, f, [obj, key, value], new Py_Dict());
+        obj.$__setitem__.exec(t, f, [key, value], new Py_Dict());
     } else {
         throw new Error("Unsupported type.");
     }
@@ -787,7 +787,7 @@ optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
         obj.__delitem__(key);
     } else if (obj.$__delitem__) {
         f.returnToThread = true;
-        obj.$__delitem__.exec(t, f, [obj, key], new Py_Dict());
+        obj.$__delitem__.exec(t, f, [key], new Py_Dict());
     } else {
         throw new Error("Unsupported type.");
     }
@@ -873,7 +873,7 @@ optable[opcodes.LIST_APPEND] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var x = f.pop();
     var lst = <Py_List> f.stack[f.stack.length - i];
-    lst.append([x], {});
+    lst.append(x);
 }
 
 optable[opcodes.END_FINALLY] = function(f: Py_FrameObject) {

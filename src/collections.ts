@@ -3,6 +3,8 @@ import iterator = require('./iterator');
 import interfaces = require('./interfaces');
 import enums = require('./enums');
 import assert = require('./assert');
+import Thread = require('./threading');
+import nativefuncobject = require('./nativefuncobject');
 import Py_Object = primitives.Py_Object;
 import Py_Int = primitives.Py_Int;
 import Py_Long = primitives.Py_Long;
@@ -18,6 +20,11 @@ import NotImplemented = primitives.NotImplemented;
 
 export class Py_List extends Py_Object implements Iterable {
   private _list: IPy_Object[];
+  public $append: interfaces.IPy_Function = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    this.append(args[0]);
+    return primitives.None;
+  });
+
   constructor(lst: IPy_Object[]) {
     super();
     this._list = lst;
@@ -35,8 +42,8 @@ export class Py_List extends Py_Object implements Iterable {
     return this._list.length;
   }
 
-  public append(args: IPy_Object[], kwargs: any): IPy_Object {
-    this._list.push(args[0]);
+  public append(item: IPy_Object): IPy_Object {
+    this._list.push(item);
     return None;
   }
 
