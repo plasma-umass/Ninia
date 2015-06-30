@@ -2,8 +2,9 @@ import primitives = require('./primitives');
 import iterator = require('./iterator');
 import interfaces = require('./interfaces');
 import enums = require('./enums');
-import singletons = require('./singletons');
 import assert = require('./assert');
+import Thread = require('./threading');
+import nativefuncobject = require('./nativefuncobject');
 import Py_Object = primitives.Py_Object;
 import Py_Int = primitives.Py_Int;
 import Py_Long = primitives.Py_Long;
@@ -13,12 +14,17 @@ import False = primitives.False;
 import Iterable = interfaces.Iterable;
 import Iterator = interfaces.Iterator;
 import IPy_Object = interfaces.IPy_Object;
-import None = singletons.None;
-import NotImplemented = singletons.NotImplemented;
+import None = primitives.None;
+import NotImplemented = primitives.NotImplemented;
 
 
 export class Py_List extends Py_Object implements Iterable {
   private _list: IPy_Object[];
+  public $append: interfaces.IPy_Function = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    this.append(args[0]);
+    return primitives.None;
+  });
+
   constructor(lst: IPy_Object[]) {
     super();
     this._list = lst;
@@ -36,8 +42,8 @@ export class Py_List extends Py_Object implements Iterable {
     return this._list.length;
   }
 
-  public append(args: IPy_Object[], kwargs: any): IPy_Object {
-    this._list.push(args[0]);
+  public append(item: IPy_Object): IPy_Object {
+    this._list.push(item);
     return None;
   }
 
@@ -190,7 +196,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
   }
   static fromIterable(x: Iterable) {
     var it = x.iter();
-    var tuple = [];
+    var tuple: IPy_Object[] = [];
     for (var val = it.next(); val != null; val = it.next()) {
         tuple.push(val);
     }
@@ -222,7 +228,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
   }
 
   public __len__(): Py_Int {
-    return new Py_Int(this.len());
+    return this._len;
   }
   public __getitem__(key: IPy_Object): IPy_Object {
     if (key.getType() === enums.Py_Type.SLICE) {
@@ -257,6 +263,16 @@ export class Py_Dict extends Py_Object implements Iterable {
     this._keys = [];
     this._vals = {};
   }
+  public clone(): Py_Dict {
+    var clone = new Py_Dict(),
+      keys = Object.keys(this._vals), i: number, key: string;
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      clone._vals[<any> key] = this._vals[<any> key];
+    }
+    clone._keys = this._keys.slice(0);
+    return clone;
+  }
   public get(key: IPy_Object): IPy_Object {
     var h = key.hash();
     return this._vals[h];
@@ -268,6 +284,13 @@ export class Py_Dict extends Py_Object implements Iterable {
     }
     this._vals[h] = val;
   }
+  public del(key: IPy_Object): void {
+    var h = key.hash();
+    if (this._vals[h] !== undefined) {
+      delete this._vals[h];
+    }
+    this._keys.splice(this._keys.indexOf(key), 1);
+  }
   public iter(): Iterator {
     return new iterator.ListIterator(this._keys);
   }
@@ -275,7 +298,7 @@ export class Py_Dict extends Py_Object implements Iterable {
       return this._keys.length;
   }
   public toPairs(): [IPy_Object,IPy_Object][] {
-    var pairs = [];
+    var pairs: [IPy_Object, IPy_Object][] = [];
     for (var i = 0; i < this._keys.length; i++) {
       var key = this._keys[i];
       var h = key.hash();
@@ -337,12 +360,12 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       return NotImplemented;
     }
     var res = new Py_Set();
-    var h, xvals = (<Py_Set> x)._vals;
+    var h: string, xvals = (<Py_Set> x)._vals;
     for (h in this._vals) {
       if (this._vals.hasOwnProperty(h) && xvals.hasOwnProperty(h)) {
-        var val = this._vals[h];
+        var val = this._vals[<any> h];
         res._keys.push(val);
-        res._vals[h] = val;
+        res._vals[<any> h] = val;
       }
     }
     return res;
@@ -354,12 +377,12 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       return NotImplemented;
     }
     var res = new Py_Set();
-    var h, xvals = (<Py_Set> x)._vals;
+    var h: string, xvals = (<Py_Set> x)._vals;
     for (h in this._vals) {
       if (this._vals.hasOwnProperty(h) && !xvals.hasOwnProperty(h)) {
-        var val = this._vals[h];
+        var val = this._vals[<any> h];
         res._keys.push(val);
-        res._vals[h] = val;
+        res._vals[<any> h] = val;
       }
     }
     return res;
@@ -379,19 +402,19 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       return NotImplemented;
     }
     var res = new Py_Set();
-    var h, xvals = (<Py_Set> x)._vals;
+    var h: string, xvals = (<Py_Set> x)._vals;
     for (h in this._vals) {
       if (this._vals.hasOwnProperty(h)) {
-        var val = this._vals[h];
+        var val = this._vals[<any> h];
         res._keys.push(val);
-        res._vals[h] = val;
+        res._vals[<any> h] = val;
       }
     }
     for (h in xvals) {
       if (xvals.hasOwnProperty(h) && !this._vals.hasOwnProperty(h)) {
-        var val = xvals[h];
+        var val = xvals[<any> h];
         res._keys.push(val);
-        res._vals[h] = val;
+        res._vals[<any> h] = val;
       }
     }
     return res;
@@ -402,7 +425,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var h, xvals = (<Py_Set> x)._vals;
+    var h: string, xvals = (<Py_Set> x)._vals;
     for (h in this._vals) {
       if (this._vals.hasOwnProperty(h) && !xvals.hasOwnProperty(h)) {
         return False;

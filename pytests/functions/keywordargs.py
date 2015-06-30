@@ -15,5 +15,6 @@ args = (2, 3)
 kwargs = dict(z=4)
 print foo(*args)
 print foo(**kwargs)
+print kwargs
 print foo(*args, **kwargs)
-
+print kwargs

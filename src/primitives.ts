@@ -1,12 +1,52 @@
 /// <reference path="../bower_components/DefinitelyTyped/decimal.js/decimal.js.d.ts" />
-import singletons = require('./singletons');
 import enums = require('./enums');
-import NIError = singletons.NotImplemented;
-import None = singletons.None;
 import interfaces = require('./interfaces');
 import IPy_Number = interfaces.IPy_Number;
 import IPy_Object = interfaces.IPy_Object;
 import Decimal = require('decimal.js');
+// Use for type information ONLY to avoid circular ref!
+import _collections = require('./collections');
+var collections: typeof _collections = null;
+
+export function circularRefHack() {
+  collections = require('./collections');
+};
+
+// Represents singleton types.
+class SingletonClass implements IPy_Object {
+    constructor(private name: string) {}
+    toString(): string {
+        return this.name;
+    }
+    getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
+    // XXX: Should be fixed.
+    hash(): number { return -1; }
+    __str__(): Py_Str {
+        return Py_Str.fromJS(this.name);
+    }
+}
+
+// Python has a single null object called "None".
+// Do not export! Should be a singleton.
+class NoneType extends SingletonClass {
+  constructor() {
+      super("None");
+  }
+    
+  asBool(): boolean {
+    return false;
+  }
+}
+export var None = new NoneType();
+
+// Ellipsis is the object corresponding to the ... syntax.
+export var Ellipsis = new SingletonClass("Ellipsis");
+
+// Python uses "NotImplemented" to signal that some operation (e.g. addition,
+// less-than) is not supported for a particular set of arguments. Typically the
+// reverse operation is tried (e.g. add => radd). If that also returns
+// NotImplemented, the interpreter throws an error.
+export var NotImplemented = new SingletonClass("NotImplemented");
 
 var ref = 1;
 
@@ -99,6 +139,7 @@ var string_pool: { [s: string]: Py_Str } = {};
 
 export class Py_Str extends Py_Object {
     private _str: string;
+    private _hash: number = -1;
     // No other class should call this constructor.
     constructor(s: string) {
         super();
@@ -112,6 +153,34 @@ export class Py_Str extends Py_Object {
         inst = new Py_Str(s);
         string_pool[s] = inst;
         return inst;
+    }
+    public hash(): number {
+        // Adapted from Python 2.7.8's string hash function.
+        var len: number, p: number, x: number, i: number = 0;
+    
+        if (this._hash !== -1) {
+            return this._hash;
+        }
+        len = this._str.length;
+        /*
+          We make the hash of the empty string be 0, rather than using
+          (prefix ^ suffix), since this slightly obfuscates the hash secret
+        */
+        if (len == 0) {
+            this._hash = 0;
+            return 0;
+        }
+        p = this._str.charCodeAt(i++);
+        x = 0;
+        x ^= p << 7;
+        while (--len >= 0)
+            x = (1000003*x) ^ this._str.charCodeAt(i++);
+        x ^= this._str.length;
+        // Avoid collisions with None's hash value.
+        if (x == -1)
+            x = -2;
+        this._hash = x;
+        return x;
     }
     public len(): number {
       return this._str.length;
@@ -139,14 +208,14 @@ export class Py_Str extends Py_Object {
         var cmp = this._str.localeCompare(other.toString());
         return Py_Boolean.fromJS(cmp == 0);
       }
-      return NIError;
+      return NotImplemented;
     }
     public __lt__(other: IPy_Object): IPy_Object {
       if (other instanceof Py_Str) {
         var cmp = this._str.localeCompare(other.toString());
         return Py_Boolean.fromJS(cmp < 0);
       }
-      return NIError;
+      return NotImplemented;
     }
     public __getitem__(idx: IPy_Object): IPy_Object {
       if (idx instanceof Py_Int) {
@@ -168,7 +237,7 @@ export class Py_Str extends Py_Object {
       if (other instanceof Py_Str) {
         return Py_Str.fromJS(this._str + other.toString());
       }
-      return singletons.NotImplemented;
+      return NotImplemented;
     }
     public __mod__(other: IPy_Object): Py_Str {
       // string formatting!
@@ -177,7 +246,7 @@ export class Py_Str extends Py_Object {
       var p = /%(\(\w*\))?([#0`+ -])?(\d+)?(\.\d+)?[hlL]?([diouxXeDfFgGcrs%])/g;
       var matches = this._str.match(p);
       var num_matches = (matches === null)? 0 : matches.length;
-      var fmt;
+      var fmt: RegExpExecArray;
       var s = '', idx = 0, rhs_idx = 0;
       while ((fmt = p.exec(this._str)) !== null) {
         s += this._str.slice(idx, fmt.index);
@@ -230,7 +299,7 @@ function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
  * type before executing the math operation. We use a regular expression to
  * replace the function name in the generated version.
  */
-function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof NIError {
+function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof NotImplemented {
   return eval(`(function() { return function(b) {
       var a = this,
         bType = b.getType(),
@@ -304,8 +373,8 @@ export class Py_Int extends Py_Object implements IPy_Number {
       return new Py_Int(res);
     }
 
-    divmod(other: Py_Int): [Py_Int, Py_Int] {
-        return [this.floordiv(other), this.mod(other)];
+    divmod(other: Py_Int): _collections.Py_Tuple {
+        return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
     }
 
     pow(other: Py_Int): Py_Float | Py_Int {
@@ -483,8 +552,8 @@ export class Py_Long extends Py_Object implements IPy_Number {
       return this.sub(other.mul(this.floordiv(other)));
     }
 
-    divmod(other: Py_Long): Py_Long[] {
-      return [this.floordiv(other), this.mod(other)];
+    divmod(other: Py_Long): _collections.Py_Tuple {
+      return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
     }
 
     // Thankfully, Decimal has a toPower function.
@@ -637,8 +706,8 @@ export class Py_Float extends Py_Object implements IPy_Number {
       // TODO: Both are floats, can avoid creating unneeded intermediate objs.
       return this.sub(other.mul(this.floordiv(other)));
     }
-    divmod(other: Py_Float): [Py_Float, Py_Float] {
-      return [this.floordiv(other), this.mod(other)];
+    divmod(other: Py_Float): _collections.Py_Tuple {
+      return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
     }
     pow(other: Py_Float): Py_Float {
       return new Py_Float(Math.pow(this.value, other.value));
@@ -703,12 +772,12 @@ export class Py_Float extends Py_Object implements IPy_Number {
 export class Py_Complex extends Py_Object implements IPy_Number {
     // TODO: Does it make sense to eagerly make these floats, or lazily construct
     // floats from JavaScript numbers?
-    real: Py_Float;
-    imag: Py_Float;
+    $real: Py_Float;
+    $imag: Py_Float;
     constructor(real: Py_Float, imag: Py_Float) {
       super();
-      this.real = real;
-      this.imag = imag;
+      this.$real = real;
+      this.$imag = imag;
     }
 
     getType(): enums.Py_Type { return enums.Py_Type.COMPLEX; }
@@ -721,28 +790,28 @@ export class Py_Complex extends Py_Object implements IPy_Number {
 
     // The following operations should be self explanatory.
     add(other: Py_Complex): Py_Complex {
-      return new Py_Complex(this.real.add(other.real), this.imag.add(other.imag));
+      return new Py_Complex(this.$real.add(other.$real), this.$imag.add(other.$imag));
     }
 
     sub(other: Py_Complex): Py_Complex {
-      return new Py_Complex(this.real.sub(other.real), this.imag.sub(other.imag));
+      return new Py_Complex(this.$real.sub(other.$real), this.$imag.sub(other.$imag));
     }
 
     // Multiplication and division are weird on Complex numbers. Wikipedia is a
     // good primer on the subject.
     mul(other: Py_Complex): Py_Complex {
-      var r, i: Py_Float;
-      r = this.real.mul(other.real).sub(this.imag.mul(other.imag));
-      i = this.imag.mul(other.real).add(this.real.mul(other.imag));
+      var r: Py_Float, i: Py_Float;
+      r = this.$real.mul(other.$real).sub(this.$imag.mul(other.$imag));
+      i = this.$imag.mul(other.$real).add(this.$real.mul(other.$imag));
       return new Py_Complex(r, i);
     }
 
     floordiv(other: Py_Complex): Py_Complex {
-      if (other.real.value == 0 && other.imag.value == 0)
+      if (other.$real.value == 0 && other.$imag.value == 0)
         throw new Error("Division by 0")
-      var r, d: Py_Float;
-      r = this.real.mul(other.real).add(this.imag.mul(other.imag));
-      d = other.real.mul(other.real).add(other.imag.mul(other.imag));
+      var r: Py_Float, d: Py_Float;
+      r = this.$real.mul(other.$real).add(this.$imag.mul(other.$imag));
+      d = other.$real.mul(other.$real).add(other.$imag.mul(other.$imag));
       // Note: floor division always zeros the imaginary part
       return new Py_Complex(r.floordiv(d), new Py_Float(0));
     }
@@ -752,12 +821,12 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     }
 
     truediv(other: Py_Complex): Py_Complex {
-      if (other.real.value == 0 && other.imag.value == 0)
+      if (other.$real.value == 0 && other.$imag.value == 0)
         throw new Error("Division by 0")
-      var r, i, d: Py_Float;
-      r = this.real.mul(other.real).add(this.imag.mul(other.imag));
-      i = this.imag.mul(other.real).sub(this.real.mul(other.imag));
-      d = other.real.mul(other.real).add(other.imag.mul(other.imag));
+      var r: Py_Float, i: Py_Float, d: Py_Float;
+      r = this.$real.mul(other.$real).add(this.$imag.mul(other.$imag));
+      i = this.$imag.mul(other.$real).sub(this.$real.mul(other.$imag));
+      d = other.$real.mul(other.$real).add(other.$imag.mul(other.$imag));
       return new Py_Complex(r.truediv(d), i.truediv(d));
     }
 
@@ -765,14 +834,14 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     // and a = (a//b)*b + (a%b). Complex numbers make it worse, because they
     // only consider the real component of (a // b)
     mod(other: Py_Complex): Py_Complex {
-      if (other.real.value == 0 && other.imag.value == 0)
+      if (other.$real.value == 0 && other.$imag.value == 0)
         throw new Error("Modulo by 0");
-      else if (other.real.value == 0)
-        return new Py_Complex(this.real, this.imag.mod(other.imag));
-      else if (other.imag.value == 0)
-        return new Py_Complex(this.real.mod(other.real), this.imag);
+      else if (other.$real.value == 0)
+        return new Py_Complex(this.$real, this.$imag.mod(other.$imag));
+      else if (other.$imag.value == 0)
+        return new Py_Complex(this.$real.mod(other.$real), this.$imag);
       else {
-        var div = new Py_Complex(this.floordiv(other).real, new Py_Float(0));
+        var div = new Py_Complex(this.floordiv(other).$real, new Py_Float(0));
         // See complexobject.c, because Python is weird
         // See Wikipedia: Modulo_operation#Modulo_operation_expression
         return this.sub(other.mul(div));
@@ -786,10 +855,10 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     // Powers with complex numbers are weird.
     // Fractional and complex powers are NYI.
     pow(other: Py_Complex): Py_Complex {
-      var n = other.real.toNumber();
-      if (other.imag.toNumber() == 0 && ((n|0) == n)) {
-        var real = this.real.value;
-        var imag = this.imag.value;
+      var n = other.$real.toNumber();
+      if (other.$imag.toNumber() == 0 && ((n|0) == n)) {
+        var real = this.$real.value;
+        var imag = this.$imag.value;
         // De Moivre's formula
         var r_n = Math.pow(Math.sqrt(real*real + imag*imag), n);
         var phi_n = Math.atan2(imag, real) * n;
@@ -799,7 +868,7 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     }
 
     __neg__(): Py_Complex {
-      return new Py_Complex(this.real.__neg__(), this.imag.__neg__());
+      return new Py_Complex(this.$real.__neg__(), this.$imag.__neg__());
     }
 
     __pos__(): Py_Complex {
@@ -809,31 +878,31 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     // This is the standard definition for absolute value: The ABSOLUTE distance
     // of (a + bi) from 0. Therefore, hypotenuse.
     __abs__(): Py_Float {
-        var r = this.real.value;
-        var i = this.imag.value;
+        var r = this.$real.value;
+        var i = this.$imag.value;
         return new Py_Float(Math.sqrt(r*r + i*i));
     }
 
-    eq(other): Py_Boolean {
-      return (this.real.eq(other.real) === True && this.imag.eq(other.imag) === True) ? True : False;
+    eq(other: Py_Complex): Py_Boolean {
+      return (this.$real.eq(other.$real) === True && this.$imag.eq(other.$imag) === True) ? True : False;
     }
 
-    ne(other): Py_Boolean {
-      return (this.real.ne(other.real) === True && this.imag.ne(other.imag) === True) ? True : False;
+    ne(other: Py_Complex): Py_Boolean {
+      return (this.$real.ne(other.$real) === True && this.$imag.ne(other.$imag) === True) ? True : False;
     }
 
     toString(): string {
-      if (this.real.value == 0) {
-        return `${this.imag.value}j`;
+      if (this.$real.value == 0) {
+        return `${this.$imag.value}j`;
       }
-      if (this.imag.value < 0) {
-        return `(${this.real.value}-${-this.imag.value}j)`;
+      if (this.$imag.value < 0) {
+        return `(${this.$real.value}-${-this.$imag.value}j)`;
       }
-      return `(${this.real.value}+${this.imag.value}j)`;
+      return `(${this.$real.value}+${this.$imag.value}j)`;
     }
 
     asBool(): boolean {
-      return !(this.real.value === 0 && this.imag.value === 0);
+      return !(this.$real.value === 0 && this.$imag.value === 0);
     }
 }
 
@@ -842,8 +911,8 @@ export class Py_Complex extends Py_Object implements IPy_Number {
   ["add", "sub", "mul", "floordiv", "mod", "divmod", "pow", "lshift", "rshift",
    "and", "xor", "or", "div", "truediv", "lt", "le", "eq", "ne", "gt", "ge"]
    .forEach((opName) => {
-     if (numericType.prototype[opName] !== undefined) {
-       numericType.prototype[`__${opName}__`] = generateMathOp(opName);
+     if ((<any> numericType).prototype[opName] !== undefined) {
+       (<any> numericType).prototype[`__${opName}__`] = generateMathOp(opName);
      }
    });
 });

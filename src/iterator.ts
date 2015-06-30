@@ -4,16 +4,19 @@ import interfaces = require('./interfaces');
 import Iterator = interfaces.Iterator;
 import Py_Int = primitives.Py_Int;
 import Py_Object = primitives.Py_Object;
+import IPy_Object = interfaces.IPy_Object;
+import IPy_FrameObj = interfaces.IPy_FrameObj;
+import Thread = require('./threading');
 
 export class ListIterator extends Py_Object implements Iterator {
     private pos: number = 0;
-    private list: any[];
-    constructor(list: any[]) {
+    private list: IPy_Object[];
+    constructor(list: IPy_Object[]) {
         super();
         this.list = list;
     }
-    public next(): any {
-        var ret = null;
+    public next(): IPy_Object {
+        var ret: IPy_Object = null;
         if (this.pos < this.list.length) {
             ret = this.list[this.pos];
             this.pos += 1;
@@ -66,8 +69,8 @@ export class XRange extends Py_Object implements Iterator, interfaces.Iterable {
     public iter(): Iterator {
         return this;
     }
-    public next(): number {
-        var ret = null;
+    public next(): Py_Int {
+        var ret: Py_Int = null;
         if (this.index < this._len) {
             ret = new Py_Int(this.start + this.index * this.step);
             this.index += 1;
@@ -88,6 +91,6 @@ export class XRange extends Py_Object implements Iterator, interfaces.Iterable {
 }
 
 // builtin xrange()
-export function xrange(args: any[], kwargs: any): XRange {
+export function xrange(t: Thread, f: IPy_FrameObj, args: any[], kwargs: any): XRange {
     return new XRange(args, kwargs);
 }

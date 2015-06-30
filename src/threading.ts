@@ -5,7 +5,7 @@ import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
-import Py_FrameObject = require('./frameobject');
+import IPy_FrameObj = interfaces.IPy_FrameObj;
 import enums = require('./enums');
 
 var maxMethodResumes: number = 10000,
@@ -19,11 +19,10 @@ var maxMethodResumes: number = 10000,
 class Thread{
     // Current state of Thread
     private status: enums.ThreadStatus = enums.ThreadStatus.NEW;
-    private stack: Py_FrameObject[] = [];
+    private stack: IPy_FrameObj[] = [];
 
     // Executes bytecode method calls
     private run(): void {
-
         var stack = this.stack,
             startTime: number = (new Date()).getTime(),
             endTime: number,
@@ -35,7 +34,7 @@ class Thread{
         // else, reset the counter, suspend thread and resume thread using setImmediate
         // Use cumulative moving average to calculate to estimate number of methodResumes in one second
         while (this.status === enums.ThreadStatus.RUNNING && stack.length > 0) {
-            var bytecodeMethod: Py_FrameObject = stack[stack.length - 1];
+            var bytecodeMethod: IPy_FrameObj = stack[stack.length - 1];
             // Execute python bytecode methods
             bytecodeMethod.exec(this);          
 
@@ -86,7 +85,7 @@ class Thread{
         this.stack.pop();
     }
     
-    public framePush(frame: Py_FrameObject): void {
+    public framePush(frame: IPy_FrameObj): void {
         this.stack.push(frame);
     }   
 
@@ -95,9 +94,19 @@ class Thread{
 
     }
 
-    // TODO: Push the return value from a finished function's stack frame onto the calling function's stack frame.
     public asyncReturn(rv?: any): void {
-
+        var stack = this.stack,
+          length: number;
+        // framePop
+        stack.pop();
+        length = stack.length;
+        if (length > 0) {
+            stack[length - 1].resume(rv);
+            this.setStatus(enums.ThreadStatus.RUNNABLE);
+        } else {
+            // Program has ended.
+            this.setStatus(enums.ThreadStatus.TERMINATED);
+        }
     }
 
     // Terminates execution of a Thread by changing its status and then emptying its stack
