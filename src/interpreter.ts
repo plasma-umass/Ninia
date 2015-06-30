@@ -3,6 +3,7 @@ import Py_CodeObject = require('./codeobject');
 import collections = require('./collections');
 import enums = require('./enums');
 import Thread = require('./threading');
+import primitives = require('./primitives');
 // The Interpreter uses a simple Fetch-Decode-Execute loop to execute Python
 // code. Each program is first unmarshalled into a Py_CodeObject. The
 // interpreter then wraps the code object inside a frame object, which tracks
@@ -10,6 +11,11 @@ import Thread = require('./threading');
 // interpreter can be configured to output to any device as long as it has a
 // "write" method. The interpreter does not maintain its own stack.
 class Interpreter {
+    constructor() {
+        // XXX: Hack around circular reference issue.
+        primitives.circularRefHack();
+    }
+    
     // Interpret wraps a code object in a frame and executes it.
     // This is the "base frame" and has no pointer to a previous frame.
     interpret(code: Py_CodeObject, debug: boolean) {
