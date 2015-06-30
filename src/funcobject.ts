@@ -24,7 +24,7 @@ import nativefuncobject = require('./nativefuncobject');
 // Similar to frame objects, Function Objects wrap Python functions. However,
 // these are more the data representation of functions, and are transformed into
 // Frame Objects when the function is called.
-class Py_FuncObject implements IPy_Function {
+class Py_FuncObject extends primitives.Py_Object implements IPy_Function {
     code: Py_CodeObject;
     globals: Py_Dict;
     defaults: Py_Dict;
@@ -36,6 +36,7 @@ class Py_FuncObject implements IPy_Function {
                 defaults: Py_Dict,
                 name: Py_Str,
                 closure: Py_Tuple = null) {
+        super();
         this.code = code;
         this.globals = globals;
         this.defaults = defaults;

@@ -24,6 +24,7 @@ import Iterable = interfaces.Iterable;
 import None = primitives.None;
 import Py_Cell = require('./cell');
 import Thread = require('./threading');
+import nativefuncobject = require('./nativefuncobject')
 import IPy_Function = interfaces.IPy_Function;
 var NotImplemented = builtins.$NotImplemented;
 
@@ -952,6 +953,32 @@ optable[opcodes.BUILD_SLICE] = function(f: Py_FrameObject) {
     stop = f.pop();
     start = f.pop();
     f.push(new Py_Slice(start, stop, step));
+}
+
+optable[opcodes.LOAD_LOCALS] = function(f: Py_FrameObject) {
+    f.push(f.locals);
+}
+
+optable[opcodes.BUILD_CLASS] = function(f: Py_FrameObject) {
+    /* Creates a new class object. TOS is the methods dictionary, TOS1 the tuple of the names of the base classes, and TOS2 the class name. */
+    var methods = <Py_Dict> f.pop(),
+      methodIter = methods.iter(),
+      nextKey: primitives.Py_Str,
+      baseClasses = <Py_Tuple> f.pop(),
+      className = <primitives.Py_Str> f.pop(),
+      jsClassName = className.toString(),
+      // Use eval so the function name matchs. :)
+      cls = <Function> eval(`function ${jsClassName}(){};${jsClassName}`);
+    
+    // TODO: Use prototype chaining for baseClasses.
+    
+    while (null !== (nextKey = methodIter.next())) {
+        cls.prototype['$' + nextKey.toString()] = methods.get(nextKey);
+    }
+    
+    f.push(new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Function[], kwargs: Py_Dict) => {
+        return new (<any> cls)();
+    }));
 }
 
 export = optable;
