@@ -58,7 +58,8 @@ bower_components:
 	$(PYC) $^
 
 %.out: %.pyc
-	$(PYTHON) $^ > $@ 2>&1
+	# $(PYTHON) $^ > $@ 2>&1
+	$(PYTHON) $^ &> $@
 
 clean:
 	$(RM) $(GENJS) $(PYCS) $(MAINOUT) $(TESTOUTS) $(RUNNER)
