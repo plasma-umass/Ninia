@@ -44,9 +44,9 @@ class Py_FrameObject implements IPy_FrameObj {
     // see https://docs.python.org/2/reference/simple_stmts.html#print
     shouldWriteSpace: boolean;
     // block stack, for loops and such.
-    // Entries are [stackSize, startPos, endPos] tuples.
+    // Entries are [stackSize, startPos, endPos, opcode] tuples.
     // TODO: type this correctly
-    blockStack: [number, number, number][];
+    blockStack: [number, number, number, number][];
     // Lexical environment
     // cellvars followed by freevars
     env: Py_Cell[];
@@ -74,6 +74,7 @@ class Py_FrameObject implements IPy_FrameObj {
         for (i = 0; i < code.freevars.length; i++) {
             this.env.push(<Py_Cell>closure[i]);
         }
+        this.lineNum = 0;
 
     }
     

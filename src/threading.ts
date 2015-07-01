@@ -5,6 +5,7 @@ import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
+import Py_FrameObject = require('./frameobject');
 import IPy_FrameObj = interfaces.IPy_FrameObj;
 import enums = require('./enums');
 
@@ -20,6 +21,8 @@ class Thread{
     // Current state of Thread
     private status: enums.ThreadStatus = enums.ThreadStatus.NEW;
     private stack: IPy_FrameObj[] = [];
+    public traceback: string = "";
+    public codefile: string[] = [];
 
     // Executes bytecode method calls
     private run(): void {
@@ -88,6 +91,15 @@ class Thread{
     public framePush(frame: IPy_FrameObj): void {
         this.stack.push(frame);
     }   
+
+    public addToTraceback(str : string): void {
+        this.traceback = str + this.traceback;
+    }
+
+    public writeTraceback(): void {
+        this.traceback = "Traceback (most recent call last):\n" + this.traceback;
+        process.stdout.write(this.traceback);
+    }
 
     // TODO: Handle exceptions when exception support is added
     public throwException(): void {

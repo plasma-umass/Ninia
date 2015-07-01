@@ -4,6 +4,7 @@ import collections = require('./collections');
 import enums = require('./enums');
 import Thread = require('./threading');
 import primitives = require('./primitives');
+import fs = require('fs');
 // The Interpreter uses a simple Fetch-Decode-Execute loop to execute Python
 // code. Each program is first unmarshalled into a Py_CodeObject. The
 // interpreter then wraps the code object inside a frame object, which tracks
@@ -22,7 +23,9 @@ class Interpreter {
         var f = new Py_FrameObject(null, code, new collections.Py_Dict(), new collections.Py_Dict(), []);
 
         // Create new Thread, push the Py_FrameObject on it and then run it
+        var data = fs.readFileSync(f.codeObj.filename.toString());
         var t: Thread = new Thread();
+        t.codefile = data.toString('utf8').split('\n');        
         t.framePush(f);
         // Change Thread status to RUNNABLE
         t.setStatus(enums.ThreadStatus.RUNNABLE);

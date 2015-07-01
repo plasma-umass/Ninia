@@ -1,12 +1,3 @@
-# def foo():
-#     print "HELLO"
-#     print "WORLD"
-#     raise
-
-# def bar():
-#     foo()
-
-# bar()
 def foo(depth):
     print depth
     if depth == 0:

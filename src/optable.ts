@@ -501,6 +501,134 @@ optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
     var i = f.readArg();
     f.locals.del(f.codeObj.varnames[i]);
 }
+// Searches for an exception handler inside the current Py_FrameObject
+// Returns true if found, else returns false
+function find_exception_handler(f: Py_FrameObject) : boolean {
+    while (f.blockStack.length > 0) {
+        // console.log("FIRST LOOP");
+        var b = f.blockStack[f.blockStack.length - 1];
+        f.blockStack.pop();
+        if (b[3] === opcodes.SETUP_EXCEPT) {
+            // console.log("I AM MOVING TO EXCEPT");
+            setup_block(f, opcodes.EXCEPT_HANDLER);
+            // console.log(b);
+            var endPos: number = b[2];
+            f.lastInst = endPos;
+            return true;
+        }
+        if (b[3] === opcodes.SETUP_FINALLY) {
+            // console.log("I AM SETTING UP FINALLY");
+            var endPos: number = b[2];
+            f.lastInst = endPos;
+            return true;
+        }
+    }
+    return false;
+}
+function unpack(str: any) {
+    var ln_byte_tuple: [number,number][] = [];
+    for(var i = 0, n = str.length; i < n; i+=2) {
+        var char1:number = parseInt(str.charCodeAt(i));
+        var char2:number = parseInt(str.charCodeAt(i+1));
+        ln_byte_tuple.push([char1, char2]);
+    }
+    return ln_byte_tuple;
+}
+
+function addr2line(f: Py_FrameObject) {
+    var lineno = 0;
+    var addr = 0;
+    var chars = f.codeObj.lnotab.toString();
+    var lnotab = unpack(chars);
+    for (var i = 0; i < lnotab.length; i++) {
+        addr += lnotab[i][0];
+        if (addr > f.lastInst) {
+            break;
+        }
+        lineno += lnotab[i][1];
+    }
+    return lineno;
+}
+function frame_add_traceback(f: Py_FrameObject, t:Thread) {
+
+    var current_line = (f.codeObj.firstlineno) + addr2line(f);
+    var tback: string = "";
+    tback = "";
+    tback += "  File \"" + f.codeObj.filename.toString() +
+        "\", line " + current_line +
+        ", in " + f.codeObj.name.toString() + "\n";
+    if (t.codefile.length > 0) {
+        tback += "    " + t.codefile[current_line-1].replace(/\s+/g, '')  + "\n";
+    }
+    t.addToTraceback(tback);
+}
+// TODO: If no handler found, create a relevant traceback and output it
+function fast_block_end (f: Py_FrameObject, t: Thread){
+    // console.log("INSIDE FAST BLOCK END");
+    if (f.blockStack.length > 0) {
+        // Search for exception handler in current Py_FrameObject
+        find_exception_handler(f);
+    }
+    else {
+        // For the case where no exception handler exists in the current Py_FrameObject
+        // Unwinds the stack and moves to previous frames and searches for an exception handler
+        // console.log("FOUND NO EXCEPTIONS", "   STACK LENGTH", f.stack.length)
+        // pop current frame and move to back;
+        while (f.stack.length > 0) {
+            // console.log("POPPED");
+            f.pop();
+        }
+        // var t: Thread = f.getThreadObject();
+        // Search in previous frames
+        var exception_handler_found: boolean = false;
+
+        // [CHANGE ONCE ARG>0 IMPLEMENTED (CO_VARGS)]incase of a raise with no arguements/no explicit catching exception
+        t.addToTraceback("TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n");
+        frame_add_traceback(f, t);
+
+        while (f.back != null) {
+            var chars = f.codeObj.lnotab.toString();
+            f.returnToThread = true;
+            // t.framePop();
+            f = (<Py_FrameObject>f.back);
+            frame_add_traceback(f, t);
+            if (find_exception_handler(f)) {
+                exception_handler_found = true;
+                break;
+            }
+        }
+        // Print traceback
+        if (!exception_handler_found) {
+            t.writeTraceback();
+        }
+    }
+    // f.returnToThread = true;
+
+
+}
+
+// TODO: Use Py_FrameObject exc_type, exc_value, traceback to store relevant exception information
+//       Handle cases when i = 1,2
+optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
+    var i = f.readArg();
+    var cause: IPy_Object = null, exc: IPy_Object = null;
+    // console.log("\n**Here is the error**", i);
+    switch (i) {
+        case 2:
+            cause = f.pop();
+        case 1:
+            exc = f.pop();
+        case 0:
+            // console.log("**IN here ** ", cause, exc);
+
+            break;
+        default:
+            throw new Error("bad RAISE_VARARGS oparg")
+            break;
+    }
+    /// handle the various exceptions here
+    fast_block_end(f,t);
+}
 
 // Helper function for all the CALL_FUNCTION* opcodes
 function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: boolean) {
@@ -835,16 +963,16 @@ optable[opcodes.STORE_MAP] = function(f: Py_FrameObject) {
     d.set(key, val);
 }
 
-function setup_block(f: Py_FrameObject) {
+function setup_block(f: Py_FrameObject, op: number) {
     var delta = f.readArg();
     // push a block to the block stack
     var stackSize = f.stack.length;
     var loopPos = f.lastInst;
-    f.blockStack.push([stackSize, loopPos, loopPos+delta]);
+    f.blockStack.push([stackSize, loopPos, loopPos+delta, op]);
 }
-optable[opcodes.SETUP_LOOP] = setup_block;
-optable[opcodes.SETUP_EXCEPT] = setup_block;
-optable[opcodes.SETUP_FINALLY] = setup_block;
+optable[opcodes.SETUP_LOOP] = (f: Py_FrameObject) => setup_block(f, opcodes.SETUP_LOOP);
+optable[opcodes.SETUP_EXCEPT] = (f: Py_FrameObject) => setup_block(f, opcodes.SETUP_EXCEPT);
+optable[opcodes.SETUP_FINALLY] = (f: Py_FrameObject) => setup_block(f, opcodes.SETUP_FINALLY);
 
 optable[opcodes.BREAK_LOOP] = function(f: Py_FrameObject) {
     var b = f.blockStack.pop();
@@ -877,11 +1005,12 @@ optable[opcodes.LIST_APPEND] = function(f: Py_FrameObject) {
     lst.append(x);
 }
 
-optable[opcodes.END_FINALLY] = function(f: Py_FrameObject) {
+optable[opcodes.END_FINALLY] = function(f: Py_FrameObject, t: Thread) {
     // TODO: The interpreter recalls whether the exception has to be re-raised,
     // or whether the function returns, and continues with the outer-next block.
     // As of now, we always assume that no exception needs to be re-raised.
     f.blockStack.pop();
+    fast_block_end(f,t);
 }
 
 

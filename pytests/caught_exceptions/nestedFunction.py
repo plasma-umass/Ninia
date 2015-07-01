@@ -4,7 +4,7 @@ def foo():
 		bar()
 	except:
 		print "Hello"
-
+	print "I RETURNED HERE?"
 def bar():
 	print "World"
 	foobar()

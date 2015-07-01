@@ -151,5 +151,6 @@ enum Opcodes {
     EXTENDED_ARG         = 145,
     SET_ADD              = 146,
     MAP_ADD              = 147,
+    EXCEPT_HANDLER       = 257,
 }
 export = Opcodes;
