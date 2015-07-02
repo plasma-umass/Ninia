@@ -558,7 +558,7 @@ function frame_add_traceback(f: Py_FrameObject, t:Thread) {
         "\", line " + current_line +
         ", in " + f.codeObj.name.toString() + "\n";
     if (t.codefile.length > 0) {
-        tback += "    " + t.codefile[current_line-1].replace(/\s+/g, '')  + "\n";
+        tback += "    " + t.codefile[current_line-1].trim()  + "\n";
     }
     t.addToTraceback(tback);
 }
@@ -578,7 +578,6 @@ function fast_block_end (f: Py_FrameObject, t: Thread){
             // console.log("POPPED");
             f.pop();
         }
-        // var t: Thread = f.getThreadObject();
         // Search in previous frames
         var exception_handler_found: boolean = false;
 

@@ -88,8 +88,17 @@ var testList = [
     ["Deletion test", "pytests/delTest"]
 ];
 
-function indiv_test(name: string, file: string, cb) {
+function onFailure() {
+    realPrint("Fail\n");
+    restorePrint(() => {
+        console.log('CPython output:\n', expectedOut);
+        console.log('Ninia output:\n', testOut);
+    });
+    testFails[testName] += 1;
+}
 
+// Execute an individual test
+function indiv_test(name: string, file: string, cb: () => void) {
     realPrint(`Running ${name}... `);
     numTests += 1;
     var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
@@ -97,28 +106,23 @@ function indiv_test(name: string, file: string, cb) {
     testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
     if (isNaN(testFails[testName]))
         testFails[testName] = 0;  // initialize
-    var err: string = null;
-            expectedOut = fs.readFileSync(file+'.out').toString();
-     
-        interp.interpret(u.value(), false, function() {
-            if (testOut == expectedOut) {
-                realPrint("Pass\n");
-                numPassed += 1;
-            } else {
-                realPrint("Fail\n");
-                restorePrint(() => {
-                    console.log('CPython output:\n', expectedOut);
-                    console.log('Ninia output:\n', testOut);
-                });
-                testFails[testName] += 1;
-            }
-            cb();
-        });
+
+    expectedOut = fs.readFileSync(file+'.out').toString();
+
+    interp.interpret(u.value(), false, function() {
+        if (testOut == expectedOut) {
+            realPrint("Pass\n");
+            numPassed += 1;
+        } else {
+            onFailure();
+        }
+        cb();
+    });
 }
 
 var testList_dup = testList.slice(0);
 
-var iteration = function(cur_test, inCb) {
+var iteration = function(cur_test: [string], inCb: () => void) {
     var name = cur_test[0];
     if(cur_test.length === 1){
         realPrint(name + "\n");
@@ -134,7 +138,7 @@ var iteration = function(cur_test, inCb) {
     }    
 }
 function processTests(){
-    async.eachSeries(testList, iteration, function(err) {
+    async.eachSeries(testList, iteration, function(err: string) {
         printResults();
     });
 }
@@ -142,12 +146,8 @@ function processTests(){
 function runTests() {
     var d = domain.create();
 
-    d.on('error', function(err){
-        realPrint("Fail\n");
-        restorePrint(() => {
-            console.log('CPython output:\n', expectedOut);
-            console.log('Ninia output:\n', testOut);
-        });
+    d.on('error', function(err: string){
+        onFailure();
         realPrint("Uncaught exception in Ninia: \n\t" + err.toString() + "\n");
         testFails[testName] += 1;
         testList = testList_dup.slice(0);

@@ -63,20 +63,21 @@ class Thread{
 
         if (stack.length === 0) {
             // This thread has finished!
-            // console.log(" I AM THE ONE WHO TERMINATES");
-            // this.setStatus(enums.ThreadStatus.TERMINATED);
-            // this.cb();
+            this.setStatus(enums.ThreadStatus.TERMINATED);
         }
     }
 
     // Change Thread status
     public setStatus(status: enums.ThreadStatus): void {
+        // Fix for a single thread terminating multiple times in run(), whenever its stack is empty
+        if(this.status === enums.ThreadStatus.TERMINATED && status === enums.ThreadStatus.TERMINATED)
+        {
+            return;
+        }
         this.status = status;
         switch (this.status) {
             // If thread is runnable, yield to JS event loop and then change the thread to running
             case enums.ThreadStatus.RUNNABLE:
-                // console.log("caller is " + arguments.callee.caller.toString());
-
                 setImmediate(() => { this.setStatus(enums.ThreadStatus.RUNNING); });
                 break;
             case enums.ThreadStatus.RUNNING:
@@ -84,11 +85,9 @@ class Thread{
                 this.run();
                 break;
             case enums.ThreadStatus.TERMINATED:
-                // console.log("I AM EXITING");
                 this.exit();
+                // execute callback
                 this.cb();
-                // console.log("caller is " + arguments.callee.caller.name);
-
                 break;
         }
     }
@@ -131,19 +130,15 @@ class Thread{
         } else {
             // Program has ended.
             this.setStatus(enums.ThreadStatus.TERMINATED);
-            // console.log("******************************ASY");
         }
     }
 
     // Terminates execution of a Thread by changing its status and then emptying its stack
     public exit(): void {
-        // console.log("LENGTH: ", this.stack.length);
         this.status = enums.ThreadStatus.TERMINATED;
         while(this.stack.length !== 0) {
             this.framePop();
         }
-        
-
     }
 }
 export = Thread;
