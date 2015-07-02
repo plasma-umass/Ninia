@@ -146,9 +146,9 @@ function processTests(){
 function runTests() {
     var d = domain.create();
 
-    d.on('error', function(err: string){
+    d.on('error', function(err){
         onFailure();
-        realPrint("Uncaught exception in Ninia: \n\t" + err.toString() + "\n");
+        realPrint("Uncaught exception in Ninia: \n" + err + (err['stack'] != null ? err.stack : "") + "\n");
         testFails[testName] += 1;
         testList = testList_dup.slice(0);
         runTests();
