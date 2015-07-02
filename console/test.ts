@@ -2,6 +2,7 @@ import fs = require('fs');
 import Unmarshaller = require('../src/unmarshal');
 import Interpreter = require('../src/interpreter');
 var async = require('async');
+import domain = require('domain');
 
 var testOut: string = '';
 var oldStdout = process.stdout.write;
@@ -10,7 +11,8 @@ var interp = new Interpreter();
 var numTests = 0;
 var numPassed = 0;
 var testFails: { [testName: string]: number; } = { };
-
+var expectedOut = "";
+var testName = "";
 function realPrint(text: string) {
     oldStdout.apply(process.stdout, [text]);
 }
@@ -87,57 +89,74 @@ var testList = [
 ];
 
 function indiv_test(name: string, file: string, cb) {
+
     realPrint(`Running ${name}... `);
     numTests += 1;
     var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
     testOut = '';  // reset the output catcher
-    var testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
+    testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
     if (isNaN(testFails[testName]))
         testFails[testName] = 0;  // initialize
     var err: string = null;
-    // try {
-    interp.interpret(u.value(), false, function() {
-        var expectedOut = fs.readFileSync(file+'.out').toString();
-        if (testOut == expectedOut) {
-            realPrint("Pass\n");
-            numPassed += 1;
-        } else {
-            realPrint("Fail\n");
-            restorePrint(() => {
-                console.log('CPython output:\n', expectedOut);
-                console.log('Ninia output:\n', testOut);
-            });
-            testFails[testName] += 1;
-        }
-        cb();
-    });
+            expectedOut = fs.readFileSync(file+'.out').toString();
+     
+        interp.interpret(u.value(), false, function() {
+            if (testOut == expectedOut) {
+                realPrint("Pass\n");
+                numPassed += 1;
+            } else {
+                realPrint("Fail\n");
+                restorePrint(() => {
+                    console.log('CPython output:\n', expectedOut);
+                    console.log('Ninia output:\n', testOut);
+                });
+                testFails[testName] += 1;
+            }
+            cb();
+        });
 }
 
+var testList_dup = testList.slice(0);
 
 var iteration = function(cur_test, inCb) {
-    // do individual stuff
+    var name = cur_test[0];
     if(cur_test.length === 1){
-        realPrint(cur_test[0] + "\n");
+        realPrint(name + "\n");
+        testList_dup.shift();
         inCb();
     }
     else{
-        // realPrint(cur_test[0] + "   " + cur_test[1] + "\n");
-        indiv_test(cur_test[0], cur_test[1], function() {
-            console.log("TEST FINIHSED");
+        var file = cur_test[1];
+        testList_dup.shift();
+        indiv_test(name, file, function() {
             inCb();
         });
-
     }    
 }
-
 function processTests(){
     async.eachSeries(testList, iteration, function(err) {
-        // All the stuff is done?
         printResults();
-        realPrint("I AM ALL SET AND DONE");
     });
 }
 
-processTests();
+function runTests() {
+    var d = domain.create();
 
-// printResults()
+    d.on('error', function(err){
+        realPrint("Fail\n");
+        restorePrint(() => {
+            console.log('CPython output:\n', expectedOut);
+            console.log('Ninia output:\n', testOut);
+        });
+        realPrint("Uncaught exception in Ninia: \n\t" + err.toString() + "\n");
+        testFails[testName] += 1;
+        testList = testList_dup.slice(0);
+        runTests();
+    });
+
+    d.run(function() {
+        processTests();
+    });
+}
+
+runTests();
