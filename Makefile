@@ -3,7 +3,7 @@ SDIR=src
 TDIR=pytests
 # compilers
 TSC=./node_modules/typescript/bin/tsc
-TSCFLAGS=-t ES3 --sourceMap --module commonjs --noImplicitAny
+TSCFLAGS=-t ES3 --sourceMap --module commonjs
 PYTHON=python2.7
 PYC=$(PYTHON) -m compileall
 BROWSERIFY=./node_modules/browserify/bin/cmd.js

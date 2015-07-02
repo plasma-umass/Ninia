@@ -19,12 +19,12 @@ class Interpreter {
     
     // Interpret wraps a code object in a frame and executes it.
     // This is the "base frame" and has no pointer to a previous frame.
-    interpret(code: Py_CodeObject, debug: boolean) {
+    interpret(code: Py_CodeObject, debug: boolean, callback: () => void) {
         var f = new Py_FrameObject(null, code, new collections.Py_Dict(), new collections.Py_Dict(), []);
 
         // Create new Thread, push the Py_FrameObject on it and then run it
         var data = fs.readFileSync(f.codeObj.filename.toString());
-        var t: Thread = new Thread();
+        var t: Thread = new Thread(callback);
         t.codefile = data.toString('utf8').split('\n');        
         t.framePush(f);
         // Change Thread status to RUNNABLE

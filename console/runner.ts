@@ -16,4 +16,4 @@ if (argv._.length != 1 || argv.help) {
 var interp = new Interpreter();
 var file: string = argv._[0];
 var u = new Unmarshaller(fs.readFileSync(file));
-interp.interpret(u.value(), argv.debug);
+interp.interpret(u.value(), argv.debug, function(){});

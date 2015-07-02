@@ -1,6 +1,7 @@
 import fs = require('fs');
 import Unmarshaller = require('../src/unmarshal');
 import Interpreter = require('../src/interpreter');
+var async = require('async');
 
 var testOut: string = '';
 var oldStdout = process.stdout.write;
@@ -21,41 +22,6 @@ function restorePrint(cb: () => void): void {
     process.stdout.write = newStdout;
 }
 
-function test(name: string, file: string) {
-    realPrint(`Running ${name}... `);
-    numTests += 1;
-    var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
-    testOut = '';  // reset the output catcher
-    var testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
-    if (isNaN(testFails[testName]))
-        testFails[testName] = 0;  // initialize
-    var err: string = null;
-    try {
-        interp.interpret(u.value(), false);
-    } catch (e) {
-        if (e.stack) {
-            err = `${e.stack}\n`;
-        } else {
-            err = `${e}\n`
-        }
-    }
-    var expectedOut = fs.readFileSync(file+'.out').toString();
-    if (!err && testOut == expectedOut) {
-        realPrint("Pass\n");
-        numPassed += 1;
-    } else {
-        realPrint("Fail\n");
-        restorePrint(() => {
-            console.log('CPython output:\n', expectedOut);
-            console.log('Ninia output:\n', testOut);
-            if (err) {
-                console.log(err);
-            }
-        });
-        testFails[testName] += 1;
-    }
-}
-
 function printResults() {
     restorePrint(() => {
        console.log(`\n--- Results ---`);
@@ -69,52 +35,109 @@ function printResults() {
 }
 
 // Add more tests here:
-realPrint(`\n--- Math tests ---\n`);
-test("Unary operations test", "pytests/math/unaryOpsTest");
-test("Binary operations test", "pytests/math/binaryOpsTest");
-test("In-place operations test", "pytests/math/inplaceTest");
-test("Mixed Arithmetic test", "pytests/math/mixedMathTest");
-realPrint(`\n--- Function tests ---\n`);
-test("Keyword and default arguments test","pytests/functions/keywordargs");
-test("Recursion test", "pytests/functions/recursionTest");
-test("Scoping test", "pytests/functions/scopeTest");
-test("Generators test", "pytests/functions/generatorTest");
-realPrint(`\n--- Builtin tests ---\n`);
-test("Builtin Types test", "pytests/builtins/builtinTypes");
-test("Bin function test", "pytests/builtins/bin");
-test("Hex function test", "pytests/builtins/hex");
-test("Complex function test", "pytests/builtins/complex");
-test("Bool function test", "pytests/builtins/bool");
-test("Divmod function test", "pytests/builtins/divmod");
-test("Abs function test", "pytests/builtins/abs");
-test("Cmp function test", "pytests/builtins/cmp");
-test("All & Any functions test", "pytests/builtins/all_any");
-test("Chr & Ord functions test", "pytests/builtins/chr_ord");
-test("Attribute accessors test", "pytests/builtins/attrs");
-test("Underscore names test", "pytests/builtins/underscoresTest");
-realPrint(`\n--- Collection tests ---\n`);
-test("List test", "pytests/collections/lists");
-test("Set test", "pytests/collections/sets");
-test("Dict test", "pytests/collections/dicts");
-realPrint(`\n--- Control flow tests ---\n`);
-test("Loop test", "pytests/loopTest");
-test("Range test", "pytests/rangeTest");
-test("Comprehension test", "pytests/comprehensionTest");
-realPrint(`\n--- Class tests ---\n`);
-test("Basic class test", "pytests/classes/userDefTest");
-realPrint(`\n--- Caught Exception tests ---`);
-test("Basic Exception test", "pytests/caught_exceptions/except");
-test("Nested Function Exception test", "pytests/caught_exceptions/nestedFunction");
-test("Nested Try-Block Exception test", "pytests/caught_exceptions/nestedTry");
-test("Recursive function Try-Block Exception test", "pytests/caught_exceptions/recursiveFunctionTry");
-realPrint(`\n--- Uncaught Exception tests ---`);
-test("Basic Uncaught Exception test", "pytests/uncaught_exceptions/simpleFunction");
-test("Recurisve Function Uncaught Exception test", "pytests/uncaught_exceptions/recursiveFunctionUncaught");
-realPrint(`\n--- Thread tests ---`);
-test("Termination test", "pytests/threads/terminationTest");
-realPrint(`\n--- Other tests ---\n`);
-test("Strings test", "pytests/stringTest");
-test("Slice test", "pytests/sliceTest");
-test("Assignment test", "pytests/assignmentTest");
-test("Deletion test", "pytests/delTest");
-printResults()
+var testList = [
+    [`\n--- Math tests ---`],
+    ["Unary operations test", "pytests/math/unaryOpsTest"],
+    ["Binary operations test", "pytests/math/binaryOpsTest"],
+    ["In-place operations test", "pytests/math/inplaceTest"],
+    ["Mixed Arithmetic test", "pytests/math/mixedMathTest"],
+    [`\n--- Function tests ---`],
+    ["Keyword and default arguments test", "pytests/functions/keywordargs"],
+    ["Recursion test", "pytests/functions/recursionTest"],
+    ["Scoping test", "pytests/functions/scopeTest"],
+    ["Generators test", "pytests/functions/generatorTest"],
+    [`\n--- Builtin tests ---`],
+    ["Builtin Types test", "pytests/builtins/builtinTypes"],
+    ["Bin function test", "pytests/builtins/bin"],
+    ["Hex function test", "pytests/builtins/hex"],
+    ["Complex function test", "pytests/builtins/complex"],
+    ["Bool function test", "pytests/builtins/bool"],
+    ["Divmod function test", "pytests/builtins/divmod"],
+    ["Abs function test", "pytests/builtins/abs"],
+    ["Cmp function test", "pytests/builtins/cmp"],
+    ["All & Any functions test", "pytests/builtins/all_any"],
+    ["Chr & Ord functions test", "pytests/builtins/chr_ord"],
+    ["Attribute accessors test", "pytests/builtins/attrs"],
+    ["Underscore names test", "pytests/builtins/underscoresTest"],
+    [`\n--- Collection tests ---`],
+    ["List test", "pytests/collections/lists"],
+    ["Set test", "pytests/collections/sets"],
+    ["Dict test", "pytests/collections/dicts"],
+    [`\n--- Control flow tests ---`],
+    ["Loop test", "pytests/loopTest"],
+    ["Range test", "pytests/rangeTest"],
+    ["Comprehension test", "pytests/comprehensionTest"],
+    [`\n--- Class tests ---`],
+    ["Basic class test", "pytests/classes/userDefTest"],
+    [`\n--- Caught Exception tests ---`],
+    ["Basic Exception test", "pytests/caught_exceptions/except"],
+    ["Nested Function Exception test", "pytests/caught_exceptions/nestedFunction"],
+    ["Nested Try-Block Exception test", "pytests/caught_exceptions/nestedTry"],
+    ["Recursive function Try-Block Exception test", "pytests/caught_exceptions/recursiveFunctionTry"],
+    [`\n--- Uncaught Exception tests ---`],
+    ["Basic Uncaught Exception test", "pytests/uncaught_exceptions/simpleFunction"],
+    ["Recurisve Function Uncaught Exception test", "pytests/uncaught_exceptions/recursiveFunctionUncaught"],
+    [`\n--- Thread tests ---`],
+    ["Termination test", "pytests/threads/terminationTest"],
+    [`\n--- Other tests ---`],
+    ["Strings test", "pytests/stringTest"],
+    ["Slice test", "pytests/sliceTest"],
+    ["Assignment test", "pytests/assignmentTest"],
+    ["Deletion test", "pytests/delTest"]
+];
+
+function indiv_test(name: string, file: string, cb) {
+    realPrint(`Running ${name}... `);
+    numTests += 1;
+    var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
+    testOut = '';  // reset the output catcher
+    var testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
+    if (isNaN(testFails[testName]))
+        testFails[testName] = 0;  // initialize
+    var err: string = null;
+    // try {
+    interp.interpret(u.value(), false, function() {
+        var expectedOut = fs.readFileSync(file+'.out').toString();
+        if (testOut == expectedOut) {
+            realPrint("Pass\n");
+            numPassed += 1;
+        } else {
+            realPrint("Fail\n");
+            restorePrint(() => {
+                console.log('CPython output:\n', expectedOut);
+                console.log('Ninia output:\n', testOut);
+            });
+            testFails[testName] += 1;
+        }
+        cb();
+    });
+}
+
+
+var iteration = function(cur_test, inCb) {
+    // do individual stuff
+    if(cur_test.length === 1){
+        realPrint(cur_test[0] + "\n");
+        inCb();
+    }
+    else{
+        // realPrint(cur_test[0] + "   " + cur_test[1] + "\n");
+        indiv_test(cur_test[0], cur_test[1], function() {
+            console.log("TEST FINIHSED");
+            inCb();
+        });
+
+    }    
+}
+
+function processTests(){
+    async.eachSeries(testList, iteration, function(err) {
+        // All the stuff is done?
+        printResults();
+        realPrint("I AM ALL SET AND DONE");
+    });
+}
+
+processTests();
+
+// printResults()

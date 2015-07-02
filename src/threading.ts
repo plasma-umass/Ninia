@@ -23,9 +23,14 @@ class Thread{
     private stack: IPy_FrameObj[] = [];
     public traceback: string = "";
     public codefile: string[] = [];
+    public cb: () => void;
 
+    constructor(cb : () => void){
+        this.cb = cb;
+    }
     // Executes bytecode method calls
     private run(): void {
+        // console.log("caller is " + arguments.callee.caller.toString());
         var stack = this.stack,
             startTime: number = (new Date()).getTime(),
             endTime: number,
@@ -58,7 +63,9 @@ class Thread{
 
         if (stack.length === 0) {
             // This thread has finished!
-            this.setStatus(enums.ThreadStatus.TERMINATED);
+            // console.log(" I AM THE ONE WHO TERMINATES");
+            // this.setStatus(enums.ThreadStatus.TERMINATED);
+            // this.cb();
         }
     }
 
@@ -68,14 +75,20 @@ class Thread{
         switch (this.status) {
             // If thread is runnable, yield to JS event loop and then change the thread to running
             case enums.ThreadStatus.RUNNABLE:
-                this.setStatus(enums.ThreadStatus.RUNNING);
+                // console.log("caller is " + arguments.callee.caller.toString());
+
+                setImmediate(() => { this.setStatus(enums.ThreadStatus.RUNNING); });
                 break;
             case enums.ThreadStatus.RUNNING:
                 // I'm scheduled to run!
                 this.run();
                 break;
             case enums.ThreadStatus.TERMINATED:
+                // console.log("I AM EXITING");
                 this.exit();
+                this.cb();
+                // console.log("caller is " + arguments.callee.caller.name);
+
                 break;
         }
     }
@@ -118,15 +131,18 @@ class Thread{
         } else {
             // Program has ended.
             this.setStatus(enums.ThreadStatus.TERMINATED);
+            // console.log("******************************ASY");
         }
     }
 
     // Terminates execution of a Thread by changing its status and then emptying its stack
     public exit(): void {
+        // console.log("LENGTH: ", this.stack.length);
         this.status = enums.ThreadStatus.TERMINATED;
-        while(this.stack.length !==0) {
+        while(this.stack.length !== 0) {
             this.framePop();
         }
+        
 
     }
 }
