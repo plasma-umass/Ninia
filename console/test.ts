@@ -87,7 +87,18 @@ var testList = [
     ["Assignment test", "pytests/assignmentTest"],
     ["Deletion test", "pytests/delTest"]
 ];
+var testList_dup = testList.slice(0);
 
+var d = domain.create();
+d.on('error', function(err){
+    onFailure();
+    realPrint(err + (err['stack'] != null ? err.stack : "") + "\n");
+    testFails[testName] += 1;
+    testList = testList_dup.slice(0);
+    processTests();
+});
+
+// Called whenver Ninia output doesn't match cpython output
 function onFailure() {
     realPrint("Fail\n");
     restorePrint(() => {
@@ -109,19 +120,20 @@ function indiv_test(name: string, file: string, cb: () => void) {
 
     expectedOut = fs.readFileSync(file+'.out').toString();
 
-    interp.interpret(u.value(), false, function() {
-        if (testOut == expectedOut) {
-            realPrint("Pass\n");
-            numPassed += 1;
-        } else {
-            onFailure();
-        }
-        cb();
+    d.run(function() {
+        interp.interpret(u.value(), false, function() {
+            if (testOut == expectedOut) {
+                realPrint("Pass\n");
+                numPassed += 1;
+            } else {
+                onFailure();
+            }
+            cb();
+        });
     });
 }
 
-var testList_dup = testList.slice(0);
-
+// Setting up for an individual test
 var iteration = function(cur_test: [string], inCb: () => void) {
     var name = cur_test[0];
     if(cur_test.length === 1){
@@ -137,26 +149,12 @@ var iteration = function(cur_test: [string], inCb: () => void) {
         });
     }    
 }
+
+// Runs all tests
 function processTests(){
     async.eachSeries(testList, iteration, function(err: string) {
         printResults();
     });
 }
 
-function runTests() {
-    var d = domain.create();
-
-    d.on('error', function(err){
-        onFailure();
-        realPrint("Uncaught exception in Ninia: \n" + err + (err['stack'] != null ? err.stack : "") + "\n");
-        testFails[testName] += 1;
-        testList = testList_dup.slice(0);
-        runTests();
-    });
-
-    d.run(function() {
-        processTests();
-    });
-}
-
-runTests();
+processTests();
