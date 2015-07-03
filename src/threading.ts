@@ -30,7 +30,6 @@ class Thread{
     }
     // Executes bytecode method calls
     private run(): void {
-        // console.log("caller is " + arguments.callee.caller.toString());
         var stack = this.stack,
             startTime: number = (new Date()).getTime(),
             endTime: number,
@@ -104,10 +103,12 @@ class Thread{
         this.stack.push(frame);
     }   
 
+    // Maintains thread level tracebacks
     public addToTraceback(str : string): void {
         this.traceback = str + this.traceback;
     }
 
+    // Writes thread tracebacks to console
     public writeTraceback(): void {
         this.traceback = "Traceback (most recent call last):\n" + this.traceback;
         process.stdout.write(this.traceback);

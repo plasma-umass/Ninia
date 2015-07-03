@@ -93,7 +93,6 @@ var d = domain.create();
 d.on('error', function(err){
     onFailure();
     realPrint(err + (err['stack'] != null ? err.stack : "") + "\n");
-    testFails[testName] += 1;
     testList = testList_dup.slice(0);
     processTests();
 });

@@ -502,22 +502,19 @@ optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
     f.locals.del(f.codeObj.varnames[i]);
 }
 // Searches for an exception handler inside the current Py_FrameObject
+// Uses that blockstack to move forwards or backwards in code (by changing lastInst)
 // Returns true if found, else returns false
 function find_exception_handler(f: Py_FrameObject) : boolean {
     while (f.blockStack.length > 0) {
-        // console.log("FIRST LOOP");
         var b = f.blockStack[f.blockStack.length - 1];
         f.blockStack.pop();
         if (b[3] === opcodes.SETUP_EXCEPT) {
-            // console.log("I AM MOVING TO EXCEPT");
             setup_block(f, opcodes.EXCEPT_HANDLER);
-            // console.log(b);
             var endPos: number = b[2];
             f.lastInst = endPos;
             return true;
         }
         if (b[3] === opcodes.SETUP_FINALLY) {
-            // console.log("I AM SETTING UP FINALLY");
             var endPos: number = b[2];
             f.lastInst = endPos;
             return true;
@@ -525,6 +522,7 @@ function find_exception_handler(f: Py_FrameObject) : boolean {
     }
     return false;
 }
+// Unpack the lnotab to extract instruction/line numbers
 function unpack(str: any) {
     var ln_byte_tuple: [number,number][] = [];
     for(var i = 0, n = str.length; i < n; i+=2) {
@@ -535,6 +533,7 @@ function unpack(str: any) {
     return ln_byte_tuple;
 }
 
+// Using lnotab, find the linenumber of the current instruction in the .py file
 function addr2line(f: Py_FrameObject) {
     var lineno = 0;
     var addr = 0;
@@ -549,6 +548,7 @@ function addr2line(f: Py_FrameObject) {
     }
     return lineno;
 }
+// Add traceback
 function frame_add_traceback(f: Py_FrameObject, t:Thread) {
 
     var current_line = (f.codeObj.firstlineno) + addr2line(f);
@@ -562,9 +562,9 @@ function frame_add_traceback(f: Py_FrameObject, t:Thread) {
     }
     t.addToTraceback(tback);
 }
-// TODO: If no handler found, create a relevant traceback and output it
+
+// Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
 function fast_block_end (f: Py_FrameObject, t: Thread){
-    // console.log("INSIDE FAST BLOCK END");
     if (f.blockStack.length > 0) {
         // Search for exception handler in current Py_FrameObject
         find_exception_handler(f);
@@ -572,38 +572,35 @@ function fast_block_end (f: Py_FrameObject, t: Thread){
     else {
         // For the case where no exception handler exists in the current Py_FrameObject
         // Unwinds the stack and moves to previous frames and searches for an exception handler
-        // console.log("FOUND NO EXCEPTIONS", "   STACK LENGTH", f.stack.length)
-        // pop current frame and move to back;
         while (f.stack.length > 0) {
-            // console.log("POPPED");
             f.pop();
         }
-        // Search in previous frames
+       
         var exception_handler_found: boolean = false;
 
         // [CHANGE ONCE ARG>0 IMPLEMENTED (CO_VARGS)]incase of a raise with no arguements/no explicit catching exception
         t.addToTraceback("TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n");
         frame_add_traceback(f, t);
 
+         // Search for exception handler in previous frames
         while (f.back != null) {
             var chars = f.codeObj.lnotab.toString();
+            // stop frame execution
             f.returnToThread = true;
-            // t.framePop();
             f = (<Py_FrameObject>f.back);
+            // Add to traceback
             frame_add_traceback(f, t);
+            // If an exception handler is found in either this frame or previous frames
             if (find_exception_handler(f)) {
                 exception_handler_found = true;
                 break;
             }
         }
-        // Print traceback
+        // Print traceback and cease execution
         if (!exception_handler_found) {
             t.writeTraceback();
         }
     }
-    // f.returnToThread = true;
-
-
 }
 
 // TODO: Use Py_FrameObject exc_type, exc_value, traceback to store relevant exception information
@@ -611,22 +608,20 @@ function fast_block_end (f: Py_FrameObject, t: Thread){
 optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
     var i = f.readArg();
     var cause: IPy_Object = null, exc: IPy_Object = null;
-    // console.log("\n**Here is the error**", i);
     switch (i) {
         case 2:
             cause = f.pop();
         case 1:
             exc = f.pop();
         case 0:
-            // console.log("**IN here ** ", cause, exc);
-
+            // TODO: re-raise & exception handling for cases where i = 1, 2
+            // handle the various exceptions here
+            fast_block_end(f,t);
             break;
         default:
             throw new Error("bad RAISE_VARARGS oparg")
             break;
     }
-    /// handle the various exceptions here
-    fast_block_end(f,t);
 }
 
 // Helper function for all the CALL_FUNCTION* opcodes
