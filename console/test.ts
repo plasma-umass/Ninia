@@ -1,7 +1,8 @@
+///<reference path="../bower_components/DefinitelyTyped/async/async.d.ts" />
 import fs = require('fs');
 import Unmarshaller = require('../src/unmarshal');
 import Interpreter = require('../src/interpreter');
-var async = require('async');
+import async = require('async');
 import domain = require('domain');
 
 var testOut: string = '';
@@ -35,7 +36,11 @@ function printResults() {
         console.log(`Passed ${numPassed}/${numTests} tests.`); 
     });
 }
-
+// domain.on(err...), err is of type Error, but contains stack property
+// Reference: http://stackoverflow.com/a/28800079
+interface Error{
+    stack?: string;
+}
 // Add more tests here:
 var testList = [
     [`\n--- Math tests ---`],
@@ -87,12 +92,16 @@ var testList = [
     ["Assignment test", "pytests/assignmentTest"],
     ["Deletion test", "pytests/delTest"]
 ];
+// Duplicate test list
 var testList_dup = testList.slice(0);
 
 var d = domain.create();
-d.on('error', function(err){
+// Error interface defined above because of err.stack
+d.on('error', function(err: Error){
     onFailure();
-    realPrint(err + (err['stack'] != null ? err.stack : "") + "\n");
+    realPrint(err + (err.stack != null ? err.stack : "") + "\n");
+    // Assign testList the tests which have not run yet
+    // And continue execution of remaining tests
     testList = testList_dup.slice(0);
     processTests();
 });
@@ -137,11 +146,13 @@ var iteration = function(cur_test: [string], inCb: () => void) {
     var name = cur_test[0];
     if(cur_test.length === 1){
         realPrint(name + "\n");
+        // Remove test name from testList_dup
         testList_dup.shift();
         inCb();
     }
     else{
         var file = cur_test[1];
+        // Remove test from testList_dup
         testList_dup.shift();
         indiv_test(name, file, function() {
             inCb();
@@ -151,7 +162,7 @@ var iteration = function(cur_test: [string], inCb: () => void) {
 
 // Runs all tests
 function processTests(){
-    async.eachSeries(testList, iteration, function(err: string) {
+    async.eachSeries(testList, iteration, function(err: Error) {
         printResults();
     });
 }

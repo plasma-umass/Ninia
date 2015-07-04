@@ -526,9 +526,9 @@ function find_exception_handler(f: Py_FrameObject) : boolean {
 function unpack(str: any) {
     var ln_byte_tuple: [number,number][] = [];
     for(var i = 0, n = str.length; i < n; i+=2) {
-        var char1:number = parseInt(str.charCodeAt(i));
-        var char2:number = parseInt(str.charCodeAt(i+1));
-        ln_byte_tuple.push([char1, char2]);
+        var num1: number = parseInt(str.charCodeAt(i));
+        var num2: number = parseInt(str.charCodeAt(i+1));
+        ln_byte_tuple.push([num1, num2]);
     }
     return ln_byte_tuple;
 }
@@ -550,15 +550,10 @@ function addr2line(f: Py_FrameObject) {
 }
 // Add traceback
 function frame_add_traceback(f: Py_FrameObject, t:Thread) {
-
     var current_line = (f.codeObj.firstlineno) + addr2line(f);
-    var tback: string = "";
-    tback = "";
-    tback += "  File \"" + f.codeObj.filename.toString() +
-        "\", line " + current_line +
-        ", in " + f.codeObj.name.toString() + "\n";
+    var tback: string = `  File "${f.codeObj.filename.toString()}", line ${current_line}, in ${f.codeObj.name.toString()}\n`;
     if (t.codefile.length > 0) {
-        tback += "    " + t.codefile[current_line-1].trim()  + "\n";
+        tback += `    ${t.codefile[current_line-1].trim()}\n`;
     }
     t.addToTraceback(tback);
 }

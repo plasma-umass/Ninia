@@ -85,8 +85,6 @@ class Thread{
                 break;
             case enums.ThreadStatus.TERMINATED:
                 this.exit();
-                // execute callback
-                this.cb();
                 break;
         }
     }
@@ -140,6 +138,8 @@ class Thread{
         while(this.stack.length !== 0) {
             this.framePop();
         }
+        // execute callback
+        this.cb();
     }
 }
 export = Thread;
