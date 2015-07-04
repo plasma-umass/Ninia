@@ -14,6 +14,8 @@ var numPassed = 0;
 var testFails: { [testName: string]: number; } = { };
 var expectedOut = "";
 var testName = "";
+// Store test results
+var result: string = ``;
 function realPrint(text: string) {
     oldStdout.apply(process.stdout, [text]);
 }
@@ -27,6 +29,7 @@ function restorePrint(cb: () => void): void {
 
 function printResults() {
     restorePrint(() => {
+       console.log(result);
        console.log(`\n--- Results ---`);
         for (var tName in testFails) {
             if (testFails[tName] > 0) {
@@ -36,11 +39,7 @@ function printResults() {
         console.log(`Passed ${numPassed}/${numTests} tests.`); 
     });
 }
-// domain.on(err...), err is of type Error, but contains stack property
-// Reference: http://stackoverflow.com/a/28800079
-interface Error{
-    stack?: string;
-}
+
 // Add more tests here:
 var testList = [
     [`\n--- Math tests ---`],
@@ -92,33 +91,24 @@ var testList = [
     ["Assignment test", "pytests/assignmentTest"],
     ["Deletion test", "pytests/delTest"]
 ];
-// Duplicate test list
-var testList_dup = testList.slice(0);
 
 var d = domain.create();
-// Error interface defined above because of err.stack
-d.on('error', function(err: Error){
+var async_cb: () => void = null;
+d.on('error', function(err: any){
     onFailure();
-    realPrint(err + (err.stack != null ? err.stack : "") + "\n");
-    // Assign testList the tests which have not run yet
-    // And continue execution of remaining tests
-    testList = testList_dup.slice(0);
-    processTests();
+    result += `${err.stack != null ? err.stack : ""}\n`;
+    async_cb();
 });
 
 // Called whenver Ninia output doesn't match cpython output
 function onFailure() {
-    realPrint("Fail\n");
-    restorePrint(() => {
-        console.log('CPython output:\n', expectedOut);
-        console.log('Ninia output:\n', testOut);
-    });
+    result += `Fail\nCPython output:\n${expectedOut}\nNinia output:\n${testOut}\n`;
     testFails[testName] += 1;
 }
 
 // Execute an individual test
 function indiv_test(name: string, file: string, cb: () => void) {
-    realPrint(`Running ${name}... `);
+    result += `Running ${name}... `;
     numTests += 1;
     var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
     testOut = '';  // reset the output catcher
@@ -127,11 +117,12 @@ function indiv_test(name: string, file: string, cb: () => void) {
         testFails[testName] = 0;  // initialize
 
     expectedOut = fs.readFileSync(file+'.out').toString();
-
+    // save cb so it can be invoked by domain error handler
+    async_cb = cb;
     d.run(function() {
         interp.interpret(u.value(), false, function() {
             if (testOut == expectedOut) {
-                realPrint("Pass\n");
+                result += `Pass\n`;
                 numPassed += 1;
             } else {
                 onFailure();
@@ -145,15 +136,11 @@ function indiv_test(name: string, file: string, cb: () => void) {
 var iteration = function(cur_test: [string], inCb: () => void) {
     var name = cur_test[0];
     if(cur_test.length === 1){
-        realPrint(name + "\n");
-        // Remove test name from testList_dup
-        testList_dup.shift();
+        result += `${name}\n`;
         inCb();
     }
     else{
         var file = cur_test[1];
-        // Remove test from testList_dup
-        testList_dup.shift();
         indiv_test(name, file, function() {
             inCb();
         });
