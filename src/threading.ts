@@ -5,6 +5,7 @@ import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
+import Py_FrameObject = require('./frameobject');
 import IPy_FrameObj = interfaces.IPy_FrameObj;
 import enums = require('./enums');
 
@@ -20,7 +21,13 @@ class Thread{
     // Current state of Thread
     private status: enums.ThreadStatus = enums.ThreadStatus.NEW;
     private stack: IPy_FrameObj[] = [];
+    public traceback: string = "";
+    public codefile: string[] = [];
+    public cb: () => void;
 
+    constructor(cb : () => void){
+        this.cb = cb;
+    }
     // Executes bytecode method calls
     private run(): void {
         var stack = this.stack,
@@ -61,11 +68,16 @@ class Thread{
 
     // Change Thread status
     public setStatus(status: enums.ThreadStatus): void {
+        // Fix for a single thread terminating multiple times in run(), whenever its stack is empty
+        if(this.status === enums.ThreadStatus.TERMINATED && status === enums.ThreadStatus.TERMINATED)
+        {
+            return;
+        }
         this.status = status;
         switch (this.status) {
             // If thread is runnable, yield to JS event loop and then change the thread to running
             case enums.ThreadStatus.RUNNABLE:
-                this.setStatus(enums.ThreadStatus.RUNNING);
+                setImmediate(() => { this.setStatus(enums.ThreadStatus.RUNNING); });
                 break;
             case enums.ThreadStatus.RUNNING:
                 // I'm scheduled to run!
@@ -88,6 +100,17 @@ class Thread{
     public framePush(frame: IPy_FrameObj): void {
         this.stack.push(frame);
     }   
+
+    // Maintains thread level tracebacks
+    public addToTraceback(str : string): void {
+        this.traceback = str + this.traceback;
+    }
+
+    // Writes thread tracebacks to console
+    public writeTraceback(): void {
+        this.traceback = "Traceback (most recent call last):\n" + this.traceback;
+        process.stdout.write(this.traceback);
+    }
 
     // TODO: Handle exceptions when exception support is added
     public throwException(): void {
@@ -112,10 +135,11 @@ class Thread{
     // Terminates execution of a Thread by changing its status and then emptying its stack
     public exit(): void {
         this.status = enums.ThreadStatus.TERMINATED;
-        while(this.stack.length !==0) {
+        while(this.stack.length !== 0) {
             this.framePop();
         }
-
+        // execute callback
+        this.cb();
     }
 }
 export = Thread;
