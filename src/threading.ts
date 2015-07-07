@@ -8,6 +8,7 @@ import Py_Cell = require('./cell');
 import Py_FrameObject = require('./frameobject');
 import IPy_FrameObj = interfaces.IPy_FrameObj;
 import enums = require('./enums');
+import Py_Sys = require('./sys');
 
 var maxMethodResumes: number = 10000,
     // The number of method resumes until Doppio should yield again.
@@ -17,15 +18,17 @@ var maxMethodResumes: number = 10000,
     // Used for the CMA.
     numSamples: number = 1;
 
-class Thread{
+class Thread {
     // Current state of Thread
     private status: enums.ThreadStatus = enums.ThreadStatus.NEW;
     private stack: IPy_FrameObj[] = [];
     public traceback: string = "";
     public codefile: string[] = [];
     public cb: () => void;
+    public sys: Py_Sys;
 
-    constructor(cb : () => void){
+    constructor(sys: Py_Sys, cb : () => void) {
+        this.sys = sys;
         this.cb = cb;
     }
     // Executes bytecode method calls
@@ -59,9 +62,8 @@ class Thread{
                 setImmediate(() => { this.setStatus(enums.ThreadStatus.RUNNABLE); });
             }
         }
-
+        
         if (stack.length === 0) {
-            // This thread has finished!
             this.setStatus(enums.ThreadStatus.TERMINATED);
         }
     }
@@ -69,7 +71,7 @@ class Thread{
     // Change Thread status
     public setStatus(status: enums.ThreadStatus): void {
         // Fix for a single thread terminating multiple times in run(), whenever its stack is empty
-        if(this.status === enums.ThreadStatus.TERMINATED && status === enums.ThreadStatus.TERMINATED)
+        if (this.status === enums.ThreadStatus.TERMINATED && status === enums.ThreadStatus.TERMINATED)
         {
             return;
         }
@@ -115,6 +117,10 @@ class Thread{
     // TODO: Handle exceptions when exception support is added
     public throwException(): void {
 
+    }
+    
+    public getTopOfStack(): IPy_FrameObj {
+        return this.stack[this.stack.length - 1];
     }
 
     public asyncReturn(rv?: any): void {

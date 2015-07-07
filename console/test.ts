@@ -7,7 +7,7 @@ import domain = require('domain');
 
 var testOut: string = '';
 var oldStdout = process.stdout.write;
-process.stdout.write = <any> ((data: string) => {testOut += data;});
+process.stdout.write = <any> ((data: string) => {testOut += data;realPrint(data);});
 var interp = new Interpreter();
 var numTests = 0;
 var numPassed = 0;
@@ -75,6 +75,7 @@ var testList = [
     ["Comprehension test", "pytests/comprehensionTest"],
     [`\n--- Class tests ---`],
     ["Basic class test", "pytests/classes/userDefTest"],
+    ["Class import / inheritance test", "pytests/classes/externalImport"],
     [`\n--- Caught Exception tests ---`],
     ["Basic Exception test", "pytests/caught_exceptions/except"],
     ["Nested Function Exception test", "pytests/caught_exceptions/nestedFunction"],
@@ -141,9 +142,7 @@ var iteration = function(cur_test: [string], inCb: () => void) {
     }
     else{
         var file = cur_test[1];
-        indiv_test(name, file, function() {
-            inCb();
-        });
+        indiv_test(name, file, inCb);
     }    
 }
 

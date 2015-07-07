@@ -9,6 +9,7 @@ import Py_Object = primitives.Py_Object;
 import Py_Int = primitives.Py_Int;
 import Py_Long = primitives.Py_Long;
 import Py_Slice = primitives.Py_Slice;
+import Py_Str = primitives.Py_Str;
 import True = primitives.True;
 import False = primitives.False;
 import Iterable = interfaces.Iterable;
@@ -264,13 +265,60 @@ export class Py_Tuple extends Py_Object implements Iterable {
   }
 }
 
+/**
+ * Our implementation of Python dictionaries.
+ * 
+ * Python dictionaries form the basis of every object in Python.
+ * Objects all have an underlying __dict__ property, which is a
+ * dictionary containing all of the properties on the object.
+ * 
+ * Thus, to update the property 'bar' on object 'foo', one can
+ * do either:
+ * 
+ * foo.bar = 4
+ * 
+ * ...or:
+ * 
+ * foo.__dict__['bar'] = 4
+ * 
+ * Naturally, JavaScript objects share this same property, in
+ * that you can access property 'bar' as either foo.bar or
+ * foo['bar'].
+ * 
+ * One key difference: Python dictionaries can have arbitrary
+ * keys, whereas JavaScript objects only support string keys.
+ * However, in Python, only dictionary items keyed on a string 
+ * actually surface as object properties...
+ * 
+ * Which brings me to our idiosyncratic two-bucket dictionary
+ * design. The first bucket is for items keyed on a Python
+ * string; those go into "_stringDict", keyed on the string
+ * prepended with $ to prevent collisions with special JavaScript
+ * properties. The second bucket is for items keyed on other
+ * Python objects; like in Python, those are keyed on their
+ * __hash__ value.
+ * 
+ * This design lets us use *arbitrary JavaScript objects as
+ * _stringDict*, making it possible for Python objects to live
+ * a dual existence as both Dictionary and Object. An object's
+ * __dict__ property in Ninia is just a Py_Dict with the
+ * object as its _stringDict. :)
+ */
 export class Py_Dict extends Py_Object implements Iterable {
-  protected _keys: IPy_Object[];
+  // Non-string keys.
+  protected _objectKeys: IPy_Object[];
+  // Stores items not keyed on a string.
   protected _vals: { [hash: number]: IPy_Object };
-  constructor() {
+  // Stores items keyed on a string.
+  protected _stringDict: { [str: string]: IPy_Object };
+  constructor(stringDict: { [str: string]: IPy_Object } = {}) {
     super();
-    this._keys = [];
+    this._objectKeys = [];
     this._vals = {};
+    this._stringDict = stringDict;
+  }
+  public getStringDict(): { [str: string]: IPy_Object } {
+    return this._stringDict;
   }
   public clone(): Py_Dict {
     var clone = new Py_Dict(),
@@ -279,57 +327,87 @@ export class Py_Dict extends Py_Object implements Iterable {
       key = keys[i];
       clone._vals[<any> key] = this._vals[<any> key];
     }
-    clone._keys = this._keys.slice(0);
+    clone._objectKeys = this._objectKeys.slice(0);
+    keys = Object.keys(this._stringDict);
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      clone._stringDict[key] = this._stringDict[key];  
+    }
     return clone;
   }
   public get(key: IPy_Object): IPy_Object {
-    var h = key.hash();
-    return this._vals[h];
+    if (key instanceof Py_Str) {
+      return this._stringDict[`$${key.toString()}`];
+    } else {
+      var h = key.hash();
+      return this._vals[h];
+    }
   }
   public set(key: IPy_Object, val: IPy_Object): void {
-    var h = key.hash();
-    if (this._vals[h] === undefined) {
-      this._keys.push(key);
+    if (key instanceof Py_Str) {
+      this._stringDict[`$${key.toString()}`] = val;
+    } else {
+      var h = key.hash();
+      if (this._vals[h] === undefined) {
+        this._objectKeys.push(key);
+      }
+      this._vals[h] = val;
     }
-    this._vals[h] = val;
   }
   public del(key: IPy_Object): void {
-    var h = key.hash();
-    if (this._vals[h] !== undefined) {
-      delete this._vals[h];
+    if (key instanceof Py_Str) {
+      delete this._stringDict[`$${key.toString()}`];
+    } else {
+      var h = key.hash();
+      if (this._vals[h] !== undefined) {
+        delete this._vals[h];
+      }
+      this._objectKeys.splice(this._objectKeys.indexOf(key), 1); 
     }
-    this._keys.splice(this._keys.indexOf(key), 1);
   }
   public iter(): Iterator {
-    return new iterator.ListIterator(this._keys);
+    return new iterator.ListIterator(this._objectKeys.concat(
+      Object.keys(this._stringDict).map(
+        (key: string) => new Py_Str(key.slice(1))
+      )));
   }
   public len(): number {
-      return this._keys.length;
+      return Object.keys(this._stringDict).length + this._objectKeys.length;
   }
   public toPairs(): [IPy_Object,IPy_Object][] {
-    var pairs: [IPy_Object, IPy_Object][] = [];
-    for (var i = 0; i < this._keys.length; i++) {
-      var key = this._keys[i];
+    var pairs: [IPy_Object, IPy_Object][] = [], i: number;
+    for (i = 0; i < this._objectKeys.length; i++) {
+      var key = this._objectKeys[i];
       var h = key.hash();
       var val = this._vals[h];
       pairs.push([key, val]);
     }
+    Object.keys(this._stringDict).forEach((key: string) => {
+      pairs.push(<[IPy_Object, IPy_Object]> [new Py_Str(key.slice(1)), this._stringDict[key]]);
+    });
     return pairs;
   }
+  public keys(): IPy_Object[] {
+    return this._objectKeys.concat(
+      Object.keys(this._stringDict).map(
+        (key: string) => new Py_Str(key.slice(1))
+      )
+    );
+  }
   public toString(): string {
-    if (this._keys.length == 0) {
-      return '{}';
-    }
     var s = '{';
-    for (var i = 0; i < this._keys.length; i++) {
-      var key = this._keys[i];
+    for (var i = 0; i < this._objectKeys.length; i++) {
+      var key = this._objectKeys[i];
       var h = key.hash();
       var val = this._vals[h];
       s += key.__repr__() + ': ';
       s += val.__repr__() + ', ';
     }
+    Object.keys(this._stringDict).forEach((key) => {
+      s += "'" + key.slice(1) + "': " + this._stringDict[key].__repr__() + ", ";
+    });
     // trim off last ', '
-    return s.slice(0, -2) + '}';
+    return (s.length > 1 ? s.slice(0, -2)  : s) + '}';
   }
 
   public asBool(): boolean {
@@ -339,9 +417,23 @@ export class Py_Dict extends Py_Object implements Iterable {
   public __len__(): Py_Int {
     return new Py_Int(this.len());
   }
+  
+  public __eq__(o: IPy_Object): IPy_Object {
+    if (o === this) {
+      return True;
+    } else {
+      return False;
+    }
+  }
 }
 
 export class Py_Set extends Py_Dict implements IPy_Object {
+  static fromArray(objects: IPy_Object[]): Py_Set {
+    var res = new Py_Set();
+    objects.forEach((obj) => res.set(obj, obj));
+    return res;
+  }
+  
   static fromIterable(x: Iterable) {
     var set = new Py_Set();
     var it = x.iter();
@@ -353,14 +445,13 @@ export class Py_Set extends Py_Dict implements IPy_Object {
 
   public toString(): string {
     var s = 'set([';
-    for (var i = 0; i < this._keys.length; i++) {
-      s += this._keys[i].__repr__() + ', ';
+    for (var i = 0; i < this._objectKeys.length; i++) {
+      s += this._objectKeys[i].__repr__() + ', ';
     }
-    if (this.len() > 0) {
-      // trim off last ', '
-      s = s.slice(0, -2);
-    }
-    return s + '])';
+    Object.keys(this._stringDict).forEach((key) => {
+      s += key.slice(1) + ', ';
+    });
+    return (s.length > 5 ? s.slice(0, -2) : s) + '])';
   }
 
   // set intersection
@@ -368,13 +459,11 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var res = new Py_Set();
-    var h: string, xvals = (<Py_Set> x)._vals;
-    for (h in this._vals) {
-      if (this._vals.hasOwnProperty(h) && xvals.hasOwnProperty(h)) {
-        var val = this._vals[<any> h];
-        res._keys.push(val);
-        res._vals[<any> h] = val;
+    var res = new Py_Set(), myKeys = this.keys(),
+      other: Py_Set = <Py_Set> x;
+    for (var i = 0; i < myKeys.length; i++) {
+      if (other.get(myKeys[i]) !== undefined) {
+        res.set(myKeys[i], myKeys[i]);
       }
     }
     return res;
@@ -385,13 +474,11 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var res = new Py_Set();
-    var h: string, xvals = (<Py_Set> x)._vals;
-    for (h in this._vals) {
-      if (this._vals.hasOwnProperty(h) && !xvals.hasOwnProperty(h)) {
-        var val = this._vals[<any> h];
-        res._keys.push(val);
-        res._vals[<any> h] = val;
+    var res = new Py_Set(), myKeys = this.keys(),
+      other: Py_Set = <Py_Set> x;
+    for (var i = 0; i < myKeys.length; i++) {
+      if (other.get(myKeys[i]) === undefined) {
+        res.set(myKeys[i], myKeys[i]);
       }
     }
     return res;
@@ -410,23 +497,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var res = new Py_Set();
-    var h: string, xvals = (<Py_Set> x)._vals;
-    for (h in this._vals) {
-      if (this._vals.hasOwnProperty(h)) {
-        var val = this._vals[<any> h];
-        res._keys.push(val);
-        res._vals[<any> h] = val;
-      }
-    }
-    for (h in xvals) {
-      if (xvals.hasOwnProperty(h) && !this._vals.hasOwnProperty(h)) {
-        var val = xvals[<any> h];
-        res._keys.push(val);
-        res._vals[<any> h] = val;
-      }
-    }
-    return res;
+    return Py_Set.fromArray(this.keys().concat((<Py_Set> x).keys()));
   }
 
   // subset
@@ -434,13 +505,14 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var h: string, xvals = (<Py_Set> x)._vals;
-    for (h in this._vals) {
-      if (this._vals.hasOwnProperty(h) && !xvals.hasOwnProperty(h)) {
+    var h: string, other: Py_Set = <Py_Set> x,
+      myKeys = this.keys();
+    for (var i = 0; i < myKeys.length; i++) {
+      if (other.get(myKeys[i]) === undefined) {
         return False;
       }
-    }
+    }  
     // make sure we're not equal
-    return (this._keys.length == (<Py_Set> x)._keys.length)? False : True;
+    return (this.len() == (<Py_Set> x).len())? False : True;
   }
 }

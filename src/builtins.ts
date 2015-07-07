@@ -1,3 +1,4 @@
+/// <reference path="../bower_components/DefinitelyTyped/async/async.d.ts" />
 import iterator = require('./iterator');
 import collections = require('./collections');
 import primitives = require('./primitives');
@@ -10,6 +11,7 @@ import Py_Dict = collections.Py_Dict;
 import Py_Tuple = collections.Py_Tuple;
 import Py_Set = collections.Py_Set;
 import Py_Str = primitives.Py_Str;
+import Py_Object = primitives.Py_Object;
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
@@ -18,6 +20,12 @@ import IPy_FrameObj = interfaces.IPy_FrameObj;
 import nativefuncobj = require('./nativefuncobject');
 import Py_SyncNativeFuncObject = nativefuncobj.Py_SyncNativeFuncObject;
 import Py_AsyncNativeFuncObject = nativefuncobj.Py_AsyncNativeFuncObject;
+import path = require('path');
+import fs = require('fs');
+import async = require('async');
+// !! Use only for type info !!
+import _unmarshal = require('./unmarshal');
+import _Py_FrameObject = require('./frameobject');
 
 // range function
 function range(t: Thread, f: IPy_FrameObj, args: Py_Int[], kwargs: Py_Dict): Py_List {
@@ -357,6 +365,96 @@ function pyfunc_wrapper_onearg(func: (a: IPy_Object) => IPy_Object, funcname: st
   };
 }
 
+function locals(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
+  return f.locals;
+}
+
+function globals(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
+  return f.globals;
+}
+
+function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+  var name = <Py_Str> args[0],
+    nameJS = name.toString(),
+    globals = <Py_Dict> args[1],
+    toImport =  args[3] === primitives.None ? [] : (<Py_List> args[3]).toArray().map((item: Py_Str) => item.toString()),
+    searchPaths = [path.dirname(globals.get(new Py_Str('__file__')).toString())],
+    sys = t.sys;
+
+  if (sys.$modules.get(name) !== undefined) {
+    return cb(sys.$modules.get(name));
+  }
+  
+  searchPaths = searchPaths.concat(sys.$path.toArray().slice(1).map((str: IPy_Object) => str.toString()));
+  searchPaths = searchPaths.map((p: string) => path.resolve(p, `${name}.pyc`));
+  
+  var filename: string;
+  async.eachSeries(searchPaths, (p: string, cb: (e?: any) => void) => {
+    fs.readFile(p, (e: NodeJS.ErrnoException, data: Buffer) => {
+      if (e) {
+        cb();
+      } else {
+        filename = p;
+        console.log(filename);
+        cb(data);
+      }
+    }); 
+  }, (data?: any) => {
+    if (data) {
+      registerModule(t, f, filename, name, data, (modObj: IPy_Object) => {
+        if (toImport.length === 0) {
+          // import entire module.
+          cb(modObj);
+        } else {
+          // import specific module components.
+          var p = new Py_Object();
+          toImport.forEach((prop: string) => {
+            (<any>p)[`$${prop}`] = (<any>modObj)[`$${prop}`];
+          });
+          cb(p);
+        }
+      });
+    } else {
+      // XXX
+      throw new Error("Module not found: " + name);
+    }
+  });
+}
+
+/**
+ * Register a module with the system. Should only be called after
+ * confirming that module is not already loaded.
+ */
+function registerModule(t: Thread, f: IPy_FrameObj, filename: string, moduleName: Py_Str, data: Buffer, cb: (mod: IPy_Object) => void) {
+  //!!! CIRCULAR REFERENCE HACK!!!
+  var Unmarshaller: typeof _unmarshal = require('./unmarshal'),
+    Py_FrameObject: typeof _Py_FrameObject = require('./frameobject'),
+    mod = (new Unmarshaller(data)).value(),
+    sys = t.sys,
+    scope = new Py_Dict(),
+    // At the module level, locals === globals.
+    newFrame = new Py_FrameObject(f, mod, scope, scope, []),
+    // XXX: Should be made into a proper Py_Object w/ expected methods.
+    modObj = <any> newFrame.locals.getStringDict(),
+    // Trampoline frame. Input callback called when newFrame returns.
+    trampFrame = new nativefuncobj.Py_TrampolineFrameObject(f, new Py_Dict(), (rv: IPy_Object) => {
+      // Register into modules dictionary.
+      sys.$modules.set(moduleName, modObj);
+      cb(modObj);      
+    });
+
+  // Seed the module namespace with default attributes.
+  modObj[`$__file__`] = new Py_Str(filename);
+  modObj[`$__dict__`] = newFrame.locals;
+  modObj[`$__doc__`] = None;
+  modObj[`$__name__`] = moduleName;
+  
+  // Tell the thread to initialize the module.
+  t.framePush(trampFrame);
+  t.framePush(newFrame);
+  t.setStatus(enums.ThreadStatus.RUNNABLE);
+}
+
 // full mapping of builtin names to values.
 var builtins = {
     $True: primitives.True,
@@ -416,8 +514,14 @@ var builtins = {
     $getattr: new Py_SyncNativeFuncObject(getattr),
     setattr: setattr,
     $setattr: new Py_SyncNativeFuncObject(setattr),
+    locals: locals,
+    $locals: new Py_SyncNativeFuncObject(locals),
+    globals: globals,
+    $globals: new Py_SyncNativeFuncObject(globals),
+    __import__: __import__,
+    $__import__: new Py_AsyncNativeFuncObject(__import__),
     $__name__: Py_Str.fromJS('__main__'),
-    $__package__: primitives.None,
-}, True = primitives.True, False = primitives.False;
+    $__package__: primitives.None
+}, True = primitives.True, False = primitives.False, None = primitives.None;
 
 export = builtins

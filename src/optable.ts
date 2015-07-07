@@ -410,6 +410,13 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
         case ComparisonOp.IS_NOT:
             f.push(a.hash() !== b.hash() ? True : False);
             break;
+        case ComparisonOp.EXC_MATCH:
+            // XXX: This uses the JavaScript instanceof operator. Might not be
+            // robust in complex cases.
+            // Assuming a is an exception object, b is a Python type object.
+            // Eventually replace w/ standard 'isinstance' builtin.
+            f.push(a instanceof (<any> b) ? True : False)
+            break;
         // case 'exception match':
         //     throw new Error("Python Exceptions are not supported");
         default:
@@ -1027,30 +1034,25 @@ optable[opcodes.FOR_ITER] = function(f: Py_FrameObject) {
     }
 }
 
-optable[opcodes.IMPORT_NAME] = function(f: Py_FrameObject) {
+optable[opcodes.IMPORT_NAME] = function(f: Py_FrameObject, t: Thread) {
     var name_idx = f.readArg();
     // see https://docs.python.org/2/library/functions.html#__import__
     var fromlist = f.pop();
-    var level = (<Py_Int> f.pop()).toNumber();
+    var level = f.pop();
     var name = f.codeObj.names[name_idx];
-    //var mod;
-    // TODO: implement this. For now, we no-op.
-    // mod = builtins.__import__(name, f.globals, f.locals, fromlist, level)
-    f.push(null);
+    f.returnToThread = true;
+    builtins.$__import__.exec(t, f, [name, f.globals, f.locals, fromlist, level], new Py_Dict());
 }
 
 optable[opcodes.IMPORT_FROM] = function(f: Py_FrameObject) {
     var name_idx = f.readArg();
     var mod = f.pop();
-    //var attr;
-    // TODO: implement this. For now, we no-op.
-    // attr = mod.codeObj.names[name_idx]
-    f.push(null);
+    var name = f.codeObj.names[name_idx];
+    f.push((<any> mod)[`$${name}`]);
 }
 
 // Replaces TOS with getattr(TOS, co_names[namei]).
-optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) {
-    // TODO: Cache strings! 
+optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) { 
     var name = f.codeObj.names[f.readArg()].toString(),
         obj = f.pop(),
         val = (<any> obj)[`$${name}`];

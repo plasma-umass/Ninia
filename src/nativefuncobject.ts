@@ -109,10 +109,18 @@ export class Py_AsyncNativeFuncObject implements interfaces.IPy_Function {
     }
 
     public exec(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict) {
-        t.framePush(new Py_TrampolineFrameObject(f, kwargs, () => {}));
+        var myFrame = new Py_TrampolineFrameObject(f, kwargs, () => {});
+        t.framePush(myFrame);
+        var hasReturned: boolean = false;
         this._f(t, f, args, kwargs, (rv: IPy_Object) => {
+            hasReturned = true;
             t.asyncReturn(rv);
         });
+        // Ensure the function didn't complete synchronously or simply chain calls to
+        // other functions.
+        if (!hasReturned && t.getTopOfStack() === myFrame) {
+            t.setStatus(enums.ThreadStatus.ASYNC_WAITING);
+        }
     }
 
     public exec_from_native(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv?: IPy_Object) => void) {
