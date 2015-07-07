@@ -47,10 +47,10 @@ Alternatively, follow the "Running" steps and load one of the
 ### Adding More Tests
 
  1. Write a python file `testExample.py` somewhere in the pytests/ directory.
- 2. Add a new line to test.ts that gives a description for the test and a path to
-  the test file:
+ 2. Add a new line to [test.ts](https://github.com/plasma-umass/Ninia/blob/master/console/test.ts)
+  that gives a description for the test and a path to the test file:
 ```javascript
-test("This is a sample test", "pytests/path/to/testExample");
+["This is a sample test", "pytests/path/to/testExample"],
 ```
  3. Check that it runs with `make test`.
 
