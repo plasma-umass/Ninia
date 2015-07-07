@@ -1006,7 +1006,7 @@ optable[opcodes.END_FINALLY] = function(f: Py_FrameObject, t: Thread) {
     // or whether the function returns, and continues with the outer-next block.
     // As of now, we always assume that no exception needs to be re-raised.
     f.blockStack.pop();
-    fast_block_end(f,t);
+    // fast_block_end(f,t);
 }
 
 
