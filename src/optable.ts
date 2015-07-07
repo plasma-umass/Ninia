@@ -316,22 +316,27 @@ optable[opcodes.LOAD_CONST] = function(f: Py_FrameObject) {
     f.push(f.codeObj.consts[i]);
 }
 
-optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject) {
+optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject, t: Thread) {
     var i = f.readArg();
     var name = f.codeObj.names[i];
     var val = f.locals.get(name) || f.globals.get(name) || (<any> builtins)[`$${name.toString()}`];
     if (val === undefined) {
-        throw new Error('undefined name: ' + name);
+        // throw new Error('undefined name: ' + name);
+        var message = `NameError: global name ${name} is not defined`;
+        raise_exception_here(f, t, message, "NameError");
+        return;
     }
     f.push(val);
 }
 
-optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject) {
+optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject, t: Thread) {
     var i = f.readArg();
     var name = f.codeObj.names[i];
     var val = f.globals.get(name) || (<any> builtins)[`$${name.toString()}`];
     if (val === undefined) {
-        throw new Error('undefined name: ' + name);
+        var message = `NameError: global name ${name} is not defined`;
+        raise_exception_here(f, t, message, "NameError");
+        return;
     }
     f.push(val);
 }
@@ -577,7 +582,6 @@ function fast_block_end (f: Py_FrameObject, t: Thread){
         var exception_handler_found: boolean = false;
 
         // [CHANGE ONCE ARG>0 IMPLEMENTED (CO_VARGS)]incase of a raise with no arguements/no explicit catching exception
-        t.addToTraceback("TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n");
         frame_add_traceback(f, t);
 
          // Search for exception handler in previous frames
@@ -600,12 +604,18 @@ function fast_block_end (f: Py_FrameObject, t: Thread){
         }
     }
 }
-
+function raise_exception_here(f: Py_FrameObject, t: Thread, message: string, type: string){
+    t.addToTraceback(message);
+    fast_block_end(f,t);
+}
 // TODO: Use Py_FrameObject exc_type, exc_value, traceback to store relevant exception information
 //       Handle cases when i = 1,2
 optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
     var i = f.readArg();
     var cause: IPy_Object = null, exc: IPy_Object = null;
+    if (i === 0){
+        t.addToTraceback("TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n");
+    }
     switch (i) {
         case 2:
             cause = f.pop();

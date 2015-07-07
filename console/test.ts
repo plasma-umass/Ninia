@@ -84,6 +84,7 @@ var testList = [
     ["Nested Function Exception test", "pytests/caught_exceptions/nestedFunction"],
     ["Nested Try-Block Exception test", "pytests/caught_exceptions/nestedTry"],
     ["Recursive function Try-Block Exception test", "pytests/caught_exceptions/recursiveFunctionTry"],
+    ["NameError", "pytests/caught_exceptions/nameError"],
     [`\n--- Uncaught Exception tests ---`],
     ["Basic Uncaught Exception test", "pytests/uncaught_exceptions/simpleFunction"],
     ["Recurisve Function Uncaught Exception test", "pytests/uncaught_exceptions/recursiveFunctionUncaught"],
