@@ -8,3 +8,7 @@ print squares + [36, 49, 64, 81, 100]
 squares.append(66);
 print squares
 print squares[1::2]
+squares.__setitem__(0, 2)
+squares.__delitem__(1)
+print squares
+print squares.__getitem__(0)

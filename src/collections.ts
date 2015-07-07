@@ -20,11 +20,20 @@ import NotImplemented = primitives.NotImplemented;
 
 export class Py_List extends Py_Object implements Iterable {
   private _list: IPy_Object[];
-  public $append: interfaces.IPy_Function = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $append = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     this.append(args[0]);
     return primitives.None;
   });
-
+  public $__getitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return this.__getitem__(args[0]);
+  });
+  public $__delitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return this.__delitem__(args[0]);
+  });
+  public $__setitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return this.__setitem__(args[0], args[1]);
+  });
+  
   constructor(lst: IPy_Object[]) {
     super();
     this._list = lst;
