@@ -223,8 +223,6 @@ optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject, t: Thread) {
             f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
             t.setStatus(enums.ThreadStatus.RUNNABLE);
         });    
-    } else {
-        process.stdout.write('wtf');
     }
 }
 
