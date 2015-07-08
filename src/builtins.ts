@@ -17,6 +17,7 @@ import IPy_Object = interfaces.IPy_Object;
 import enums = require('./enums');
 import Thread = require('./threading');
 import IPy_FrameObj = interfaces.IPy_FrameObj;
+import IPy_Function = interfaces.IPy_Function;
 import nativefuncobj = require('./nativefuncobject');
 import Py_SyncNativeFuncObject = nativefuncobj.Py_SyncNativeFuncObject;
 import Py_AsyncNativeFuncObject = nativefuncobj.Py_AsyncNativeFuncObject;
@@ -373,6 +374,66 @@ function globals(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   return f.globals;
 }
 
+function type(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
+  if (args.length === 1) {
+    return (<any> args[0]).$__class__;
+  } else {
+    var name = <Py_Str> args[0],
+      bases = <Py_Tuple> args[1],
+      baseIter = bases.iter(),
+      baseItem: any,
+      key: string,
+      props = <Py_Dict> args[2],
+      propIter = props.iter(),
+      jsClassName = name.toString(),
+      nextKey: Py_Str,
+      // Use eval so the function name matchs. :)
+      cls = <Function> eval(`function ${jsClassName}(){};${jsClassName}`);
+    
+    // TODO: Use prototype chaining for baseClasses.
+    
+    while (null !== (nextKey = propIter.next())) {
+      cls.prototype['$' + nextKey.toString()] = props.get(nextKey);
+    }
+    (<any> cls).prototype['$__class__'] = cls.prototype;
+    (<any> cls).prototype['$__mro__'] = new Py_Tuple([cls.prototype].concat(bases.toArray()));
+    // HACK: Base classes.
+    while (null !== (baseItem = baseIter.next())) {
+      for (key in baseItem) {
+        if (baseItem.hasOwnProperty(key) && !cls.prototype.hasOwnProperty(key)) {
+          cls.prototype[key] = baseItem[key];
+        }
+      }
+    }
+    
+    cls.prototype['$__call__'] = new Py_AsyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Function[], kwargs: Py_Dict, cb: (rv: interfaces.IPy_Object) => void): void => {
+        // TODO: Normally, you use __new__ to return the object, then __init__ to initialize it.
+        var inst = new (<any> cls)(), key: string;
+        for (key in inst) {
+          // Naaaaasty hack because we don't do method binding.
+          if (inst[key]['exec']) {
+            (function(method: IPy_Function) {
+              inst[key] = new Py_AsyncNativeFuncObject((t, f, args, kwargs, cb) => {
+                method.exec_from_native(t, f, [inst].concat(args), kwargs, cb);
+              });
+            })(inst[key]);
+          }
+        }
+        
+        inst.$__dict__ = new Py_Dict(inst);
+        
+        if (inst['$__init__']) {
+          (<IPy_Function> inst.$__init__).exec_from_native(t, f, args, new Py_Dict(), () => {
+            cb(inst);
+          });
+        } else {
+          cb(inst);
+        }
+    });
+    return <any> cls.prototype;
+  }
+}
+
 function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
   var name = <Py_Str> args[0],
     nameJS = name.toString(),
@@ -395,7 +456,6 @@ function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
         cb();
       } else {
         filename = p;
-        console.log(filename);
         cb(data);
       }
     }); 
@@ -453,6 +513,18 @@ function registerModule(t: Thread, f: IPy_FrameObj, filename: string, moduleName
   t.framePush(trampFrame);
   t.framePush(newFrame);
   t.setStatus(enums.ThreadStatus.RUNNABLE);
+}
+
+function isinstance(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
+  var obj = args[0],
+    cls = args[1];
+
+  if ((<any> obj)['$__mro__']) {
+    var mro = <Py_Tuple> (<any> obj)['$__mro__'];
+    return mro.toArray().indexOf(cls) !== -1 ? True : False;
+  } else {
+    return False;
+  }
 }
 
 // full mapping of builtin names to values.
@@ -518,6 +590,10 @@ var builtins = {
     $locals: new Py_SyncNativeFuncObject(locals),
     globals: globals,
     $globals: new Py_SyncNativeFuncObject(globals),
+    type: type,
+    $type: new Py_SyncNativeFuncObject(type),
+    isinstance: isinstance,
+    $isinstance: new Py_SyncNativeFuncObject(isinstance),
     __import__: __import__,
     $__import__: new Py_AsyncNativeFuncObject(__import__),
     $__name__: Py_Str.fromJS('__main__'),

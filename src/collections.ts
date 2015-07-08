@@ -343,6 +343,9 @@ export class Py_Dict extends Py_Object implements Iterable {
       return this._vals[h];
     }
   }
+  public __getitem__(key: IPy_Object): IPy_Object {
+    return this.get(key); 
+  }
   public set(key: IPy_Object, val: IPy_Object): void {
     if (key instanceof Py_Str) {
       this._stringDict[`$${key.toString()}`] = val;

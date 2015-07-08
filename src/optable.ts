@@ -223,6 +223,8 @@ optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject, t: Thread) {
             f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
             t.setStatus(enums.ThreadStatus.RUNNABLE);
         });    
+    } else {
+        process.stdout.write('wtf');
     }
 }
 
@@ -655,6 +657,10 @@ function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: b
 
     var func = f.pop();
     f.returnToThread = true;
+    // Hack for class objects, which are callable.
+    if (!(<any> func)['exec'] && (<any> func)['$__call__']) {
+        func = (<any> func).$__call__;
+    }
     (<interfaces.IPy_Function> func).exec(t, f, args, kwargs);
 }
 
@@ -1046,7 +1052,8 @@ optable[opcodes.IMPORT_NAME] = function(f: Py_FrameObject, t: Thread) {
 
 optable[opcodes.IMPORT_FROM] = function(f: Py_FrameObject) {
     var name_idx = f.readArg();
-    var mod = f.pop();
+    // Don't pop it off.
+    var mod = f.peek();
     var name = f.codeObj.names[name_idx];
     f.push((<any> mod)[`$${name}`]);
 }
@@ -1079,26 +1086,12 @@ optable[opcodes.LOAD_LOCALS] = function(f: Py_FrameObject) {
     f.push(f.locals);
 }
 
-optable[opcodes.BUILD_CLASS] = function(f: Py_FrameObject) {
+optable[opcodes.BUILD_CLASS] = function(f: Py_FrameObject, t: Thread) {
     /* Creates a new class object. TOS is the methods dictionary, TOS1 the tuple of the names of the base classes, and TOS2 the class name. */
     var methods = <Py_Dict> f.pop(),
-      methodIter = methods.iter(),
-      nextKey: primitives.Py_Str,
       baseClasses = <Py_Tuple> f.pop(),
-      className = <primitives.Py_Str> f.pop(),
-      jsClassName = className.toString(),
-      // Use eval so the function name matchs. :)
-      cls = <Function> eval(`function ${jsClassName}(){};${jsClassName}`);
-    
-    // TODO: Use prototype chaining for baseClasses.
-    
-    while (null !== (nextKey = methodIter.next())) {
-        cls.prototype['$' + nextKey.toString()] = methods.get(nextKey);
-    }
-    
-    f.push(new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Function[], kwargs: Py_Dict) => {
-        return new (<any> cls)();
-    }));
+      className = <primitives.Py_Str> f.pop();
+    f.push(builtins.type(t, f, [className, baseClasses, methods], null));
 }
 
 export = optable;
