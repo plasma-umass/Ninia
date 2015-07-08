@@ -413,11 +413,7 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
             f.push(a.hash() !== b.hash() ? True : False);
             break;
         case ComparisonOp.EXC_MATCH:
-            // XXX: This uses the JavaScript instanceof operator. Might not be
-            // robust in complex cases.
-            // Assuming a is an exception object, b is a Python type object.
-            // Eventually replace w/ standard 'isinstance' builtin.
-            f.push(a instanceof (<any> b) ? True : False)
+            f.push(builtins.isinstance(t, f, [a, b], null));
             break;
         // case 'exception match':
         //     throw new Error("Python Exceptions are not supported");
