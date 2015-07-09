@@ -1,6 +1,8 @@
 Ninia
 ===================
 
+[![Build Status](https://travis-ci.org/plasma-umass/Ninia.svg?branch=master)](https://travis-ci.org/plasma-umass/Ninia)
+
 *Ninia* is a genus of snake, commonly called *coffee snakes*. In this case, it is also an implementation of Python on top of JavaScript.
 
 Ninia is currently a work-in-progress, and actively welcomes contributions!
