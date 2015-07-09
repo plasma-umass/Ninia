@@ -37,6 +37,9 @@ function printResults() {
             }
         }
         console.log(`Passed ${numPassed}/${numTests} tests.`); 
+        if (numPassed != numTests) {
+          process.exit(1);
+        }
     });
 }
 
