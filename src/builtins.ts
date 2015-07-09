@@ -6,6 +6,7 @@ import Py_Int = primitives.Py_Int;
 import Py_Complex = primitives.Py_Complex;
 import Py_Float = primitives.Py_Float;
 import Py_Long = primitives.Py_Long;
+import Py_Slice = primitives.Py_Slice;
 import Py_List = collections.Py_List;
 import Py_Dict = collections.Py_Dict;
 import Py_Tuple = collections.Py_Tuple;
@@ -519,6 +520,8 @@ function isinstance(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
   var obj = args[0],
     cls = args[1];
 
+  if (obj === undefined || cls === undefined)
+    return False;
   if ((<any> obj)['$__mro__']) {
     var mro = <Py_Tuple> (<any> obj)['$__mro__'];
     return mro.toArray().indexOf(cls) !== -1 ? True : False;
@@ -526,9 +529,72 @@ function isinstance(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
     return False;
   }
 }
+// Exception classes
+class BaseException extends Py_Object {
+  $__dict__ = new Py_Dict(<any> this);
+  $args: IPy_Object[];
+  $message: Py_Str;
+  constructor(args?: IPy_Object[]) {
+    super();
+    this.$args = args;  
+  }
+  $__mro__ = new Py_Tuple([Py_Object.prototype, BaseException.prototype]);
+  $__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return this.call(args);
+  });
+  call(args?: IPy_Object[]){
+    return new BaseException(args);
+  }
+  $__getstate__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return new Py_Tuple(this.$args);
+  });
 
+  $__setstate__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    this.$__dict__ = kwargs;
+    return kwargs;
+  });
+}
+// TODO: Change exception classes so that they print $args during tracebacks for user-defined exc classes
+class Exception extends BaseException {
+  public str: string = "";
+  constructor(args?: IPy_Object[]){
+    super(args);
+    this.$args = args;
+  }
+  $__mro__ = new Py_Tuple([ Py_Object.prototype, BaseException.prototype, Exception.prototype]);
+  $__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return this.call(args);
+  });
+  call(args?: IPy_Object[]){
+    return new Exception(args);
+  }
+  type(): string{
+    return "Exception\n";
+  }
+}
+
+class NameError extends Exception {
+  str: string = "";
+  constructor(args?: IPy_Object[]){
+    super();
+    this.$args = args;
+  }
+  $__mro__ = new Py_Tuple([Py_Object.prototype, BaseException.prototype, Exception.prototype, NameError.prototype]);
+  $__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return this.call(args);
+  });
+  call(args?: IPy_Object[]){
+    return new NameError(args);
+  }
+  type(): string{
+    return "NameError\n";
+  }
+}
 // full mapping of builtin names to values.
 var builtins = {
+    $BaseException : BaseException.prototype,
+    $Exception: Exception.prototype,
+    $NameError: NameError.prototype,
     $True: primitives.True,
     $False: primitives.False,
     $None: primitives.None,

@@ -11,7 +11,7 @@ def bar():
     #raising an exception
     try:
         print "Hello"
-        raise 
+        raise Exception
         print "This should not print"
     except:
         print "World"
