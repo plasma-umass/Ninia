@@ -335,6 +335,27 @@ export class Py_Dict extends Py_Object implements Iterable {
     }
     return clone;
   }
+  public $get = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    var res = this.get(args[0]);
+    if (res == undefined) {
+      if (args.length > 1) {
+        return args[1];
+      }
+      return primitives.None;
+    }
+    return res;
+  });
+  public $__getitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return this.get(args[0]);
+  });
+  public $__setitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    this.set(args[0], args[1]);
+    return None;
+  });
+  public $__delitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    this.del(args[0]);
+    return None;
+  });
   public get(key: IPy_Object): IPy_Object {
     if (key instanceof Py_Str) {
       return this._stringDict[`$${key.toString()}`];
@@ -342,9 +363,6 @@ export class Py_Dict extends Py_Object implements Iterable {
       var h = key.hash();
       return this._vals[h];
     }
-  }
-  public __getitem__(key: IPy_Object): IPy_Object {
-    return this.get(key); 
   }
   public set(key: IPy_Object, val: IPy_Object): void {
     if (key instanceof Py_Str) {

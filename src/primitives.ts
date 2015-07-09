@@ -307,7 +307,7 @@ function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof No
         typeDiff = aType - bType;
       if (bType > ${enums.Py_Type.COMPLEX}) {
         // b is not a number.
-        return NIError;
+        return exports.NotImplemented;
       } else if (typeDiff > 0) {
         // a is wider than b
         b = widenTo(b, aType);
