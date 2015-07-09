@@ -321,7 +321,7 @@ function hasattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
     throw new Error('TypeError: hasattr() takes two arguments');
   }
   var obj = args[0];
-  var attr = args[1].toString();
+  var attr = '$' + args[1].toString();
   return obj.hasOwnProperty(attr)? True : False;
 }
 
