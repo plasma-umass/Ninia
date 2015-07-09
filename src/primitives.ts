@@ -296,8 +296,7 @@ function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
 
 /**
  * Template function for math operations. Widens either a or b to the others'
- * type before executing the math operation. We use a regular expression to
- * replace the function name in the generated version.
+ * type before executing the math operation.
  */
 function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof NotImplemented {
   return eval(`(function() { return function(b) {
@@ -308,6 +307,26 @@ function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof No
       if (bType > ${enums.Py_Type.COMPLEX}) {
         // b is not a number.
         return exports.NotImplemented;
+      } else if (typeDiff > 0) {
+        // a is wider than b
+        b = widenTo(b, aType);
+      } else if (typeDiff < 0) {
+        // b is wider than a
+        a = widenTo(a, bType);
+      }
+      return a.${name}(b);
+    }
+  })()`);
+}
+function generateCmpOp(name: string): (b: IPy_Number) => IPy_Number {
+  return eval(`(function() { return function(b) {
+      var a = this,
+        bType = b.getType(),
+        aType = a.getType(),
+        typeDiff = aType - bType;
+      if (bType > ${enums.Py_Type.COMPLEX}) {
+        // b is not a number. Thus it is always less than a.
+	return (new exports.Py_Int(aType)).${name}(new exports.Py_Int(bType));
       } else if (typeDiff > 0) {
         // a is wider than b
         b = widenTo(b, aType);
@@ -913,6 +932,16 @@ export class Py_Complex extends Py_Object implements IPy_Number {
    .forEach((opName) => {
      if ((<any> numericType).prototype[opName] !== undefined) {
        (<any> numericType).prototype[`__${opName}__`] = generateMathOp(opName);
+     }
+   });
+});
+
+// Generate comparison ops. Numbers are always less than non-numeric types.
+[Py_Int, Py_Long, Py_Float, Py_Complex].forEach((numericType) => {
+  ["lt", "le", "eq", "ne", "gt", "ge"]
+   .forEach((opName) => {
+     if ((<any> numericType).prototype[opName] !== undefined) {
+       (<any> numericType).prototype[`__${opName}__`] = generateCmpOp(opName);
      }
    });
 });
