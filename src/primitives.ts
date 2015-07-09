@@ -268,6 +268,11 @@ export class Py_Str extends Py_Object {
 function format(mapping: string, conv_flags: string, field_width: string,
                 precision: string, conv_type: string, obj: IPy_Object): string {
   // XXX: really hacky attempt at covering the common cases
+  if (mapping !== undefined) {
+    // mapping is a JS string '(dict_key)', and obj is a Py_Dict
+    // XXX: use non-private methods for this
+    obj = (<any> obj)._stringDict[`$${mapping.slice(1,-1)}`];
+  }
   switch (conv_type) {
     case 's': return obj.__str__().toString();
     case 'r': return obj.__repr__().toString();
@@ -277,7 +282,7 @@ function format(mapping: string, conv_flags: string, field_width: string,
       if (precision !== undefined) {
         return x.toFixed(+precision.slice(1));
       }
-      return x.toString();
+      return x.toFixed(6);
   }
   return '';
 }
