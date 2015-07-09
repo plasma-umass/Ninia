@@ -7,7 +7,7 @@ import domain = require('domain');
 
 var testOut: string = '';
 var oldStdout = process.stdout.write;
-process.stdout.write = <any> ((data: string) => {testOut += data;realPrint(data);});
+process.stdout.write = <any> ((data: string) => {testOut += data;});
 var interp = new Interpreter();
 var numTests = 0;
 var numPassed = 0;
