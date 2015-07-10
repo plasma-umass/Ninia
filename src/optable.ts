@@ -608,7 +608,8 @@ function fast_block_end (f: Py_FrameObject, t: Thread){
         // Search for exception handler in previous frames
         if(!find_in_prev(f,t))
         {
-            t.writeTraceback();
+            // no exception handler found, write traceback and exit the thread
+            t.throwException();
             return false;
         }
     }

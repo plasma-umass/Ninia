@@ -118,12 +118,12 @@ class Thread {
     public writeTraceback(): void {
         this.traceback = "Traceback (most recent call last):\n" + this.traceback;
         process.stdout.write(this.traceback);
-        this.setStatus(enums.ThreadStatus.TERMINATED);
     }
 
-    // TODO: Handle exceptions when exception support is added
+    // Output the traceback when thread cannot handle an exception, and exit the thread
     public throwException(): void {
-
+        this.writeTraceback();
+        this.exit();
     }
     
     public getTopOfStack(): IPy_FrameObj {
