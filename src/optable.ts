@@ -647,7 +647,7 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): vo
     }
 }
 optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
-    t.tracebackClear();
+    t.clearTraceback();
     var i = f.readArg();
     var cause: IPy_Object = null, exc: any = null;
     if (i === 0){
@@ -1053,7 +1053,6 @@ optable[opcodes.END_FINALLY] = function(f: Py_FrameObject, t: Thread) {
     // or whether the function returns, and continues with the outer-next block.
     // As of now, we always assume that no exception needs to be re-raised.
     f.blockStack.pop();
-    // fast_block_end(f,t);
 }
 
 

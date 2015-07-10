@@ -104,7 +104,7 @@ class Thread {
         this.stack.push(frame);
     }   
 
-    public tracebackClear(): void {
+    public clearTraceback(): void {
         this.traceback = "";
     }
 
