@@ -324,10 +324,8 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject, t: Thread) {
     if (val === undefined) {
         var message = `NameError: global name '${name}' is not defined\n`;
         raise_exception_here(f, t, message, "NameError");
-        val = (<any> builtins)[`$${"NameError"}`];
         // get NameError object
-        f.push(val.call());
-        return;
+        val = (<any> builtins)[`$${"NameError"}`];
     }
     f.push(val);
 }
@@ -340,10 +338,8 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject, t: Thread) {
     if (val === undefined) {
         var message = `NameError: global name '${name}' is not defined\n`;
         raise_exception_here(f, t, message, "NameError");
-        val = (<any> builtins)[`$${"NameError"}`];
         // get NameError object
-        f.push(val.call());
-        return;
+        val = (<any> builtins)[`$${"NameError"}`];
     }
     f.push(val);
 }
@@ -569,6 +565,8 @@ function addr2line(f: Py_FrameObject) {
 // Add traceback
 function frame_add_traceback(f: Py_FrameObject, t: Thread) {
     var current_line = (f.codeObj.firstlineno) + addr2line(f);
+    // Set whenever an exception handler is found
+    // If exception handler can't handle that exception, the line where exception occurred is added to traceback
     if(t.raise_lno > 0){
         current_line = t.raise_lno ;
         t.raise_lno = 0;
@@ -579,10 +577,7 @@ function frame_add_traceback(f: Py_FrameObject, t: Thread) {
     }
     t.addToTraceback(tback);
 }
-// Search for exception handler in current Py_FrameObject
-function find_in_current(f: Py_FrameObject, t: Thread){
-    return find_exception_handler(f);
-}
+
 // Search for exception handler in previous frames
 function find_in_prev(f: Py_FrameObject, t: Thread) {
     frame_add_traceback(f, t);
@@ -609,15 +604,15 @@ function find_in_prev(f: Py_FrameObject, t: Thread) {
 // TODO: Move logic to Thread.throwException
 function fast_block_end (f: Py_FrameObject, t: Thread){
 
-    if(!find_in_current(f, t)){
+    if(!find_exception_handler(f)){
         // Search for exception handler in previous frames
         if(!find_in_prev(f,t))
         {
-        t.writeTraceback();
+            t.writeTraceback();
             return false;
         }
-        // return true;
     }
+    // save line number on which exception occurred
     t.raise_lno = (f.codeObj.firstlineno) + addr2line(f);
     return true;
 }
@@ -632,13 +627,12 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any){
     // raise with 0 arg is from Exception class
     if (exc === null && cause === null){
         val = (<any> builtins)[`$${"Exception"}`]; 
-        f.push(val.call());
+        f.push(val);
     }
     if(exc){
-        // Get object of exc class
-        val = exc.call()
-        t.addToTraceback(val.type());
-        f.push(val);        
+        // Push exc back on stack
+        // t.addToTraceback(val.type());
+        f.push(exc);        
     }
     // TODO: argc = 2
 }
