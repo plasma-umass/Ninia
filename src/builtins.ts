@@ -529,7 +529,8 @@ function isinstance(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
     return False;
   }
 }
-// Exception classes
+
+//Exception classes
 class BaseException extends Py_Object {
   $__dict__ = new Py_Dict(<any> this);
   $args: Py_Tuple;
@@ -542,7 +543,9 @@ class BaseException extends Py_Object {
 
   constructor(args?: IPy_Object[]) {
     super();
-    this.$args = new Py_Tuple(args);  
+    if (args) {
+      this.$args = new Py_Tuple(args);
+    }
   }
 }
 
@@ -561,17 +564,15 @@ BaseException.prototype.$__setstate__ = new Py_SyncNativeFuncObject((t: Thread, 
 
 // TODO: Change exception classes so that they print $args during tracebacks for user-defined exc classes
 class Exception extends BaseException {
-  public str: string = "";
   constructor(args?: IPy_Object[]){
     super(args);
-    this.$args = new Py_Tuple(args);
+    if (args) {
+      this.$args = new Py_Tuple(args);  
+    }
   }
+
   $__mro__: Py_Tuple;
   $__call__: Py_SyncNativeFuncObject;
-
-  type(): string{
-    return "Exception\n";
-  }
 }
 Exception.prototype.$__mro__ = new Py_Tuple([Exception.prototype, BaseException.prototype, Py_Object.prototype]);
 Exception.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
@@ -579,20 +580,17 @@ Exception.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: inter
 });
 
 class NameError extends Exception {
-  str: string = "";
   constructor(args?: IPy_Object[]){
     super();
-    this.$args = new Py_Tuple(args);
+    if (args) {
+      this.$args = new Py_Tuple(args);  
+    }
   }
 
   $__mro__: Py_Tuple;
   $__call__: Py_SyncNativeFuncObject;
 
-  type(): string{
-    return "NameError\n";
-  }
 }
-
 NameError.prototype.$__mro__ = new Py_Tuple([NameError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
 NameError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new NameError(args);

@@ -1,22 +1,16 @@
-def name_error1():
-    try:
-        raise
-    except:
-        print "Success"
-
-def name_error2():
+def catching_less():
     try:
         raise NameError
     except:
         print "Success"
 
-def name_error3():
+def catching_same():
     try:
         raise Exception
     except Exception:
         print "Success"
 
-def name_error4():
+def nested_try():
     try:
         try:
             raise
@@ -25,15 +19,20 @@ def name_error4():
     except:
         print "Success"
 
-def name_error5():
+def catching_same2():
     try:
         raise NameError
     except NameError:
         print "Success"
 
+def multiple_arg():
+    try:
+        raise NameError, "Message"
+    except Exception:
+        print "Caught"
 
-name_error1()
-name_error2()
-name_error3()
-name_error4()
-name_error5()
+catching_less()
+catching_same()
+nested_try()
+catching_same2()
+multiple_arg()

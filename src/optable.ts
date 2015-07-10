@@ -620,8 +620,8 @@ function raise_exception_here(f: Py_FrameObject, t: Thread, message: string, typ
     t.addToTraceback(message);
     fast_block_end(f,t);
 }
-// TODO: Use Py_FrameObject exc_type, exc_value, traceback to store relevant exception information
-//       Handle cases when i = 1,2
+
+// push exceptions on stack
 function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any){
     var val: any = null;
     // raise with 0 arg is from Exception class
@@ -629,12 +629,22 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any){
         val = (<any> builtins)[`$${"Exception"}`]; 
         f.push(val);
     }
-    if(exc){
-        // Push exc back on stack
-        // t.addToTraceback(val.type());
-        f.push(exc);        
+    // First argument exc, second argument cause (passed into exception and used as a message when printing tb)
+    if(exc && cause){
+        var message: string = "";
+        message += exc.constructor.name + ": " + <primitives.Py_Str> cause + "\n";
+        // check if user defined class
+        val = (<any> builtins)[`$${exc.constructor.name}`]; 
+        if(!val){
+            message = "__main__." + message;
+        }
+        // store message
+        exc.$message = message;
     }
-    // TODO: argc = 2
+    if(exc){
+        f.push(exc);
+        t.addToTraceback(exc.$message);
+    }
 }
 optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
     t.tracebackClear();
