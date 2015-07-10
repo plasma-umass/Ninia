@@ -6,7 +6,7 @@ def catching_less():
 
 def catching_same():
     try:
-        raise Exception
+        raise Exception("Hello")
     except Exception:
         print "Success"
 
@@ -21,7 +21,7 @@ def nested_try():
 
 def catching_same2():
     try:
-        raise NameError
+        raise NameError("Message")
     except NameError:
         print "Success"
 
