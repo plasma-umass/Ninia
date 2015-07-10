@@ -23,7 +23,6 @@ class Thread {
     private status: enums.ThreadStatus = enums.ThreadStatus.NEW;
     private stack: IPy_FrameObj[] = [];
     public raise_lno: number = 0;
-    public exc_msg: string = "";
     public traceback: string = "";
     public codefile: string[] = [];
     public cb: () => void;

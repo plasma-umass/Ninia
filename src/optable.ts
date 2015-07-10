@@ -324,8 +324,8 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject, t: Thread) {
     if (val === undefined) {
         var message = `NameError: global name '${name}' is not defined\n`;
         raise_exception_here(f, t, message, "NameError");
-        // get NameError object
-        val = (<any> builtins)[`$${"NameError"}`];
+        // get NameError type object
+        val = builtins['$NameError'];
     }
     f.push(val);
 }
@@ -338,8 +338,8 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject, t: Thread) {
     if (val === undefined) {
         var message = `NameError: global name '${name}' is not defined\n`;
         raise_exception_here(f, t, message, "NameError");
-        // get NameError object
-        val = (<any> builtins)[`$${"NameError"}`];
+        // get NameError type object
+        val = builtins['$NameError'];
     }
     f.push(val);
 }
@@ -537,9 +537,9 @@ function find_exception_handler(f: Py_FrameObject) : boolean {
     return false;
 }
 // Unpack the lnotab to extract instruction/line numbers
-function unpack(str: any) {
+function unpack(str: any): [number,number][] {
     var ln_byte_tuple: [number,number][] = [];
-    for(var i = 0, n = str.length; i < n; i+=2) {
+    for (var i = 0, n = str.length; i < n; i+=2) {
         var num1: number = parseInt(str.charCodeAt(i));
         var num2: number = parseInt(str.charCodeAt(i+1));
         ln_byte_tuple.push([num1, num2]);
@@ -548,7 +548,7 @@ function unpack(str: any) {
 }
 
 // Using lnotab, find the linenumber of the current instruction in the .py file
-function addr2line(f: Py_FrameObject) {
+function addr2line(f: Py_FrameObject): number {
     var lineno = 0;
     var addr = 0;
     var chars = f.codeObj.lnotab.toString();
@@ -564,10 +564,10 @@ function addr2line(f: Py_FrameObject) {
 }
 // Add traceback
 function frame_add_traceback(f: Py_FrameObject, t: Thread) {
-    var current_line = (f.codeObj.firstlineno) + addr2line(f);
+    var current_line: number = (f.codeObj.firstlineno) + addr2line(f);
     // Set whenever an exception handler is found
     // If exception handler can't handle that exception, the line where exception occurred is added to traceback
-    if(t.raise_lno > 0){
+    if (t.raise_lno > 0) {
         current_line = t.raise_lno ;
         t.raise_lno = 0;
     }
@@ -579,7 +579,7 @@ function frame_add_traceback(f: Py_FrameObject, t: Thread) {
 }
 
 // Search for exception handler in previous frames
-function find_in_prev(f: Py_FrameObject, t: Thread) {
+function find_in_prev(f: Py_FrameObject, t: Thread): boolean {
     frame_add_traceback(f, t);
     while (f.stack.length > 0) {
         f.pop();
@@ -602,47 +602,46 @@ function find_in_prev(f: Py_FrameObject, t: Thread) {
 }
 // Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
 // TODO: Move logic to Thread.throwException
-function fast_block_end (f: Py_FrameObject, t: Thread){
-
-    if(!find_exception_handler(f)){
+function fast_block_end(f: Py_FrameObject, t: Thread): void {
+    // search in current frame
+    if (!find_exception_handler(f)) {
         // Search for exception handler in previous frames
-        if(!find_in_prev(f,t))
+        if (!find_in_prev(f,t))
         {
             // no exception handler found, write traceback and exit the thread
             t.throwException();
-            return false;
+            return;
         }
     }
     // save line number on which exception occurred
     t.raise_lno = (f.codeObj.firstlineno) + addr2line(f);
-    return true;
 }
-function raise_exception_here(f: Py_FrameObject, t: Thread, message: string, type: string){
+function raise_exception_here(f: Py_FrameObject, t: Thread, message: string, type: string): void {
     t.addToTraceback(message);
     fast_block_end(f,t);
 }
 
 // push exceptions on stack
-function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any){
+function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): void {
     var val: any = null;
     // raise with 0 arg is from Exception class
-    if (exc === null && cause === null){
-        val = (<any> builtins)[`$${"Exception"}`]; 
+    if (exc === null && cause === null) {
+        val = builtins['$Exception'];
         f.push(val);
     }
     // First argument exc, second argument cause (passed into exception and used as a message when printing tb)
-    if(exc && cause){
+    if (exc && cause) {
         var message: string = "";
         message += exc.constructor.name + ": " + <primitives.Py_Str> cause + "\n";
         // check if user defined class
         val = (<any> builtins)[`$${exc.constructor.name}`]; 
-        if(!val){
+        if (!val) {
             message = "__main__." + message;
         }
         // store message
-        exc.$message = message;
+        exc.$message = new primitives.Py_Str(message);
     }
-    if(exc){
+    if (exc) {
         f.push(exc);
         t.addToTraceback(exc.$message);
     }

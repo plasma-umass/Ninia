@@ -520,8 +520,6 @@ function isinstance(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
   var obj = args[0],
     cls = args[1];
 
-  if (obj === undefined || cls === undefined)
-    return False;
   if ((<any> obj)['$__mro__']) {
     var mro = <Py_Tuple> (<any> obj)['$__mro__'];
     return mro.toArray().indexOf(cls) !== -1 ? True : False;
@@ -535,7 +533,6 @@ class BaseException extends Py_Object {
   $__dict__ = new Py_Dict(<any> this);
   $args: Py_Tuple;
   $message: Py_Str;
-
   $__mro__: Py_Tuple;
   $__call__: Py_SyncNativeFuncObject;
   $__getstate__: Py_SyncNativeFuncObject;
@@ -561,36 +558,21 @@ BaseException.prototype.$__setstate__ = new Py_SyncNativeFuncObject((t: Thread, 
   return kwargs;
 });
 
-
-// TODO: Change exception classes so that they print $args during tracebacks for user-defined exc classes
 class Exception extends BaseException {
-  constructor(args?: IPy_Object[]){
-    super(args);
-    if (args) {
-      this.$args = new Py_Tuple(args);  
-    }
-  }
-
   $__mro__: Py_Tuple;
   $__call__: Py_SyncNativeFuncObject;
 }
+
 Exception.prototype.$__mro__ = new Py_Tuple([Exception.prototype, BaseException.prototype, Py_Object.prototype]);
 Exception.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new Exception(args);
 });
 
 class NameError extends Exception {
-  constructor(args?: IPy_Object[]){
-    super();
-    if (args) {
-      this.$args = new Py_Tuple(args);  
-    }
-  }
-
   $__mro__: Py_Tuple;
   $__call__: Py_SyncNativeFuncObject;
-
 }
+
 NameError.prototype.$__mro__ = new Py_Tuple([NameError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
 NameError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new NameError(args);
