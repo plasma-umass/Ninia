@@ -537,11 +537,12 @@ function find_exception_handler(f: Py_FrameObject) : boolean {
     return false;
 }
 // Unpack the lnotab to extract instruction/line numbers
-function unpack(str: any): [number,number][] {
+// str contians bytes inside of a string
+function unpack(str: string): [number,number][] {
     var ln_byte_tuple: [number,number][] = [];
     for (var i = 0, n = str.length; i < n; i+=2) {
-        var num1: number = parseInt(str.charCodeAt(i));
-        var num2: number = parseInt(str.charCodeAt(i+1));
+        var num1: number = str.charCodeAt(i);
+        var num2: number = str.charCodeAt(i+1);
         ln_byte_tuple.push([num1, num2]);
     }
     return ln_byte_tuple;
