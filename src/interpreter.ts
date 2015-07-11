@@ -26,15 +26,17 @@ class Interpreter {
     interpret(code: Py_CodeObject, debug: boolean, callback: () => void) {
         var scope = new collections.Py_Dict();
         var f = new Py_FrameObject(null, code, scope, scope, []);
-        // TODO: change this to be asynchronous
-        var data = fs.readFileSync(f.codeObj.filename.toString());
         f.globals.getStringDict()[`$__file__`] = code.filename;
         // Create new Thread, push the Py_FrameObject on it and then run it
         var t: Thread = new Thread(this.sys, callback);
-        t.codefile = data.toString('utf8').split('\n');
         t.framePush(f);
-        // Change Thread status to RUNNABLE
-        t.setStatus(enums.ThreadStatus.RUNNABLE);
+        // Read .py file corresponding to .pyc file and save it in t.codefile
+        fs.readFile(f.codeObj.filename.toString(), function (err, data) {
+            var codefile = data.toString('utf8').split('\n');
+            t.codefile = codefile;                  
+            // Change Thread status to RUNNABLE
+            t.setStatus(enums.ThreadStatus.RUNNABLE);
+        });
     }
 }
 export = Interpreter;

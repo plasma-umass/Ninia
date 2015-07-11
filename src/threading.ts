@@ -22,6 +22,7 @@ class Thread {
     // Current state of Thread
     private status: enums.ThreadStatus = enums.ThreadStatus.NEW;
     private stack: IPy_FrameObj[] = [];
+    public raise_lno: number = 0;
     public traceback: string = "";
     public codefile: string[] = [];
     public cb: () => void;
@@ -103,6 +104,10 @@ class Thread {
         this.stack.push(frame);
     }   
 
+    public clearTraceback(): void {
+        this.traceback = "";
+    }
+
     // Maintains thread level tracebacks
     public addToTraceback(str : string): void {
         this.traceback = str + this.traceback;
@@ -114,9 +119,10 @@ class Thread {
         process.stdout.write(this.traceback);
     }
 
-    // TODO: Handle exceptions when exception support is added
+    // Output the traceback when thread cannot handle an exception, and exit the thread
     public throwException(): void {
-
+        this.writeTraceback();
+        this.exit();
     }
     
     public getTopOfStack(): IPy_FrameObj {
