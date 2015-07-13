@@ -126,14 +126,14 @@ class Py_FrameObject implements IPy_FrameObj {
     exec(t: Thread): void {
         this.returnToThread = false;
         for (var op = this.readOp(); op != undefined; op = this.readOp()) {
-            // console.log("OP: ", opcodes[op]);
             var func = optable[op];
             if (func == undefined) {
-                throw new Error("Unknown opcode: " + opcodes[op] + " ("+op+")");
+                throw new Error(`Unknown opcode: ${opcodes[op]} (${op})`);
             }
-            //if (this.debug) {
-            //   console.log(opcodes[op]);
-            //}
+            if (false) {  // debug
+                console.log(this.stack);
+                console.log(`${t.stackIdx}: ${opcodes[op]}`);
+            }
             func(this, t);
             if (this.returnToThread) {
                 // End the bytecode loop; return to thread loop.
