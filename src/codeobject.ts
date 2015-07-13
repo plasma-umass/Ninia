@@ -24,5 +24,8 @@ class Py_CodeObject implements interfaces.IPy_Object {
                 public lnotab: Py_Str) {}
     getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
     hash(): number { return -1; }
+    isGenerator(): boolean {
+        return !!(this.flags & 0x20);
+    }
 }
 export = Py_CodeObject;
