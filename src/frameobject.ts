@@ -132,7 +132,7 @@ class Py_FrameObject implements IPy_FrameObj {
             }
             if (false) {  // debug
                 console.log(this.stack);
-                console.log(`${t.stackIdx}: ${opcodes[op]}`);
+                console.log(`${t.stackDepth()}: ${opcodes[op]}`);
             }
             func(this, t);
             if (this.returnToThread) {

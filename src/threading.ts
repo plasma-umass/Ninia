@@ -129,6 +129,10 @@ class Thread {
         return this.stack[this.stack.length - 1];
     }
 
+    public stackDepth(): number {
+        return this.stack.length;
+    }
+
     public asyncReturn(rv?: any): void {
         var stack = this.stack,
           length: number;
