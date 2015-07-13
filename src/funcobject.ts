@@ -63,16 +63,20 @@ class Py_FuncObject extends primitives.Py_Object implements IPy_Function {
             }
         }
     }
+
+    makeFrame(caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict): Py_FrameObject {
+        this.args2locals(args, locals);
+        return new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), locals, (this.closure ? this.closure.toArray() : []));
+    }
     
     exec(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
-        this.args2locals(args, locals);
-        t.framePush(new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), locals, (this.closure ? this.closure.toArray() : [])));
+        t.framePush(this.makeFrame(caller, args, locals));
     }
 
     exec_from_native(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict, cb: (rv?: IPy_Object) => void) {
-        this.args2locals(args, locals);
+        var frame = this.makeFrame(caller, args, locals);
         t.framePush(new nativefuncobject.Py_TrampolineFrameObject(caller, locals, cb))
-        t.framePush(new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), locals, (this.closure ? this.closure.toArray() : [])));
+        t.framePush(frame);
     }
 }
 export = Py_FuncObject;
