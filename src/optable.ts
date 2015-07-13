@@ -4,7 +4,9 @@ import Py_FrameObject = require('./frameobject');
 import Py_Int = primitives.Py_Int;
 // XXX: Prevent a circular reference. Use this only for type info.
 import _Py_FuncObject = require('./funcobject');
+import _Py_GeneratorObject = require('./genobject');
 var Py_FuncObject: typeof _Py_FuncObject = null;
+var Py_GeneratorObject: typeof _Py_GeneratorObject = null;
 import opcodes = require('./opcodes');
 import builtins = require('./builtins');
 import collections = require('./collections');
@@ -698,11 +700,19 @@ function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: b
     }
 
     var func = f.pop();
-    f.returnToThread = true;
+
     // Hack for class objects, which are callable.
     if (!(<any> func)['exec'] && (<any> func)['$__call__']) {
         func = (<any> func).$__call__;
     }
+
+    if (func instanceof Py_GeneratorObject) {
+        // This sets up the frame, but doesn't run the code.
+        (<interfaces.IPy_Function> func).exec(t, f, args, kwargs);
+        return f.push(func);
+    }
+
+    f.returnToThread = true;
     (<interfaces.IPy_Function> func).exec(t, f, args, kwargs);
 }
 
@@ -725,7 +735,8 @@ optable[opcodes.CALL_FUNCTION_VAR_KW] = function(f: Py_FrameObject, t: Thread) {
 // XXX: Hack around circular reference.
 function initPyFuncObj() {
     if (Py_FuncObject === null) {
-        Py_FuncObject = require('./funcobject')
+        Py_FuncObject = require('./funcobject');
+        Py_GeneratorObject = require('./genobject');
     }
 }
 
@@ -739,7 +750,12 @@ optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
     }
 
     initPyFuncObj();
-    var func = new Py_FuncObject(code, f.globals, defaults, code.name);
+    var func: interfaces.IPy_Function;
+    if (code.isGenerator()) {
+        func = new Py_GeneratorObject(code, f.globals, defaults, code.name);
+    } else {
+        func = new Py_FuncObject(code, f.globals, defaults, code.name);
+    }
     f.push(func);
 }
 
@@ -1055,7 +1071,6 @@ optable[opcodes.END_FINALLY] = function(f: Py_FrameObject, t: Thread) {
     // As of now, we always assume that no exception needs to be re-raised.
     f.blockStack.pop();
 }
-
 
 optable[opcodes.POP_BLOCK] = function(f: Py_FrameObject) {
     // removes a block from the block stack
