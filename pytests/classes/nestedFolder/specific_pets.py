@@ -1,5 +1,7 @@
 from pet import Pet
 
+_Hidden = 'not imported with *'
+
 class Dog(Pet):
 
     def __init__(self, name, chases_cats):

@@ -79,6 +79,7 @@ var testList = [
     [`\n--- Class tests ---`],
     ["Basic class test", "pytests/classes/userDefTest"],
     ["Class import / inheritance test", "pytests/classes/externalImport"],
+    ["import-star test", "pytests/classes/importStar"],
     [`\n--- Caught Exception tests ---`],
     ["Basic Exception test", "pytests/caught_exceptions/except"],
     ["Nested Function Exception test", "pytests/caught_exceptions/nestedFunction"],
