@@ -79,6 +79,11 @@ function list(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: P
     return Py_List.fromIterable(x);
 }
 
+// object constructor function
+function object(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Object {
+    return new Py_Object();
+}
+
 // dict constructor function
 function dict(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Dict {
     // ???? apparently this is the most basic case.
@@ -588,6 +593,7 @@ var builtins = {
     $None: primitives.None,
     $NotImplemented: primitives.NotImplemented,
     $Ellipsis: primitives.Ellipsis,
+    $object: new Py_SyncNativeFuncObject(object),
     iter: iter,
     $iter: new Py_SyncNativeFuncObject(iter),
     xrange: iterator.xrange,

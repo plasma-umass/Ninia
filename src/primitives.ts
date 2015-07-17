@@ -59,6 +59,9 @@ export class Py_Object implements IPy_Object {
     public hash(): number {
         return this._ref;
     }
+    public toString(): string {
+        return `<object object at ${this._ref}>`;
+    }
     public __repr__(): Py_Str {
         return Py_Str.fromJS(this.toString());
     }
