@@ -68,6 +68,24 @@ export class Py_Object implements IPy_Object {
     public __str__(): Py_Str {
         return this.__repr__();
     }
+    public __contains__(x: IPy_Object): typeof True {
+      var xh = x.hash();
+      var it: interfaces.Iterator;
+      if ((<any> this).iter) {
+        it = (<any> this).iter();
+      } else if ((<any> this)['$__iter__']) {
+        throw new Error('NYI feature: calling non-native __iter__');
+      } else {
+        // XXX: throw actual python exception here, also use __class__
+        throw new Error(`TypeError: argument of type '???' is not iterable`);
+      }
+      for (var val = it.next(); val != null; val = it.next()) {
+        if (val.hash() == xh) {
+          return True;
+        }
+      }
+      return False;
+    }
 }
 
 export class Py_Slice extends Py_Object {

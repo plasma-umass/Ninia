@@ -398,7 +398,7 @@ function type(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): 
     
     // TODO: Use prototype chaining for baseClasses.
     
-    while (null !== (nextKey = propIter.next())) {
+    while (null !== (nextKey = <Py_Str> propIter.next())) {
       cls.prototype['$' + nextKey.toString()] = props.get(nextKey);
     }
     (<any> cls).prototype['$__class__'] = cls.prototype;
@@ -474,6 +474,16 @@ function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
         } else {
           // import specific module components.
           var p = new Py_Object();
+          if (toImport.length == 1 && toImport[0] == '*') {
+            // when importing *, replace with all names
+            // XXX: should we be reading from modObj.__all__ here?
+            toImport = [];
+            for (var key in modObj) {
+              if (key.length > 1 && key[0] == '$') {
+                toImport.push(key.slice(1));
+              }
+            }
+          }
           toImport.forEach((prop: string) => {
             (<any>p)[`$${prop}`] = (<any>modObj)[`$${prop}`];
           });

@@ -202,10 +202,11 @@ export interface IPy_Number extends IPy_Object {
 
 // all iterators must support next()
 export interface Iterator extends IPy_Object {
-  next: () => any;
+  next: () => IPy_Object;
 }
 
-// all iterables must support iter()
+// all iterables must support iter() and __contains__()
 export interface Iterable extends IPy_Object {
   iter: () => Iterator;
+  __contains__: (x: IPy_Object) => IPy_Object;
 }

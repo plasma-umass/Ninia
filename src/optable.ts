@@ -399,17 +399,13 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
         case ComparisonOp.GTE:
             doCmpOp(t, f, a, b, '__gte__', '__lte__');
             break;
-        // Comparisons of sequences and types are not implemented
-        // case 'in':
-        //     return b.some( function(elem, idx, arr) {
-        //         return elem == a;
-        //     });
-        //     break;
-        // case 'not in':
-        //     return b.every( function(elem, idx, arr) {
-        //         return elem != a;
-        //     });
-        //     break;
+        case ComparisonOp.IN:
+            doCmpOp(t, f, b, a, '__contains__', null);
+            break;
+        case ComparisonOp.NOT_IN:
+            doCmpOp(t, f, b, a, '__contains__', null);
+            f.push(bool(f.pop()) === True ? False : True);
+            break;
         case ComparisonOp.IS:
             // TODO: Python does pointer comparison.
             // Does this mean IS fails for integers...???
@@ -439,7 +435,7 @@ function doCmpOp(t: Thread, f: Py_FrameObject, a: IPy_Object, b: IPy_Object, fun
     } else if ((<any> a)[`$${funcA}`]) {
         f.returnToThread = true;
         (<IPy_Function> (<any> a)[`$${funcA}`]).exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
-            if (res == NotImplemented) {
+            if (res == NotImplemented && funcB !== null) {
                 if ((<any> b)[funcB]) {
                     f.push((<(a: IPy_Object) => IPy_Object> (<any> b)[funcB])(a));
                     t.setStatus(enums.ThreadStatus.RUNNABLE);
@@ -706,6 +702,7 @@ function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: b
         func = (<any> func).$__call__;
     }
 
+    initPyFuncObj();
     if (func instanceof Py_GeneratorObject) {
         // This sets up the frame, but doesn't run the code.
         (<interfaces.IPy_Function> func).exec(t, f, args, kwargs);
@@ -1127,6 +1124,20 @@ optable[opcodes.IMPORT_FROM] = function(f: Py_FrameObject) {
     var mod = f.peek();
     var name = f.codeObj.names[name_idx];
     f.push((<any> mod)[`$${name}`]);
+}
+
+optable[opcodes.IMPORT_STAR] = function(f: Py_FrameObject) {
+    // pop the just-imported module
+    var mod = f.pop();
+    // Add names not starting with _ to locals
+    var key: any, py_key: primitives.Py_Str;
+    for (var key in mod) {
+        if (key.length > 1 && key[0] == '$' && key[1] != '_') {
+            // strip off the leading $
+            py_key = new primitives.Py_Str(key.slice(1));
+            f.locals.set(py_key, (<any> mod)[key]);
+        }
+    }
 }
 
 // Replaces TOS with getattr(TOS, co_names[namei]).
