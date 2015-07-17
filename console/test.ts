@@ -97,7 +97,8 @@ var testList = [
     ["Strings test", "pytests/stringTest"],
     ["Slice test", "pytests/sliceTest"],
     ["Assignment test", "pytests/assignmentTest"],
-    ["Deletion test", "pytests/delTest"]
+    ["Deletion test", "pytests/delTest"],
+    ["Context Manager test", "pytests/contextTest"]
 ];
 
 var d = domain.create();
