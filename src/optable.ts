@@ -1058,11 +1058,26 @@ optable[opcodes.CONTINUE_LOOP] = function(f: Py_FrameObject) {
     }
 }
 
+optable[opcodes.SET_ADD] = function(f: Py_FrameObject, t: Thread) {
+    var i = f.readArg();
+    var x = f.pop();
+    var set = <Py_Set> f.stack[f.stack.length - i];
+    set.add(x);
+}
+
 optable[opcodes.LIST_APPEND] = function(f: Py_FrameObject) {
     var i = f.readArg();
     var x = f.pop();
     var lst = <Py_List> f.stack[f.stack.length - i];
     lst.append(x);
+}
+
+optable[opcodes.MAP_ADD] = function(f: Py_FrameObject, t: Thread) {
+    var i = f.readArg();
+    var key = f.pop();
+    var val = f.pop();
+    var dict = <Py_Dict> f.stack[f.stack.length - i];
+    dict.set(key, val);
 }
 
 optable[opcodes.END_FINALLY] = function(f: Py_FrameObject, t: Thread) {
