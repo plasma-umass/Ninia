@@ -356,6 +356,9 @@ export class Py_Dict extends Py_Object implements Iterable {
     this.del(args[0]);
     return None;
   });
+  public $keys = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+    return new Py_List(this.keys());
+  });
   public get(key: IPy_Object): IPy_Object {
     if (key instanceof Py_Str) {
       return this._stringDict[`$${key.toString()}`];
