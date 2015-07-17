@@ -1150,4 +1150,33 @@ optable[opcodes.BUILD_CLASS] = function(f: Py_FrameObject, t: Thread) {
     f.push(builtins.type(t, f, [className, baseClasses, methods], null));
 }
 
+optable[opcodes.SETUP_WITH] = function(f: Py_FrameObject, t: Thread) {
+    var ctx_man = f.pop();
+    // push the __exit__ method, used by WITH_CLEANUP
+    f.push((<any> ctx_man)['$__exit__']);
+    // call the __enter__ method, leaving the result on the stack
+    var enter_func = (<any> ctx_man)['$__enter__'];
+    f.returnToThread = true;
+    (<interfaces.IPy_Function> enter_func).exec(t, f, [], new Py_Dict());
+    // start a finally block
+    setup_block(f, opcodes.SETUP_FINALLY);
+}
+
+optable[opcodes.WITH_CLEANUP] = function(f: Py_FrameObject, t: Thread) {
+    // find the __exit__ method and pull it out of the stack
+    var n = f.stack.length, kwargs = new Py_Dict();
+    if (f.peek() === None) {
+        var exit_func = f.stack.splice(n - 2, 1)[0];
+    } else {
+        throw new Error('Exceptions in context managers are NYI');
+    }
+    // call __exit__ with the appropriate args
+    var args = [None, None, None];
+    f.returnToThread = true;
+    (<interfaces.IPy_Function> exit_func).exec(t, f, args, kwargs);
+    // TODO: if there was an exception (NYI case for now)
+    //  and result === True, 'zap' the exc_info to prevent re-raise.
+    var result = f.pop();
+}
+
 export = optable;
