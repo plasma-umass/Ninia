@@ -451,7 +451,7 @@ export class Py_Dict extends Py_Object implements Iterable {
 export class Py_Set extends Py_Dict implements IPy_Object {
   static fromArray(objects: IPy_Object[]): Py_Set {
     var res = new Py_Set();
-    objects.forEach((obj) => res.set(obj, obj));
+    objects.forEach((obj) => res.add(obj));
     return res;
   }
   
@@ -459,9 +459,13 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     var set = new Py_Set();
     var it = x.iter();
     for (var val = it.next(); val != null; val = it.next()) {
-      set.set(val, val);
+      set.add(val);
     }
     return set;
+  }
+
+  public add(x: IPy_Object): void {
+    this.set(x, x);
   }
 
   public toString(): string {
@@ -484,7 +488,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       other: Py_Set = <Py_Set> x;
     for (var i = 0; i < myKeys.length; i++) {
       if (other.get(myKeys[i]) !== undefined) {
-        res.set(myKeys[i], myKeys[i]);
+        res.add(myKeys[i]);
       }
     }
     return res;
@@ -499,7 +503,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       other: Py_Set = <Py_Set> x;
     for (var i = 0; i < myKeys.length; i++) {
       if (other.get(myKeys[i]) === undefined) {
-        res.set(myKeys[i], myKeys[i]);
+        res.add(myKeys[i]);
       }
     }
     return res;
