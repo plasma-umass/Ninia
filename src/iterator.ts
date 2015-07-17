@@ -7,6 +7,7 @@ import Py_Object = primitives.Py_Object;
 import IPy_Object = interfaces.IPy_Object;
 import IPy_FrameObj = interfaces.IPy_FrameObj;
 import Thread = require('./threading');
+var True = primitives.True, False = primitives.False;
 
 export class ListIterator extends Py_Object implements Iterator {
     private pos: number = 0;
@@ -68,6 +69,11 @@ export class XRange extends Py_Object implements Iterator, interfaces.Iterable {
     }
     public iter(): Iterator {
         return this;
+    }
+    public __contains__(x: IPy_Object): typeof True {
+        var num = (<any> x).toNumber();  // XXX: need to deal with non-number case
+        var ret = (num >= this.start) && (num < this.stop) && ((num - this.start) % this.step == 0);
+        return ret ? True : False;
     }
     public next(): Py_Int {
         var ret: Py_Int = null;

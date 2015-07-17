@@ -69,7 +69,6 @@ export class Py_Object implements IPy_Object {
         return this.__repr__();
     }
     public __contains__(x: IPy_Object): typeof True {
-      var xh = x.hash();
       var it: interfaces.Iterator;
       if ((<any> this).iter) {
         it = (<any> this).iter();
@@ -80,7 +79,7 @@ export class Py_Object implements IPy_Object {
         throw new Error(`TypeError: argument of type '???' is not iterable`);
       }
       for (var val = it.next(); val != null; val = it.next()) {
-        if (val.hash() == xh) {
+        if (val.__eq__(x).asBool()) {
           return True;
         }
       }
