@@ -11,13 +11,14 @@ import primitives = require('./primitives');
  * "Bounces" the return value through a provided callback.
  */
 export class Py_TrampolineFrameObject implements interfaces.IPy_FrameObj {
-    private _cb: (rv: IPy_Object) => void;
+    private _cb: (rv: IPy_Object, exc: IPy_Object) => void;
     private _rv: IPy_Object = null;
+    private _exc: IPy_Object = null;
     globals: collections.Py_Dict;
     locals: collections.Py_Dict;
     back: interfaces.IPy_FrameObj;
     
-    constructor(caller: interfaces.IPy_FrameObj, locals: collections.Py_Dict, cb: (rv: IPy_Object) => void) {
+    constructor(caller: interfaces.IPy_FrameObj, locals: collections.Py_Dict, cb: (rv: IPy_Object, exc: IPy_Object) => void) {
         this._cb = cb;
         this.locals = locals;
         // Copy caller's globals.
@@ -43,13 +44,14 @@ export class Py_TrampolineFrameObject implements interfaces.IPy_FrameObj {
         // Pause the thread.
         t.setStatus(enums.ThreadStatus.ASYNC_WAITING);
         // Provide the return value to the callback.
-        this._cb(this._rv);
+        this._cb(this._rv, this._exc);
     }
     
-    public resume(rv: IPy_Object): void {
+    public resume(rv: IPy_Object, exc: IPy_Object): void {
         // Store the return value. Wait for the thread to
         // exec the frame again before providing to callback.
         this._rv = rv;
+        this._exc = exc;
     }
 }
 
@@ -82,7 +84,7 @@ export class Py_SyncNativeFuncObject implements interfaces.IPy_Function {
         t.asyncReturn(rv !== undefined ? rv : primitives.None);
     }
 
-    public exec_from_native(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv?: IPy_Object) => void) {
+    public exec_from_native(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv?: IPy_Object, exc?: IPy_Object) => void) {
         // Bypass the thread entirely.
         cb(this._f(t, f, args, kwargs));
     }
@@ -92,9 +94,9 @@ export class Py_SyncNativeFuncObject implements interfaces.IPy_Function {
  * Represents an asynchronous "native" function (written in JavaScript).
  */
 export class Py_AsyncNativeFuncObject implements interfaces.IPy_Function {
-    private _f: (t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv: IPy_Object) => void) => void;
+    private _f: (t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv: IPy_Object, exc?: IPy_Object) => void) => void;
 
-    constructor(f: (t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv: IPy_Object) => void) => void) {
+    constructor(f: (t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv: IPy_Object, exc?: IPy_Object) => void) => void) {
         this._f = f;
     }
     
@@ -123,7 +125,7 @@ export class Py_AsyncNativeFuncObject implements interfaces.IPy_Function {
         }
     }
 
-    public exec_from_native(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv?: IPy_Object) => void) {
+    public exec_from_native(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv?: IPy_Object, exc?: IPy_Object) => void) {
         // Bypass thread.
         this._f(t, f, args, kwargs, cb);
     }

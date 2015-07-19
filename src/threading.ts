@@ -27,6 +27,7 @@ class Thread {
     public codefile: string[] = [];
     public cb: () => void;
     public sys: Py_Sys;
+    public exc: IPy_Object;
 
     constructor(sys: Py_Sys, cb : () => void) {
         this.sys = sys;
@@ -133,14 +134,14 @@ class Thread {
         return this.stack.length;
     }
 
-    public asyncReturn(rv?: any): void {
+    public asyncReturn(rv?: any, exc?: any): void {
         var stack = this.stack,
           length: number;
         // framePop
         stack.pop();
         length = stack.length;
         if (length > 0) {
-            stack[length - 1].resume(rv);
+            stack[length - 1].resume(rv, exc);
             this.setStatus(enums.ThreadStatus.RUNNABLE);
         } else {
             // Program has ended.

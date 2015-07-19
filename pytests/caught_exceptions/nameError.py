@@ -10,6 +10,15 @@ def catching_same():
     except Exception:
         print "Success"
 
+def foo():
+    raise Exception
+
+def nested():
+    try:
+        foo()
+    except Exception:
+        print "Success"
+
 def nested_try():
     try:
         try:
@@ -33,6 +42,7 @@ def multiple_arg():
 
 catching_less()
 catching_same()
+nested()
 nested_try()
 catching_same2()
 multiple_arg()

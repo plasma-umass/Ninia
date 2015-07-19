@@ -26,7 +26,7 @@ export interface IPy_FrameObj extends IPy_Object {
    * 
    * This method does not re-start execution. exec() should be called sometime after this to resume execution.
    */
-  resume(rv: IPy_Object): void;
+  resume(rv: IPy_Object, exc: IPy_Object): void;
 }
 
 /**
@@ -63,41 +63,41 @@ export interface IPy_Object {
   $__str__?: IPy_Function;
 
   // Math functions
-  __pos__?(): IPy_Object;
-  __neg__?(): IPy_Object;
-  __invert__?(): IPy_Object;
-  __abs__?(): IPy_Object;
-  __divmod__?(a: IPy_Object): Py_Tuple;
-  __rdivmod__?(a: IPy_Object): Py_Tuple;
-  __pow__?(a: IPy_Object): IPy_Object;
-  __rpow__?(a: IPy_Object): IPy_Object;
-  __mul__?(a: IPy_Object): IPy_Object;
-  __rmul__?(a: IPy_Object): IPy_Object;
-  __div__?(a: IPy_Object): IPy_Object;
-  __rdiv__?(a: IPy_Object): IPy_Object;
-  __mod__?(a: IPy_Object): IPy_Object;
-  __rmod__?(a: IPy_Object): IPy_Object;
-  __add__?(a: IPy_Object): IPy_Object;
-  __radd__?(a: IPy_Object): IPy_Object;
-  __sub__?(a: IPy_Object): IPy_Object;
-  __rsub__?(a: IPy_Object): IPy_Object;
-  __floordiv__?(a: IPy_Object): IPy_Object;
-  __rfloordiv__?(a: IPy_Object): IPy_Object;
-  __truediv__?(a: IPy_Object): IPy_Object;
-  __rtruediv__?(a: IPy_Object): IPy_Object;
-  __lshift__?(a: IPy_Object): IPy_Object;
-  __rlshift__?(a: IPy_Object): IPy_Object;
-  __rshift__?(a: IPy_Object): IPy_Object;
-  __rrshift__?(a: IPy_Object): IPy_Object;
-  __and__?(a: IPy_Object): IPy_Object;
-  __rand__?(a: IPy_Object): IPy_Object;
-  __xor__?(a: IPy_Object): IPy_Object;
-  __rxor__?(a: IPy_Object): IPy_Object;
-  __or__?(a: IPy_Object): IPy_Object;
-  __ror__?(a: IPy_Object): IPy_Object;
-  __iadd__?(a: IPy_Object): IPy_Object;
-  __add__?(a: IPy_Object): IPy_Object;
-  __ipow__?(a: IPy_Object): IPy_Object;
+  __pos__?(t: Thread): IPy_Object;
+  __neg__?(t: Thread): IPy_Object;
+  __invert__?(t: Thread): IPy_Object;
+  __abs__?(t: Thread): IPy_Object;
+  __divmod__?(a: IPy_Object, t: Thread): Py_Tuple;
+  __rdivmod__?(a: IPy_Object, t: Thread): Py_Tuple;
+  __pow__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rpow__?(a: IPy_Object, t: Thread): IPy_Object;
+  __mul__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rmul__?(a: IPy_Object, t: Thread): IPy_Object;
+  __div__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rdiv__?(a: IPy_Object, t: Thread): IPy_Object;
+  __mod__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rmod__?(a: IPy_Object, t: Thread): IPy_Object;
+  __add__?(a: IPy_Object, t: Thread): IPy_Object;
+  __radd__?(a: IPy_Object, t: Thread): IPy_Object;
+  __sub__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rsub__?(a: IPy_Object, t: Thread): IPy_Object;
+  __floordiv__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rfloordiv__?(a: IPy_Object, t: Thread): IPy_Object;
+  __truediv__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rtruediv__?(a: IPy_Object, t: Thread): IPy_Object;
+  __lshift__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rlshift__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rshift__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rrshift__?(a: IPy_Object, t: Thread): IPy_Object;
+  __and__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rand__?(a: IPy_Object, t: Thread): IPy_Object;
+  __xor__?(a: IPy_Object, t: Thread): IPy_Object;
+  __rxor__?(a: IPy_Object, t: Thread): IPy_Object;
+  __or__?(a: IPy_Object, t: Thread): IPy_Object;
+  __ror__?(a: IPy_Object, t: Thread): IPy_Object;
+  __iadd__?(a: IPy_Object, t: Thread): IPy_Object;
+  __add__?(a: IPy_Object, t: Thread): IPy_Object;
+  __ipow__?(a: IPy_Object, t: Thread): IPy_Object;
   
   $__pos__?: IPy_Function;
   $__neg__?: IPy_Function;

@@ -142,7 +142,7 @@ function BINARY_${funcName}(f, t) {
     ` : ''}
 
     if (a['__${funcName}__']) {
-        f.push(a.__${funcName}__(b));
+        f.push(a.__${funcName}__(b,t));
         return;
     } else if (a['$__${funcName}__']) {
         f.returnToThread = true;
@@ -325,9 +325,8 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject, t: Thread) {
     // throw NameError
     if (val === undefined) {
         var message = `NameError: global name '${name}' is not defined\n`;
-        raise_exception_here(f, t, message, "NameError");
-        // get NameError type object
-        val = builtins['$NameError'];
+        f.raise_exception_here(t, message, "$NameError");
+        return;
     }
     f.push(val);
 }
@@ -339,9 +338,8 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject, t: Thread) {
     // throw NameError
     if (val === undefined) {
         var message = `NameError: global name '${name}' is not defined\n`;
-        raise_exception_here(f, t, message, "NameError");
-        // get NameError type object
-        val = builtins['$NameError'];
+        f.raise_exception_here(t, message, "$NameError");
+        return;
     }
     f.push(val);
 }
@@ -416,10 +414,11 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
             f.push(a.hash() !== b.hash() ? True : False);
             break;
         case ComparisonOp.EXC_MATCH:
+            a = t.exc;
             var x = builtins.isinstance(t, f, [a, b], null);
             f.push(x);
             if (x == False) {
-                fast_block_end(f,t);
+                f.tryCatchException(t);
             }
             break;
         // case 'exception match':
@@ -513,145 +512,42 @@ optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
     var i = f.readArg();
     f.locals.del(f.codeObj.varnames[i]);
 }
-// Searches for an exception handler inside the current Py_FrameObject
-// Uses that blockstack to move forwards or backwards in code (by changing lastInst)
-// Returns true if found, else returns false
-function find_exception_handler(f: Py_FrameObject) : boolean {
-    while (f.blockStack.length > 0) {
-        var b = f.blockStack[f.blockStack.length - 1];
-        f.blockStack.pop();
-        if (b[3] === opcodes.SETUP_EXCEPT) {
-            setup_block(f, opcodes.EXCEPT_HANDLER);
-            var endPos: number = b[2];
-            f.lastInst = endPos;
-            return true;
-        }
-        if (b[3] === opcodes.SETUP_FINALLY) {
-            var endPos: number = b[2];
-            f.lastInst = endPos;
-            return true;
-        }
-    }
-    return false;
-}
-// Unpack the lnotab to extract instruction/line numbers
-// str contians bytes inside of a string
-function unpack(str: string): [number,number][] {
-    var ln_byte_tuple: [number,number][] = [];
-    for (var i = 0, n = str.length; i < n; i+=2) {
-        var num1: number = str.charCodeAt(i);
-        var num2: number = str.charCodeAt(i+1);
-        ln_byte_tuple.push([num1, num2]);
-    }
-    return ln_byte_tuple;
-}
 
-// Using lnotab, find the linenumber of the current instruction in the .py file
-function addr2line(f: Py_FrameObject): number {
-    var lineno = 0;
-    var addr = 0;
-    var chars = f.codeObj.lnotab.toString();
-    var lnotab = unpack(chars);
-    for (var i = 0; i < lnotab.length; i++) {
-        addr += lnotab[i][0];
-        if (addr > f.lastInst) {
-            break;
-        }
-        lineno += lnotab[i][1];
-    }
-    return lineno;
-}
-// Add traceback
-function frame_add_traceback(f: Py_FrameObject, t: Thread) {
-    var current_line: number = (f.codeObj.firstlineno) + addr2line(f);
-    // Set whenever an exception handler is found
-    // If exception handler can't handle that exception, the line where exception occurred is added to traceback
-    if (t.raise_lno > 0) {
-        current_line = t.raise_lno ;
-        t.raise_lno = 0;
-    }
-    var tback: string = `  File "${f.codeObj.filename.toString()}", line ${current_line}, in ${f.codeObj.name.toString()}\n`;
-    if (t.codefile.length > 0) {
-        tback += `    ${t.codefile[current_line-1].trim()}\n`;
-    }
-    t.addToTraceback(tback);
-}
-
-// Search for exception handler in previous frames
-function find_in_prev(f: Py_FrameObject, t: Thread): boolean {
-    frame_add_traceback(f, t);
-    while (f.stack.length > 0) {
-        f.pop();
-    }
-     // Search for exception handler in previous frames
-    while (f.back != null) {
-        var chars = f.codeObj.lnotab.toString();
-        // stop frame execution
-        f.returnToThread = true;
-        f = (<Py_FrameObject>f.back);
-        // Add to traceback
-        frame_add_traceback(f, t);
-        // If an exception handler is found in either this frame or previous frames
-        if (find_exception_handler(f)) {
-            return true;
-        }
-    }
-    // return false if no handler found
-    return false;
-}
-// Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
-// TODO: Move logic to Thread.throwException
-function fast_block_end(f: Py_FrameObject, t: Thread): void {
-    // search in current frame
-    if (!find_exception_handler(f)) {
-        // Search for exception handler in previous frames
-        if (!find_in_prev(f,t))
-        {
-            // no exception handler found, write traceback and exit the thread
-            t.throwException();
-            return;
-        }
-    }
-    // save line number on which exception occurred
-    t.raise_lno = (f.codeObj.firstlineno) + addr2line(f);
-}
-function raise_exception_here(f: Py_FrameObject, t: Thread, message: string, type: string): void {
-    t.addToTraceback(message);
-    fast_block_end(f,t);
+function add_exc(f: Py_FrameObject, t: Thread, exc: any, message: string): void {
+    exc.$message = new primitives.Py_Str(message);
+    t.addToTraceback(exc.$message);
+    f.push(exc);
+    t.exc = exc;
 }
 
 // push exceptions on stack
 function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): void {
     var val: any = null;
+    var message: string = "";
     // raise with 0 arg is from Exception class
     if (exc === null && cause === null) {
         val = builtins['$Exception'];
-        f.push(val);
+        message += "TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n";
+        add_exc(f, t, val, message);
+        return;
     }
     // First argument exc, second argument cause (passed into exception and used as a message when printing tb)
+    message += exc.constructor.name;
     if (exc && cause) {
-        var message: string = "";
-        message += exc.constructor.name + ": " + <primitives.Py_Str> cause + "\n";
+        message += ": " + <primitives.Py_Str> cause;
         // check if user defined class
         val = (<any> builtins)[`$${exc.constructor.name}`]; 
-        if (!val) {
+        if (!val)
             message = "__main__." + message;
-        }
-        // store message
-        exc.$message = new primitives.Py_Str(message);
     }
     if (exc) {
-        f.push(exc);
-        t.addToTraceback(exc.$message);
+        add_exc(f, t, exc, message + "\n");
     }
 }
 optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
     t.clearTraceback();
     var i = f.readArg();
     var cause: IPy_Object = null, exc: any = null;
-    if (i === 0){
-        t.addToTraceback("TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n");
-    }
     switch (i) {
         case 2:
             cause = f.pop();
@@ -660,7 +556,7 @@ optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
         case 0:
             // todo: re-raising
             do_raise(f, t, cause, exc);
-            fast_block_end(f,t);
+            f.tryCatchException(t);
             break;
         default:
             throw new Error("bad RAISE_VARARGS oparg")
@@ -1141,12 +1037,13 @@ optable[opcodes.IMPORT_STAR] = function(f: Py_FrameObject) {
 }
 
 // Replaces TOS with getattr(TOS, co_names[namei]).
-optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) { 
+optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject, t: Thread) { 
     var name = f.codeObj.names[f.readArg()].toString(),
         obj = f.pop(),
         val = (<any> obj)[`$${name}`];
     if (val === undefined) {
-        throw new Error(`Invalid attribute: ${name}`);
+        var message = `AttributeError: 'function' object has no attribute '${name}'\n`;
+        f.raise_exception_here(t, message, "$AttributeError");
     } else {
         f.push(val);
     }

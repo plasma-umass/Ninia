@@ -7,6 +7,8 @@ import Decimal = require('decimal.js');
 // Use for type information ONLY to avoid circular ref!
 import _collections = require('./collections');
 var collections: typeof _collections = null;
+import Thread = require('./threading');
+import Py_FrameObject = require('./frameobject');
 
 export function circularRefHack() {
   collections = require('./collections');
@@ -323,8 +325,8 @@ function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
  * Template function for math operations. Widens either a or b to the others'
  * type before executing the math operation.
  */
-function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof NotImplemented {
-  return eval(`(function() { return function(b) {
+function generateMathOp(name: string): (b: IPy_Number, t: Thread) => IPy_Number | typeof NotImplemented {
+  return eval(`(function() { return function(b, t) {
       var a = this,
         bType = b.getType(),
         aType = a.getType(),
@@ -339,7 +341,7 @@ function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof No
         // b is wider than a
         a = widenTo(a, bType);
       }
-      return a.${name}(b);
+      return a.${name}(b, t);
     }
   })()`);
 }
@@ -389,36 +391,36 @@ export class Py_Int extends Py_Object implements IPy_Number {
     add(other: Py_Int): Py_Int { return new Py_Int((this.value + other.value) | 0); }
     sub(other: Py_Int): Py_Int { return new Py_Int((this.value - other.value) | 0); }
     mul(other: Py_Int): Py_Int { return new Py_Int((this.value * other.value) | 0); }
-    floordiv(other: Py_Int): Py_Int {
+    floordiv(other: Py_Int, t: Thread): Py_Int {
       if (other.value === 0)
-          throw new Error("Division by 0");
+        throwZeroDivisionError(t);
       return new Py_Int((this.value / other.value) | 0);
     }
 
     // Future division is always in effect
-    div(other: Py_Int): Py_Float { return this.truediv(other); }
+    div(other: Py_Int, t: Thread): Py_Float { return this.truediv(other, t); }
 
     // Since truediv has to return a Float, we automatically cast this Py_Int to
     // a Float and call truediv again.
-    truediv(other: Py_Int): Py_Float {
+    truediv(other: Py_Int, t: Thread): Py_Float {
       // TODO: Just do the division here.
-      return this.asFloat().truediv(other.asFloat());
+      return this.asFloat().truediv(other.asFloat(), t);
     }
 
     // Python modulo follows certain rules not seen in other languages.
     // 1. (a % b) has the same sign as b
     // 2. a == (a // b) * b + (a % b)
     // These are useful for defining modulo for different types though
-    mod(other: Py_Int): Py_Int {
+    mod(other: Py_Int, t: Thread): Py_Int {
       var a = this.value, b = other.value;
       if (b === 0)
-        throw new Error("Modulo by 0 is not allowed");
+        throwZeroDivisionError(t);
       var res = (a - (b * Math.floor(a / b))) | 0;
       return new Py_Int(res);
     }
 
-    divmod(other: Py_Int): _collections.Py_Tuple {
-        return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
+    divmod(other: Py_Int, t: Thread): _collections.Py_Tuple {
+        return new collections.Py_Tuple([this.floordiv(other, t), this.mod(other, t)]);
     }
 
     pow(other: Py_Int): Py_Float | Py_Int {
@@ -571,33 +573,33 @@ export class Py_Long extends Py_Object implements IPy_Number {
     // the floor division operator always rounds towards negative infinity.
     // Therefore, the slightly longer div(...).floor() method chain should be
     // used.
-    floordiv(other: Py_Long): Py_Long {
+    floordiv(other: Py_Long, t: Thread): Py_Long {
       if (other.value.isZero())
-        throw new Error("Division by 0");
+        throwZeroDivisionError(t);
       return new Py_Long(this.value.div(other.value).floor());
     }
 
     // True division, always.
-    div(other: Py_Long): Py_Long {
-        return this.truediv(other);
+    div(other: Py_Long, t: Thread): Py_Long {
+        return this.truediv(other, t);
     }
 
-    truediv(other: Py_Long): Py_Long {
+    truediv(other: Py_Long, t: Thread): Py_Long {
       if (other.value.isZero())
-        throw new Error("Division by 0");
+        throwZeroDivisionError(t);
       return new Py_Long(this.value.div(other.value));
     }
 
     // As stated previously, Python's unusual mod rules come into play here.
     // (a % b) has b's sign, and a == (a // b) * b + (a % b)
-    mod(other: Py_Long): Py_Long {
+    mod(other: Py_Long, t: Thread): Py_Long {
       if (other.value.isZero())
-        throw new Error("Modulo by 0");
-      return this.sub(other.mul(this.floordiv(other)));
+        throwZeroDivisionError(t);
+      return this.sub(other.mul(this.floordiv(other, t)));
     }
 
-    divmod(other: Py_Long): _collections.Py_Tuple {
-      return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
+    divmod(other: Py_Long, t: Thread): _collections.Py_Tuple {
+      return new collections.Py_Tuple([this.floordiv(other, t), this.mod(other, t)]);
     }
 
     // Thankfully, Decimal has a toPower function.
@@ -729,29 +731,29 @@ export class Py_Float extends Py_Object implements IPy_Number {
     mul(other: Py_Float): Py_Float {
       return new Py_Float(this.value * other.value);
     }
-    floordiv(other: Py_Float): Py_Float {
+    floordiv(other: Py_Float, t: Thread): Py_Float {
       if (other.value == 0)
-        throw new Error("Division by 0");
+        throwZeroDivisionError(t);
       return new Py_Float(Math.floor(this.value / other.value));
     }
-    div(other: Py_Float): Py_Float {
-      return this.truediv(other);
+    div(other: Py_Float, t: Thread): Py_Float {
+      return this.truediv(other, t);
     }
-    truediv(other: Py_Float): Py_Float {
+    truediv(other: Py_Float, t: Thread): Py_Float {
       if (other.value == 0)
-        throw new Error("Division by 0");
+        throwZeroDivisionError(t);
       return new Py_Float(this.value / other.value);
     }
     // Modulo in Python has the following property: a % b) will always have the
     // sign of b, and a == (a//b)*b + (a%b).
-    mod(other: Py_Float): Py_Float {
+    mod(other: Py_Float, t: Thread): Py_Float {
       if (other.value == 0)
-        throw new Error("Modulo by 0");
+        throwZeroDivisionError(t);
       // TODO: Both are floats, can avoid creating unneeded intermediate objs.
-      return this.sub(other.mul(this.floordiv(other)));
+      return this.sub(other.mul(this.floordiv(other, t)));
     }
-    divmod(other: Py_Float): _collections.Py_Tuple {
-      return new collections.Py_Tuple([this.floordiv(other), this.mod(other)]);
+    divmod(other: Py_Float, t: Thread): _collections.Py_Tuple {
+      return new collections.Py_Tuple([this.floordiv(other, t), this.mod(other, t)]);
     }
     pow(other: Py_Float): Py_Float {
       return new Py_Float(Math.pow(this.value, other.value));
@@ -850,50 +852,50 @@ export class Py_Complex extends Py_Object implements IPy_Number {
       return new Py_Complex(r, i);
     }
 
-    floordiv(other: Py_Complex): Py_Complex {
+    floordiv(other: Py_Complex, t: Thread): Py_Complex {
       if (other.$real.value == 0 && other.$imag.value == 0)
-        throw new Error("Division by 0")
+        throwZeroDivisionError(t);
       var r: Py_Float, d: Py_Float;
       r = this.$real.mul(other.$real).add(this.$imag.mul(other.$imag));
       d = other.$real.mul(other.$real).add(other.$imag.mul(other.$imag));
       // Note: floor division always zeros the imaginary part
-      return new Py_Complex(r.floordiv(d), new Py_Float(0));
+      return new Py_Complex(r.floordiv(d, t), new Py_Float(0));
     }
 
-    div(other: Py_Complex): Py_Complex {
-      return this.truediv(other);
+    div(other: Py_Complex, t: Thread): Py_Complex {
+      return this.truediv(other, t);
     }
 
-    truediv(other: Py_Complex): Py_Complex {
+    truediv(other: Py_Complex, t: Thread): Py_Complex {
       if (other.$real.value == 0 && other.$imag.value == 0)
-        throw new Error("Division by 0")
+        throwZeroDivisionError(t);
       var r: Py_Float, i: Py_Float, d: Py_Float;
       r = this.$real.mul(other.$real).add(this.$imag.mul(other.$imag));
       i = this.$imag.mul(other.$real).sub(this.$real.mul(other.$imag));
       d = other.$real.mul(other.$real).add(other.$imag.mul(other.$imag));
-      return new Py_Complex(r.truediv(d), i.truediv(d));
+      return new Py_Complex(r.truediv(d, t), i.truediv(d, t));
     }
 
     // Modulo is REALLY weird in Python. (a % b) will always have the sign of b,
     // and a = (a//b)*b + (a%b). Complex numbers make it worse, because they
     // only consider the real component of (a // b)
-    mod(other: Py_Complex): Py_Complex {
+    mod(other: Py_Complex, t: Thread): Py_Complex {
       if (other.$real.value == 0 && other.$imag.value == 0)
-        throw new Error("Modulo by 0");
+        throwZeroDivisionError(t);
       else if (other.$real.value == 0)
-        return new Py_Complex(this.$real, this.$imag.mod(other.$imag));
+        return new Py_Complex(this.$real, this.$imag.mod(other.$imag, t));
       else if (other.$imag.value == 0)
-        return new Py_Complex(this.$real.mod(other.$real), this.$imag);
+        return new Py_Complex(this.$real.mod(other.$real, t), this.$imag);
       else {
-        var div = new Py_Complex(this.floordiv(other).$real, new Py_Float(0));
+        var div = new Py_Complex(this.floordiv(other, t).$real, new Py_Float(0));
         // See complexobject.c, because Python is weird
         // See Wikipedia: Modulo_operation#Modulo_operation_expression
         return this.sub(other.mul(div));
       }
     }
 
-    divmod(other: Py_Complex): Py_Complex {
-      return this.floordiv(other).mod(other);
+    divmod(other: Py_Complex, t: Thread): Py_Complex {
+      return this.floordiv(other, t).mod(other, t);
     }
 
     // Powers with complex numbers are weird.
@@ -970,3 +972,9 @@ export class Py_Complex extends Py_Object implements IPy_Number {
      }
    });
 });
+
+function throwZeroDivisionError(t: Thread) {
+  var f = <Py_FrameObject> t.getTopOfStack();
+  var message = `ZeroDivisionError: integer division or modulo by zero\n`;
+  f.raise_exception_here(t, message, "$ZeroDivisionError");
+}

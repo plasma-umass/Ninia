@@ -11,6 +11,7 @@ import collections = require('./collections');
 import Py_Dict = collections.Py_Dict;
 import IPy_FrameObj = interfaces.IPy_FrameObj;
 import assert = require('assert');
+import builtins = require('./builtins');
 
 // Frame Objects are basically stack frames for functions, except they carry
 // extra context (e.g. globals, local scope, etc.). This class is not simplified
@@ -130,6 +131,7 @@ class Py_FrameObject implements IPy_FrameObj {
             if (func == undefined) {
                 throw new Error(`Unknown opcode: ${opcodes[op]} (${op})`);
             }
+            // console.log(opcodes[op]);
             if (false) {  // debug
                 console.log(this.stack);
                 console.log(`${t.stackDepth()}: ${opcodes[op]}`);
@@ -140,6 +142,36 @@ class Py_FrameObject implements IPy_FrameObj {
                 break;
             }
         }
+    }
+
+    emptyStack() {
+        while (this.stack.length > 0) {
+            this.pop();
+        }
+    }
+    raise_exception_here(t: Thread, message: string, type: string): void {
+        var val: IPy_Object = (<any> builtins)[type];
+        t.exc = val;
+        this.push(val);
+        t.addToTraceback(message);
+        this.tryCatchException(t);
+    }
+
+    tryCatchException(t: Thread): boolean {
+        // Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
+        // search in current frame
+        if (!find_exception_handler(this)) {
+            // Search for exception handler in previous frames
+            if (!find_in_prev(this,t))
+            {
+                // no exception handler found, write traceback and exit the thread
+                t.throwException();
+                return false;
+            }
+        }
+        // save line number on which exception occurred
+        t.raise_lno = (this.codeObj.firstlineno) + addr2line(this);
+        return true;
     }
     
     resume(rv: IPy_Object): void {
@@ -163,4 +195,99 @@ class Py_FrameObject implements IPy_FrameObj {
         return cell;
     }
 }
+
+function setup_block(f: Py_FrameObject, op: number) {
+    var delta = f.readArg();
+    // push a block to the block stack
+    var stackSize = f.stack.length;
+    var loopPos = f.lastInst;
+    f.blockStack.push([stackSize, loopPos, loopPos+delta, op]);
+}
+// Searches for an exception handler inside the current Py_FrameObject
+// Uses that blockstack to move forwards or backwards in code (by changing lastInst)
+// Returns true if found, else returns false
+function find_exception_handler(f: Py_FrameObject) : boolean {
+    while (f.blockStack.length > 0) {
+        var b = f.blockStack[f.blockStack.length - 1];
+        f.blockStack.pop();
+        if (b[3] === opcodes.SETUP_EXCEPT) {
+            setup_block(f, opcodes.EXCEPT_HANDLER);
+            var endPos: number = b[2];
+            f.lastInst = endPos;
+            return true;
+        }
+        if (b[3] === opcodes.SETUP_FINALLY) {
+            var endPos: number = b[2];
+            f.lastInst = endPos;
+            return true;
+        }
+    }
+    return false;
+}
+// Unpack the lnotab to extract instruction/line numbers
+// str contians bytes inside of a string
+function unpack(str: string): [number,number][] {
+    var ln_byte_tuple: [number,number][] = [];
+    for (var i = 0, n = str.length; i < n; i+=2) {
+        var num1: number = str.charCodeAt(i);
+        var num2: number = str.charCodeAt(i+1);
+        ln_byte_tuple.push([num1, num2]);
+    }
+    return ln_byte_tuple;
+}
+
+// Using lnotab, find the linenumber of the current instruction in the .py file
+function addr2line(f: Py_FrameObject): number {
+    var lineno = 0;
+    var addr = 0;
+    var chars = f.codeObj.lnotab.toString();
+    var lnotab = unpack(chars);
+    for (var i = 0; i < lnotab.length; i++) {
+        addr += lnotab[i][0];
+        if (addr > f.lastInst) {
+            break;
+        }
+        lineno += lnotab[i][1];
+    }
+    return lineno;
+}
+// Add traceback
+function frame_add_traceback(f: Py_FrameObject, t: Thread) {
+    var current_line: number = (f.codeObj.firstlineno) + addr2line(f);
+    // Set whenever an exception handler is found
+    // If exception handler can't handle that exception, the line where exception occurred is added to traceback
+    if (t.raise_lno > 0) {
+        current_line = t.raise_lno ;
+        t.raise_lno = 0;
+    }
+    var tback: string = `  File "${f.codeObj.filename.toString()}", line ${current_line}, in ${f.codeObj.name.toString()}\n`;
+    if (t.codefile.length > 0) {
+        tback += `    ${t.codefile[current_line-1].trim()}\n`;
+    }
+    t.addToTraceback(tback);
+}
+
+// Search for exception handler in previous frames
+function find_in_prev(f: Py_FrameObject, t: Thread): boolean {
+    frame_add_traceback(f, t);
+    f.emptyStack();
+    // Search for exception handler in previous frames
+    while (f.back != null) {
+        var chars = f.codeObj.lnotab.toString();
+        // stop frame execution
+        f.returnToThread = true;
+        f = (<Py_FrameObject>f.back);
+        // Add to traceback
+        frame_add_traceback(f, t);
+        // If an exception handler is found in either this frame or previous frames
+        if (find_exception_handler(f)) {
+            // f.emptyStack();
+            return true;
+        }
+        // f.emptyStack();
+    }
+    // return false if no handler found
+    return false;
+}
+
 export = Py_FrameObject;

@@ -513,11 +513,11 @@ export class Py_Set extends Py_Dict implements IPy_Object {
   }
 
   // set symmetric difference
-  public __xor__(x: IPy_Object): IPy_Object {
+  public __xor__(x: IPy_Object, t: Thread): IPy_Object {
     // TODO: implement this directly
     var left = this.__sub__(x);
-    var right = x.__sub__(this);
-    return left.__or__(right);
+    var right = x.__sub__(this, t);
+    return left.__or__(right, t);
   }
 
   // set union
