@@ -222,7 +222,7 @@ function complex(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
 }
 
 function divmod(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
-  return args[0].__divmod__(args[1], t);
+  return args[0].__divmod__(t, args[1]);
 }
 
 function float(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Float {

@@ -142,7 +142,7 @@ function BINARY_${funcName}(f, t) {
     ` : ''}
 
     if (a['__${funcName}__']) {
-        f.push(a.__${funcName}__(b,t));
+        f.push(a.__${funcName}__(t,b));
         return;
     } else if (a['$__${funcName}__']) {
         f.returnToThread = true;
@@ -278,7 +278,7 @@ optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject, t: Thread) {
 
     if (val.__getitem__) {
         for (; i >= 0; i--) {
-            f.push(val.__getitem__(new Py_Int(i)));
+            f.push(val.__getitem__(t, new Py_Int(i)));
         } 
     } else if (val.$__getitem__) {
         // Pop from stack, and reverse the order of elements, and push back into stack
@@ -678,7 +678,7 @@ optable[opcodes.SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var a = f.pop();
     if (a.__getitem__) {
         // Assumption: types with __getitem__ also have __len__.
-        f.push(a.__getitem__(new Py_Slice(new Py_Int(0), a.__len__(), None)));
+        f.push(a.__getitem__(t, new Py_Slice(new Py_Int(0), a.__len__(), None)));
     } else if (a.$__getitem__ && a.$__len__) {
         f.returnToThread = true;
         a.$__len__.exec_from_native(t, f, [], new Py_Dict(), (rv: IPy_Object) => {
@@ -696,7 +696,7 @@ optable[opcodes.SLICE_1] = function(f: Py_FrameObject, t: Thread) {
     var b = f.pop();
     var a = f.pop();
     if (a.__getitem__) {
-        f.push(a.__getitem__(new Py_Slice(b, a.__len__(), None)));
+        f.push(a.__getitem__(t, new Py_Slice(b, a.__len__(), None)));
     } else if (a.$__getitem__ && a.$__len__) {
         f.returnToThread = true;
         a.$__len__.exec_from_native(t, f, [], new Py_Dict(), (rv: IPy_Object) => {
@@ -714,7 +714,7 @@ optable[opcodes.SLICE_2] = function(f: Py_FrameObject, t: Thread) {
     var b = f.pop();
     var a = f.pop();
     if (a.__getitem__) {
-        f.push(a.__getitem__(new Py_Slice(new Py_Int(0), b, None)));
+        f.push(a.__getitem__(t, new Py_Slice(new Py_Int(0), b, None)));
     } else if (a.$__getitem__) {
         f.returnToThread = true;
         a.$__getitem__.exec(t, f, [new Py_Slice(new Py_Int(0), b, None)], new Py_Dict());
@@ -728,7 +728,7 @@ optable[opcodes.SLICE_3] = function(f: Py_FrameObject, t: Thread) {
     var b = f.pop();
     var c = f.pop();
     if (c.__getitem__) {
-        f.push(c.__getitem__(new Py_Slice(b, a, None)));
+        f.push(c.__getitem__(t, new Py_Slice(b, a, None)));
     } else if (c.$__getitem__) {
         f.returnToThread = true;
         c.$__getitem__.exec(t, f, [new Py_Slice(b, a, None)], new Py_Dict());
@@ -741,7 +741,7 @@ optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        seq.__setitem__(new Py_Slice(None, None, None), value);
+        seq.__setitem__(t, new Py_Slice(None, None, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [new Py_Slice(None, None, None), value], new Py_Dict());
@@ -755,7 +755,7 @@ optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        seq.__setitem__(new Py_Slice(start, None, None), value);
+        seq.__setitem__(t, new Py_Slice(start, None, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [new Py_Slice(start, None, None), value], new Py_Dict());
@@ -769,7 +769,7 @@ optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        seq.__setitem__(new Py_Slice(None, end, None), value);
+        seq.__setitem__(t, new Py_Slice(None, end, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [new Py_Slice(None, end, None), value], new Py_Dict());
@@ -784,7 +784,7 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        seq.__setitem__(new Py_Slice(start, end, None), value);
+        seq.__setitem__(t, new Py_Slice(start, end, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [new Py_Slice(start, end, None), value], new Py_Dict());
@@ -796,7 +796,7 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
 optable[opcodes.DELETE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     if (seq.__delitem__) {
-        seq.__delitem__(new Py_Slice(None, None, None));
+        seq.__delitem__(t, new Py_Slice(None, None, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [new Py_Slice(None, None, None)], new Py_Dict());
@@ -809,7 +809,7 @@ optable[opcodes.DELETE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
     var start = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        seq.__delitem__(new Py_Slice(start, None, None));
+        seq.__delitem__(t, new Py_Slice(start, None, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [new Py_Slice(start, None, None)], new Py_Dict());
@@ -822,7 +822,7 @@ optable[opcodes.DELETE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
     var end = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        seq.__delitem__(new Py_Slice(None, end, None));
+        seq.__delitem__(t, new Py_Slice(None, end, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [new Py_Slice(None, end, None)], new Py_Dict());
@@ -836,7 +836,7 @@ optable[opcodes.DELETE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
     var start = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        seq.__delitem__(new Py_Slice(start, end, None));
+        seq.__delitem__(t, new Py_Slice(start, end, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [new Py_Slice(start, end, None)], new Py_Dict());
@@ -852,7 +852,7 @@ optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
     var obj = f.pop();
     var value = f.pop();
     if (obj.__setitem__) {
-        obj.__setitem__(key, value);
+        obj.__setitem__(t, key, value);
     } else if (obj.$__setitem__) {
         f.returnToThread = true;
         obj.$__setitem__.exec(t, f, [key, value], new Py_Dict());
@@ -866,7 +866,7 @@ optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
     var key = f.pop();
     var obj = f.pop();
     if (obj.__delitem__) {
-        obj.__delitem__(key);
+        obj.__delitem__(t, key);
     } else if (obj.$__delitem__) {
         f.returnToThread = true;
         obj.$__delitem__.exec(t, f, [key], new Py_Dict());

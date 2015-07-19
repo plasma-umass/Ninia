@@ -239,7 +239,7 @@ export class Py_Str extends Py_Object {
       }
       return NotImplemented;
     }
-    public __getitem__(idx: IPy_Object): IPy_Object {
+    public __getitem__(t: Thread, idx: IPy_Object): IPy_Object {
       if (idx instanceof Py_Int) {
         var i = (<Py_Int> idx).toNumber();
         if (i < 0) {
@@ -255,13 +255,13 @@ export class Py_Str extends Py_Object {
       }
       throw new Error(`ValueError: cannot subscript str with ${idx}`);
     }
-    public __add__(other: IPy_Object): IPy_Object {
+    public __add__(t: Thread, other: IPy_Object): IPy_Object {
       if (other instanceof Py_Str) {
         return Py_Str.fromJS(this._str + other.toString());
       }
       return NotImplemented;
     }
-    public __mod__(other: IPy_Object): Py_Str {
+    public __mod__(t: Thread, other: IPy_Object): Py_Str {
       // string formatting!
       // This arcane regex matches (most) valid format patterns
       // TODO: support the * syntax in the field width / precision sections.
@@ -276,7 +276,7 @@ export class Py_Str extends Py_Object {
         if (rhs_idx == 0 && num_matches == 1) {
           obj = other;
         } else {
-          obj = other.__getitem__(new Py_Int(rhs_idx));
+          obj = other.__getitem__(t, new Py_Int(rhs_idx));
           rhs_idx++;
         }
         s += format(fmt[1], fmt[2], fmt[3], fmt[4], fmt[5], obj);
@@ -325,8 +325,8 @@ function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
  * Template function for math operations. Widens either a or b to the others'
  * type before executing the math operation.
  */
-function generateMathOp(name: string): (b: IPy_Number, t: Thread) => IPy_Number | typeof NotImplemented {
-  return eval(`(function() { return function(b, t) {
+function generateMathOp(name: string): (t: Thread, b: IPy_Number) => IPy_Number | typeof NotImplemented {
+  return eval(`(function() { return function(t, b) {
       var a = this,
         bType = b.getType(),
         aType = a.getType(),
@@ -341,7 +341,7 @@ function generateMathOp(name: string): (b: IPy_Number, t: Thread) => IPy_Number 
         // b is wider than a
         a = widenTo(a, bType);
       }
-      return a.${name}(b, t);
+      return a.${name}(t, b);
     }
   })()`);
 }
@@ -388,30 +388,30 @@ export class Py_Int extends Py_Object implements IPy_Number {
     }
 
     // The following are very self explanatory.
-    add(other: Py_Int): Py_Int { return new Py_Int((this.value + other.value) | 0); }
-    sub(other: Py_Int): Py_Int { return new Py_Int((this.value - other.value) | 0); }
-    mul(other: Py_Int): Py_Int { return new Py_Int((this.value * other.value) | 0); }
-    floordiv(other: Py_Int, t: Thread): Py_Int {
+    add(t: Thread, other: Py_Int): Py_Int { return new Py_Int((this.value + other.value) | 0); }
+    sub(t: Thread, other: Py_Int): Py_Int { return new Py_Int((this.value - other.value) | 0); }
+    mul(t: Thread, other: Py_Int): Py_Int { return new Py_Int((this.value * other.value) | 0); }
+    floordiv(t: Thread, other: Py_Int): Py_Int {
       if (other.value === 0)
         throwZeroDivisionError(t);
       return new Py_Int((this.value / other.value) | 0);
     }
 
     // Future division is always in effect
-    div(other: Py_Int, t: Thread): Py_Float { return this.truediv(other, t); }
+    div(t: Thread, other: Py_Int): Py_Float { return this.truediv(t, other); }
 
     // Since truediv has to return a Float, we automatically cast this Py_Int to
     // a Float and call truediv again.
-    truediv(other: Py_Int, t: Thread): Py_Float {
+    truediv(t: Thread, other: Py_Int): Py_Float {
       // TODO: Just do the division here.
-      return this.asFloat().truediv(other.asFloat(), t);
+      return this.asFloat().truediv(t, other.asFloat());
     }
 
     // Python modulo follows certain rules not seen in other languages.
     // 1. (a % b) has the same sign as b
     // 2. a == (a // b) * b + (a % b)
     // These are useful for defining modulo for different types though
-    mod(other: Py_Int, t: Thread): Py_Int {
+    mod(t: Thread, other: Py_Int): Py_Int {
       var a = this.value, b = other.value;
       if (b === 0)
         throwZeroDivisionError(t);
@@ -419,11 +419,11 @@ export class Py_Int extends Py_Object implements IPy_Number {
       return new Py_Int(res);
     }
 
-    divmod(other: Py_Int, t: Thread): _collections.Py_Tuple {
-        return new collections.Py_Tuple([this.floordiv(other, t), this.mod(other, t)]);
+    divmod(t: Thread, other: Py_Int): _collections.Py_Tuple {
+        return new collections.Py_Tuple([this.floordiv(t, other), this.mod(t, other)]);
     }
 
-    pow(other: Py_Int): Py_Float | Py_Int {
+    pow(t: Thread, other: Py_Int): Py_Float | Py_Int {
       var res = Math.pow(this.value, other.value);
       if ((res|0) != res) {
         return new Py_Float(res);
@@ -431,45 +431,45 @@ export class Py_Int extends Py_Object implements IPy_Number {
       return new Py_Int(res | 0);
     }
 
-    lshift(other: Py_Int): Py_Int {
+    lshift(t: Thread, other: Py_Int): Py_Int {
       return new Py_Int(this.value << other.value);
     }
 
-    rshift(other: Py_Int): Py_Int {
+    rshift(t: Thread, other: Py_Int): Py_Int {
       return new Py_Int(this.value >> other.value);
     }
 
-    and(other: Py_Int): Py_Int {
+    and(t: Thread, other: Py_Int): Py_Int {
       return new Py_Int(this.value & other.value);
     }
 
-    xor(other: Py_Int): Py_Int {
+    xor(t: Thread, other: Py_Int): Py_Int {
       return new Py_Int(this.value ^ other.value);
     }
 
-    or(other: Py_Int): Py_Int {
+    or(t: Thread, other: Py_Int): Py_Int {
       return new Py_Int(this.value | other.value);
     }
 
     // Negation is obvious and simple.
-    __neg__(): Py_Int {
+    __neg__(t: Thread): Py_Int {
       return new Py_Int((this.value * -1) | 0);
     }
 
     // Apparently unary plus doesn't really do much.
     // Presumably you can do more with it in user-defined classes.
-    __pos__(): Py_Int {
+    __pos__(t: Thread): Py_Int {
       return this;
     }
 
-    __abs__(): Py_Int {
+    __abs__(t: Thread): Py_Int {
       if (this.value < 0)
-        return this.__neg__();
+        return this.__neg__(t);
       else
         return this;
     }
 
-    __invert__(): Py_Int {
+    __invert__(t: Thread): Py_Int {
       return new Py_Int(~this.value);
     }
 
@@ -557,15 +557,15 @@ export class Py_Long extends Py_Object implements IPy_Number {
     }
 
     // The following should be self explanatary, to an extent.
-    add(other: Py_Long): Py_Long {
+    add(t: Thread, other: Py_Long): Py_Long {
       return new Py_Long(this.value.plus(other.value));
     }
 
-    sub(other: Py_Long): Py_Long {
+    sub(t: Thread, other: Py_Long): Py_Long {
       return new Py_Long(this.value.minus(other.value));
     }
 
-    mul(other: Py_Long): Py_Long {
+    mul(t: Thread, other: Py_Long): Py_Long {
       return new Py_Long(this.value.times(other.value));
     }
 
@@ -573,18 +573,18 @@ export class Py_Long extends Py_Object implements IPy_Number {
     // the floor division operator always rounds towards negative infinity.
     // Therefore, the slightly longer div(...).floor() method chain should be
     // used.
-    floordiv(other: Py_Long, t: Thread): Py_Long {
+    floordiv(t: Thread, other: Py_Long): Py_Long {
       if (other.value.isZero())
         throwZeroDivisionError(t);
       return new Py_Long(this.value.div(other.value).floor());
     }
 
     // True division, always.
-    div(other: Py_Long, t: Thread): Py_Long {
-        return this.truediv(other, t);
+    div(t: Thread, other: Py_Long): Py_Long {
+        return this.truediv(t, other);
     }
 
-    truediv(other: Py_Long, t: Thread): Py_Long {
+    truediv(t: Thread, other: Py_Long): Py_Long {
       if (other.value.isZero())
         throwZeroDivisionError(t);
       return new Py_Long(this.value.div(other.value));
@@ -592,27 +592,27 @@ export class Py_Long extends Py_Object implements IPy_Number {
 
     // As stated previously, Python's unusual mod rules come into play here.
     // (a % b) has b's sign, and a == (a // b) * b + (a % b)
-    mod(other: Py_Long, t: Thread): Py_Long {
+    mod(t: Thread, other: Py_Long): Py_Long {
       if (other.value.isZero())
         throwZeroDivisionError(t);
-      return this.sub(other.mul(this.floordiv(other, t)));
+      return this.sub(t,other.mul(t, this.floordiv(t, other)));
     }
 
-    divmod(other: Py_Long, t: Thread): _collections.Py_Tuple {
-      return new collections.Py_Tuple([this.floordiv(other, t), this.mod(other, t)]);
+    divmod(t: Thread, other: Py_Long): _collections.Py_Tuple {
+      return new collections.Py_Tuple([this.floordiv(t, other), this.mod(t, other)]);
     }
 
     // Thankfully, Decimal has a toPower function.
-    pow(other: Py_Long): Py_Long {
+    pow(t: Thread, other: Py_Long): Py_Long {
       return new Py_Long(this.value.toPower(other.value));
     }
 
     // These are a bitty "hacky" but they get the job done.
-    lshift(other: Py_Long): Py_Long {
+    lshift(t: Thread, other: Py_Long): Py_Long {
       return new Py_Long(this.value.times(Decimal.pow(2, other.value)));
     }
 
-    rshift(other: Py_Long): Py_Long {
+    rshift(t: Thread, other: Py_Long): Py_Long {
       return new Py_Long(this.value.divToInt(Decimal.pow(2, other.value)));
     }
 
@@ -621,19 +621,19 @@ export class Py_Long extends Py_Object implements IPy_Number {
     // Future reference: Decimal's 'c' field is number[] (array of digits)
     // res[i] = a[i] | b[i]
     // But might need to treat negative numbers differently?
-    and(other: Py_Long): Py_Long {
+    and(t: Thread, other: Py_Long): Py_Long {
       if (this.fitsInJsNumber() && other.fitsInJsNumber()) {
         return Py_Long.fromNumber(this.toNumber() & other.toNumber());
       }
       throw new Error('Py_Long __and__ for wide numbers is NYI');
     }
-    xor(other: Py_Long): Py_Long {
+    xor(t: Thread, other: Py_Long): Py_Long {
       if (this.fitsInJsNumber() && other.fitsInJsNumber()) {
         return Py_Long.fromNumber(this.toNumber() ^ other.toNumber());
       }
       throw new Error('Py_Long __xor__ for wide numbers is NYI');
     }
-    or(other: Py_Long): Py_Long {
+    or(t: Thread, other: Py_Long): Py_Long {
       if (this.fitsInJsNumber() && other.fitsInJsNumber()) {
         return Py_Long.fromNumber(this.toNumber() | other.toNumber());
       }
@@ -645,24 +645,24 @@ export class Py_Long extends Py_Object implements IPy_Number {
               this.value.greaterThanOrEqualTo(MIN_INT));
     }
 
-    __neg__(): Py_Long {
-        return this.mul(Py_Long.fromString("-1"));
+    __neg__(t: Thread): Py_Long {
+        return this.mul(t, Py_Long.fromString("-1"));
     }
 
-    __pos__(): Py_Long {
+    __pos__(t: Thread): Py_Long {
         return this
     }
 
-    __abs__(): Py_Long {
+    __abs__(t: Thread): Py_Long {
         if (this.value.isNegative())
-            return this.__neg__();
+            return this.__neg__(t);
         else
             return this;
     }
 
     // ~x = (-x) - 1 for integers, so we emulate that here
-    __invert__(): Py_Long {
-        return this.__neg__().sub(Py_Long.fromString("1"));
+    __invert__(t: Thread): Py_Long {
+        return this.__neg__(t).sub(t, Py_Long.fromString("1"));
     }
 
     lt(other: Py_Long): Py_Boolean {
@@ -722,54 +722,54 @@ export class Py_Float extends Py_Object implements IPy_Number {
     }
 
     // The following functions are dangerously self-explanatory
-    add(other: Py_Float): Py_Float {
+    add(t: Thread, other: Py_Float): Py_Float {
       return new Py_Float(this.value + other.value);
     }
-    sub(other: Py_Float): Py_Float {
+    sub(t: Thread, other: Py_Float): Py_Float {
       return new Py_Float(this.value - other.value);
     }
-    mul(other: Py_Float): Py_Float {
+    mul(t: Thread, other: Py_Float): Py_Float {
       return new Py_Float(this.value * other.value);
     }
-    floordiv(other: Py_Float, t: Thread): Py_Float {
+    floordiv(t: Thread, other: Py_Float): Py_Float {
       if (other.value == 0)
         throwZeroDivisionError(t);
       return new Py_Float(Math.floor(this.value / other.value));
     }
-    div(other: Py_Float, t: Thread): Py_Float {
-      return this.truediv(other, t);
+    div(t: Thread, other: Py_Float): Py_Float {
+      return this.truediv(t, other);
     }
-    truediv(other: Py_Float, t: Thread): Py_Float {
+    truediv(t: Thread, other: Py_Float): Py_Float {
       if (other.value == 0)
         throwZeroDivisionError(t);
       return new Py_Float(this.value / other.value);
     }
     // Modulo in Python has the following property: a % b) will always have the
     // sign of b, and a == (a//b)*b + (a%b).
-    mod(other: Py_Float, t: Thread): Py_Float {
+    mod(t: Thread, other: Py_Float): Py_Float {
       if (other.value == 0)
         throwZeroDivisionError(t);
       // TODO: Both are floats, can avoid creating unneeded intermediate objs.
-      return this.sub(other.mul(this.floordiv(other, t)));
+      return this.sub(t, other.mul(t, this.floordiv(t, other)));
     }
-    divmod(other: Py_Float, t: Thread): _collections.Py_Tuple {
-      return new collections.Py_Tuple([this.floordiv(other, t), this.mod(other, t)]);
+    divmod(t: Thread, other: Py_Float): _collections.Py_Tuple {
+      return new collections.Py_Tuple([this.floordiv(t, other), this.mod(t, other)]);
     }
-    pow(other: Py_Float): Py_Float {
+    pow(t: Thread, other: Py_Float): Py_Float {
       return new Py_Float(Math.pow(this.value, other.value));
     }
 
-    __neg__(): Py_Float {
-      return this.mul(new Py_Float(-1));
+    __neg__(t: Thread): Py_Float {
+      return this.mul(t, new Py_Float(-1));
     }
 
-    __pos__(): Py_Float {
+    __pos__(t: Thread): Py_Float {
       return this
     }
 
-    __abs__(): Py_Float {
+    __abs__(t: Thread): Py_Float {
       if (this.value < 0)
-        return this.__neg__();
+        return this.__neg__(t);
       else
         return this;
     }
@@ -835,72 +835,72 @@ export class Py_Complex extends Py_Object implements IPy_Number {
     }
 
     // The following operations should be self explanatory.
-    add(other: Py_Complex): Py_Complex {
-      return new Py_Complex(this.$real.add(other.$real), this.$imag.add(other.$imag));
+    add(t: Thread, other: Py_Complex): Py_Complex {
+      return new Py_Complex(this.$real.add(t, other.$real), this.$imag.add(t, other.$imag));
     }
 
-    sub(other: Py_Complex): Py_Complex {
-      return new Py_Complex(this.$real.sub(other.$real), this.$imag.sub(other.$imag));
+    sub(t: Thread, other: Py_Complex): Py_Complex {
+      return new Py_Complex(this.$real.sub(t, other.$real), this.$imag.sub(t, other.$imag));
     }
 
     // Multiplication and division are weird on Complex numbers. Wikipedia is a
     // good primer on the subject.
-    mul(other: Py_Complex): Py_Complex {
+    mul(t: Thread, other: Py_Complex): Py_Complex {
       var r: Py_Float, i: Py_Float;
-      r = this.$real.mul(other.$real).sub(this.$imag.mul(other.$imag));
-      i = this.$imag.mul(other.$real).add(this.$real.mul(other.$imag));
+      r = this.$real.mul(t, other.$real).sub(t, this.$imag.mul(t, other.$imag));
+      i = this.$imag.mul(t, other.$real).add(t, this.$real.mul(t, other.$imag));
       return new Py_Complex(r, i);
     }
 
-    floordiv(other: Py_Complex, t: Thread): Py_Complex {
+    floordiv(t: Thread, other: Py_Complex): Py_Complex {
       if (other.$real.value == 0 && other.$imag.value == 0)
         throwZeroDivisionError(t);
       var r: Py_Float, d: Py_Float;
-      r = this.$real.mul(other.$real).add(this.$imag.mul(other.$imag));
-      d = other.$real.mul(other.$real).add(other.$imag.mul(other.$imag));
+      r = this.$real.mul(t, other.$real).add(t, this.$imag.mul(t, other.$imag));
+      d = other.$real.mul(t, other.$real).add(t, other.$imag.mul(t, other.$imag));
       // Note: floor division always zeros the imaginary part
-      return new Py_Complex(r.floordiv(d, t), new Py_Float(0));
+      return new Py_Complex(r.floordiv(t, d), new Py_Float(0));
     }
 
-    div(other: Py_Complex, t: Thread): Py_Complex {
-      return this.truediv(other, t);
+    div(t: Thread, other: Py_Complex): Py_Complex {
+      return this.truediv(t, other);
     }
 
-    truediv(other: Py_Complex, t: Thread): Py_Complex {
+    truediv(t: Thread, other: Py_Complex): Py_Complex {
       if (other.$real.value == 0 && other.$imag.value == 0)
         throwZeroDivisionError(t);
       var r: Py_Float, i: Py_Float, d: Py_Float;
-      r = this.$real.mul(other.$real).add(this.$imag.mul(other.$imag));
-      i = this.$imag.mul(other.$real).sub(this.$real.mul(other.$imag));
-      d = other.$real.mul(other.$real).add(other.$imag.mul(other.$imag));
-      return new Py_Complex(r.truediv(d, t), i.truediv(d, t));
+      r = this.$real.mul(t, other.$real).add(t, this.$imag.mul(t, other.$imag));
+      i = this.$imag.mul(t, other.$real).sub(t, this.$real.mul(t, other.$imag));
+      d = other.$real.mul(t, other.$real).add(t, other.$imag.mul(t, other.$imag));
+      return new Py_Complex(r.truediv(t, d), i.truediv(t, d));
     }
 
     // Modulo is REALLY weird in Python. (a % b) will always have the sign of b,
     // and a = (a//b)*b + (a%b). Complex numbers make it worse, because they
     // only consider the real component of (a // b)
-    mod(other: Py_Complex, t: Thread): Py_Complex {
+    mod(t: Thread, other: Py_Complex): Py_Complex {
       if (other.$real.value == 0 && other.$imag.value == 0)
         throwZeroDivisionError(t);
       else if (other.$real.value == 0)
-        return new Py_Complex(this.$real, this.$imag.mod(other.$imag, t));
+        return new Py_Complex(this.$real, this.$imag.mod(t, other.$imag));
       else if (other.$imag.value == 0)
-        return new Py_Complex(this.$real.mod(other.$real, t), this.$imag);
+        return new Py_Complex(this.$real.mod(t, other.$real), this.$imag);
       else {
-        var div = new Py_Complex(this.floordiv(other, t).$real, new Py_Float(0));
+        var div = new Py_Complex(this.floordiv(t, other).$real, new Py_Float(0));
         // See complexobject.c, because Python is weird
         // See Wikipedia: Modulo_operation#Modulo_operation_expression
-        return this.sub(other.mul(div));
+        return this.sub(t, other.mul(t, div));
       }
     }
 
-    divmod(other: Py_Complex, t: Thread): Py_Complex {
-      return this.floordiv(other, t).mod(other, t);
+    divmod(t: Thread, other: Py_Complex): Py_Complex {
+      return this.floordiv(t, other).mod(t, other);
     }
 
     // Powers with complex numbers are weird.
     // Fractional and complex powers are NYI.
-    pow(other: Py_Complex): Py_Complex {
+    pow(t: Thread, other: Py_Complex): Py_Complex {
       var n = other.$real.toNumber();
       if (other.$imag.toNumber() == 0 && ((n|0) == n)) {
         var real = this.$real.value;
@@ -913,17 +913,17 @@ export class Py_Complex extends Py_Object implements IPy_Number {
       throw new Error('Py_Complex __pow__ for non-integer powers is NYI');
     }
 
-    __neg__(): Py_Complex {
-      return new Py_Complex(this.$real.__neg__(), this.$imag.__neg__());
+    __neg__(t: Thread): Py_Complex {
+      return new Py_Complex(this.$real.__neg__(t), this.$imag.__neg__(t));
     }
 
-    __pos__(): Py_Complex {
+    __pos__(t: Thread): Py_Complex {
       return this
     }
 
     // This is the standard definition for absolute value: The ABSOLUTE distance
     // of (a + bi) from 0. Therefore, hypotenuse.
-    __abs__(): Py_Float {
+    __abs__(t: Thread): Py_Float {
         var r = this.$real.value;
         var i = this.$imag.value;
         return new Py_Float(Math.sqrt(r*r + i*i));

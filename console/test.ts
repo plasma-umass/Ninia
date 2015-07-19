@@ -94,6 +94,7 @@ var testList = [
     ["NameError Uncaught test", "pytests/uncaught_exceptions/nameError"],
     ["Raise exception with arguments test", "pytests/uncaught_exceptions/raiseMultipleArg"],
     ["User-defined exceptions test", "pytests/uncaught_exceptions/userClassException"],
+    ["ArithmeticError Uncaught test", "pytests/uncaught_exceptions/arithmeticError"],
     [`\n--- Thread tests ---`],
     ["Termination test", "pytests/threads/terminationTest"],
     [`\n--- Other tests ---`],

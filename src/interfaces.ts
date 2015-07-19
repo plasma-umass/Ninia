@@ -67,37 +67,37 @@ export interface IPy_Object {
   __neg__?(t: Thread): IPy_Object;
   __invert__?(t: Thread): IPy_Object;
   __abs__?(t: Thread): IPy_Object;
-  __divmod__?(a: IPy_Object, t: Thread): Py_Tuple;
-  __rdivmod__?(a: IPy_Object, t: Thread): Py_Tuple;
-  __pow__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rpow__?(a: IPy_Object, t: Thread): IPy_Object;
-  __mul__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rmul__?(a: IPy_Object, t: Thread): IPy_Object;
-  __div__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rdiv__?(a: IPy_Object, t: Thread): IPy_Object;
-  __mod__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rmod__?(a: IPy_Object, t: Thread): IPy_Object;
-  __add__?(a: IPy_Object, t: Thread): IPy_Object;
-  __radd__?(a: IPy_Object, t: Thread): IPy_Object;
-  __sub__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rsub__?(a: IPy_Object, t: Thread): IPy_Object;
-  __floordiv__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rfloordiv__?(a: IPy_Object, t: Thread): IPy_Object;
-  __truediv__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rtruediv__?(a: IPy_Object, t: Thread): IPy_Object;
-  __lshift__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rlshift__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rshift__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rrshift__?(a: IPy_Object, t: Thread): IPy_Object;
-  __and__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rand__?(a: IPy_Object, t: Thread): IPy_Object;
-  __xor__?(a: IPy_Object, t: Thread): IPy_Object;
-  __rxor__?(a: IPy_Object, t: Thread): IPy_Object;
-  __or__?(a: IPy_Object, t: Thread): IPy_Object;
-  __ror__?(a: IPy_Object, t: Thread): IPy_Object;
-  __iadd__?(a: IPy_Object, t: Thread): IPy_Object;
-  __add__?(a: IPy_Object, t: Thread): IPy_Object;
-  __ipow__?(a: IPy_Object, t: Thread): IPy_Object;
+  __divmod__?(t: Thread, a: IPy_Object): Py_Tuple;
+  __rdivmod__?(t: Thread, a: IPy_Object): Py_Tuple;
+  __pow__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rpow__?(t: Thread, a: IPy_Object): IPy_Object;
+  __mul__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rmul__?(t: Thread, a: IPy_Object): IPy_Object;
+  __div__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rdiv__?(t: Thread, a: IPy_Object): IPy_Object;
+  __mod__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rmod__?(t: Thread, a: IPy_Object): IPy_Object;
+  __add__?(t: Thread, a: IPy_Object): IPy_Object;
+  __radd__?(t: Thread, a: IPy_Object): IPy_Object;
+  __sub__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rsub__?(t: Thread, a: IPy_Object): IPy_Object;
+  __floordiv__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rfloordiv__?(t: Thread, a: IPy_Object): IPy_Object;
+  __truediv__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rtruediv__?(t: Thread, a: IPy_Object): IPy_Object;
+  __lshift__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rlshift__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rshift__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rrshift__?(t: Thread, a: IPy_Object): IPy_Object;
+  __and__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rand__?(t: Thread, a: IPy_Object): IPy_Object;
+  __xor__?(t: Thread, a: IPy_Object): IPy_Object;
+  __rxor__?(t: Thread, a: IPy_Object): IPy_Object;
+  __or__?(t: Thread, a: IPy_Object): IPy_Object;
+  __ror__?(t: Thread, a: IPy_Object): IPy_Object;
+  __iadd__?(t: Thread, a: IPy_Object): IPy_Object;
+  __add__?(t: Thread, a: IPy_Object): IPy_Object;
+  __ipow__?(t: Thread, a: IPy_Object): IPy_Object;
   
   $__pos__?: IPy_Function;
   $__neg__?: IPy_Function;
@@ -169,7 +169,7 @@ export interface IPy_Object {
    * IndexError will be raised for illegal indexes to allow proper detection of
    * the end of the sequence.
    */
-  __getitem__?(key: IPy_Object): IPy_Object;
+  __getitem__?(t: Thread, key: IPy_Object): IPy_Object;
   $__getitem__?: IPy_Function;
   /**
    * Called to implement assignment to self[key]. Same note as for
@@ -178,7 +178,7 @@ export interface IPy_Object {
    * sequences if elements can be replaced. The same exceptions should be raised
    * for improper key values as for the __getitem__() method.
    */
-  __setitem__?(key: IPy_Object, value: IPy_Object): IPy_Object;
+  __setitem__?(t: Thread, key: IPy_Object, value: IPy_Object): IPy_Object;
   $__setitem__?: IPy_Function;
   /**
    * Called to implement deletion of self[key]. Same note as for __getitem__().
@@ -187,7 +187,7 @@ export interface IPy_Object {
    * same exceptions should be raised for improper key values as for the
    * __getitem__() method.
    */
-  __delitem__?(key: IPy_Object): IPy_Object;
+  __delitem__?(t: Thread, key: IPy_Object): IPy_Object;
   $__delitem__?: IPy_Function;
 }
 

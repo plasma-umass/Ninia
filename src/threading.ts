@@ -152,9 +152,7 @@ class Thread {
     // Terminates execution of a Thread by changing its status and then emptying its stack
     public exit(): void {
         this.status = enums.ThreadStatus.TERMINATED;
-        while(this.stack.length !== 0) {
-            this.framePop();
-        }
+        this.stack = [];
         // execute callback
         this.cb();
     }
