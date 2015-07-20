@@ -418,7 +418,6 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
             var x = builtins.isinstance(t, f, [a, b], null);
             f.push(x);
             if (x == False) {
-                // f.tryCatchException(t);
                 t.throwException(f);
             }
             break;
@@ -557,7 +556,6 @@ optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
         case 0:
             // todo: re-raising
             do_raise(f, t, cause, exc);
-            // f.tryCatchException(t);
             t.throwException(f);
             break;
         default:
