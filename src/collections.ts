@@ -65,9 +65,8 @@ export class Py_List extends Py_Object implements Iterable {
       return '[]';
     }
     var s = '[';
-    for (var i=0; i<this._list.length; i++) {
-      s += this._list[i].__repr__();
-      s += ', ';
+    for (var x of this._list) {
+      s += `${x.__repr__()}, `;
     }
     // Remove last ', ' from the end.
     return s.slice(0, -2) + ']';
@@ -225,9 +224,8 @@ export class Py_Tuple extends Py_Object implements Iterable {
       return '()';
     }
     var s = '(';
-    for (var i=0; i<this._tuple.length; i++) {
-      s += this._tuple[i].__repr__();
-      s += ', ';
+    for (var x of this._tuple) {
+      s += `${x.__repr__()}, `;
     }
     // Remove last ', ' from the end.
     return s.slice(0, -2) + ')';
@@ -386,6 +384,7 @@ export class Py_Dict extends Py_Object implements Iterable {
       if (this._vals[h] !== undefined) {
         delete this._vals[h];
       }
+      this._objectKeys.splice(this._objectKeys.indexOf(key), 1);
     }
   }
   public iter(): Iterator {
@@ -419,15 +418,13 @@ export class Py_Dict extends Py_Object implements Iterable {
   }
   public toString(): string {
     var s = '{';
-    for (var i = 0; i < this._objectKeys.length; i++) {
-      var key = this._objectKeys[i];
+    for (var key of this._objectKeys) {
       var h = key.hash();
       var val = this._vals[h];
-      s += key.__repr__() + ': ';
-      s += val.__repr__() + ', ';
+      s += `${key.__repr__()}: ${val.__repr__()}, `;
     }
     Object.keys(this._stringDict).forEach((key) => {
-      s += "'" + key.slice(1) + "': " + this._stringDict[key].__repr__() + ", ";
+      s += `'${key.slice(1)}': ${this._stringDict[key].__repr__()}, `;
     });
     // trim off last ', '
     return (s.length > 1 ? s.slice(0, -2)  : s) + '}';
@@ -472,8 +469,8 @@ export class Py_Set extends Py_Dict implements IPy_Object {
 
   public toString(): string {
     var s = 'set([';
-    for (var i = 0; i < this._objectKeys.length; i++) {
-      s += this._objectKeys[i].__repr__() + ', ';
+    for (var key of this._objectKeys) {
+      s += key.__repr__() + ', ';
     }
     Object.keys(this._stringDict).forEach((key) => {
       s += key.slice(1) + ', ';
@@ -486,11 +483,11 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var res = new Py_Set(), myKeys = this.keys(),
+    var res = new Py_Set(),
       other: Py_Set = <Py_Set> x;
-    for (var i = 0; i < myKeys.length; i++) {
-      if (other.get(myKeys[i]) !== undefined) {
-        res.add(myKeys[i]);
+    for (var key of this.keys()) {
+      if (other.get(key) !== undefined) {
+        res.add(key);
       }
     }
     return res;
@@ -501,11 +498,11 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var res = new Py_Set(), myKeys = this.keys(),
+    var res = new Py_Set(),
       other: Py_Set = <Py_Set> x;
-    for (var i = 0; i < myKeys.length; i++) {
-      if (other.get(myKeys[i]) === undefined) {
-        res.add(myKeys[i]);
+    for (var key of this.keys()) {
+      if (other.get(key) === undefined) {
+        res.add(key);
       }
     }
     return res;
@@ -532,10 +529,9 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
-    var h: string, other: Py_Set = <Py_Set> x,
-      myKeys = this.keys();
-    for (var i = 0; i < myKeys.length; i++) {
-      if (other.get(myKeys[i]) === undefined) {
+    var h: string, other: Py_Set = <Py_Set> x;
+    for (var key of this.keys()) {
+      if (other.get(key) === undefined) {
         return False;
       }
     }

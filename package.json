@@ -13,7 +13,7 @@
     "minimist": "*",
     "npm": "*",
     "tslint": "^2.1.1",
-    "typescript": "1.4"
+    "typescript": "1.5"
   },
   "repository": {
     "type": "git",

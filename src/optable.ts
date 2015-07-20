@@ -559,12 +559,12 @@ function addr2line(f: Py_FrameObject): number {
     var addr = 0;
     var chars = f.codeObj.lnotab.toString();
     var lnotab = unpack(chars);
-    for (var i = 0; i < lnotab.length; i++) {
-        addr += lnotab[i][0];
+    for (var row of lnotab) {
+        addr += row[0];
         if (addr > f.lastInst) {
             break;
         }
-        lineno += lnotab[i][1];
+        lineno += row[1];
     }
     return lineno;
 }
