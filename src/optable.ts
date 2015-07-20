@@ -432,27 +432,33 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
 
 function doCmpOp(t: Thread, f: Py_FrameObject, a: IPy_Object, b: IPy_Object, funcA: string, funcB: string) {
     if ((<any> a)[funcA]) {
-        f.push((<(b: IPy_Object) => IPy_Object> (<any> a)[funcA])(b));
-    } else if ((<any> a)[`$${funcA}`]) {
+        var native_fn: (b: IPy_Object) => IPy_Object = (<any> a)[funcA];
+        f.push(native_fn(b));
+        return
+    }
+    if ((<any> a)[`$${funcA}`]) {
+        var py_fn: IPy_Function = (<any> a)[`$${funcA}`]
         f.returnToThread = true;
-        (<IPy_Function> (<any> a)[`$${funcA}`]).exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
-            if (res == NotImplemented && funcB !== null) {
-                if ((<any> b)[funcB]) {
-                    f.push((<(a: IPy_Object) => IPy_Object> (<any> b)[funcB])(a));
+        py_fn.exec_from_native(t, f, [a, b], new Py_Dict(), (res: IPy_Object) => {
+            if (res != NotImplemented || funcB === null)
+                return;
+            if ((<any> b)[funcB]) {
+                var native_fn: (a: IPy_Object) => IPy_Object = (<any> b)[funcB];
+                f.push(native_fn(a));
+                t.setStatus(enums.ThreadStatus.RUNNABLE);
+            } else if ((<any> b)[`$${funcB}`]) {
+                var py_fn: IPy_Function = (<any> b)[`$${funcB}`];
+                py_fn.exec_from_native(t, f, [b, a], new Py_Dict(), (res: IPy_Object) => {
+                    f.push(res);
                     t.setStatus(enums.ThreadStatus.RUNNABLE);
-                } else if ((<any> b)[`$${funcB}`]) {
-                    (<IPy_Function> (<any> b)[`$${funcB}`]).exec_from_native(t, f, [b, a], new Py_Dict(), (res: IPy_Object) => {
-                        f.push(res);
-                        t.setStatus(enums.ThreadStatus.RUNNABLE);
-                    });
-                } else {
-                    throw new Error(`Object lacks ${funcB} property.`);   
-                }            
-            } 
+                });
+            } else {
+                throw new Error(`Object lacks ${funcB} property.`);
+            }
         });
-    } else {
-        throw new Error(`Object lacks ${funcA} property.`);
-    }   
+        return
+    }
+    throw new Error(`Object lacks ${funcA} property.`);
 }
 
 optable[opcodes.JUMP_FORWARD] = function(f: Py_FrameObject) {
@@ -1141,7 +1147,7 @@ optable[opcodes.IMPORT_STAR] = function(f: Py_FrameObject) {
 }
 
 // Replaces TOS with getattr(TOS, co_names[namei]).
-optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) { 
+optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) {
     var name = f.codeObj.names[f.readArg()].toString(),
         obj = f.pop(),
         val = (<any> obj)[`$${name}`];
