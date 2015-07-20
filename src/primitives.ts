@@ -177,7 +177,7 @@ export class Py_Str extends Py_Object {
     public hash(): number {
         // Adapted from Python 2.7.8's string hash function.
         var len: number, p: number, x: number, i: number = 0;
-    
+
         if (this._hash !== -1) {
             return this._hash;
         }
@@ -351,7 +351,7 @@ function generateCmpOp(name: string): (b: IPy_Number) => IPy_Number {
         typeDiff = aType - bType;
       if (bType > ${enums.Py_Type.COMPLEX}) {
         // b is not a number. Thus it is always less than a.
-	return (new exports.Py_Int(aType)).${name}(new exports.Py_Int(bType));
+	      return (new exports.Py_Int(aType)).${name}(new exports.Py_Int(bType));
       } else if (typeDiff > 0) {
         // a is wider than b
         b = widenTo(b, aType);

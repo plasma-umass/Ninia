@@ -36,7 +36,7 @@ function printResults() {
                 console.log(`${testFails[tName]} test failed in ${tName} tests.`);
             }
         }
-        console.log(`Passed ${numPassed}/${numTests} tests.`); 
+        console.log(`Passed ${numPassed}/${numTests} tests.`);
         if (numPassed != numTests) {
           process.exit(1);
         }
@@ -152,7 +152,7 @@ var iteration = function(cur_test: [string], inCb: () => void) {
     else{
         var file = cur_test[1];
         indiv_test(name, file, inCb);
-    }    
+    }
 }
 
 // Runs all tests

@@ -34,7 +34,7 @@ export class Py_List extends Py_Object implements Iterable {
   public $__setitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     return this.__setitem__(args[0], args[1]);
   });
-  
+
   constructor(lst: IPy_Object[]) {
     super();
     this._list = lst;
@@ -267,29 +267,29 @@ export class Py_Tuple extends Py_Object implements Iterable {
 
 /**
  * Our implementation of Python dictionaries.
- * 
+ *
  * Python dictionaries form the basis of every object in Python.
  * Objects all have an underlying __dict__ property, which is a
  * dictionary containing all of the properties on the object.
- * 
+ *
  * Thus, to update the property 'bar' on object 'foo', one can
  * do either:
- * 
+ *
  * foo.bar = 4
- * 
+ *
  * ...or:
- * 
+ *
  * foo.__dict__['bar'] = 4
- * 
+ *
  * Naturally, JavaScript objects share this same property, in
  * that you can access property 'bar' as either foo.bar or
  * foo['bar'].
- * 
+ *
  * One key difference: Python dictionaries can have arbitrary
  * keys, whereas JavaScript objects only support string keys.
- * However, in Python, only dictionary items keyed on a string 
+ * However, in Python, only dictionary items keyed on a string
  * actually surface as object properties...
- * 
+ *
  * Which brings me to our idiosyncratic two-bucket dictionary
  * design. The first bucket is for items keyed on a Python
  * string; those go into "_stringDict", keyed on the string
@@ -297,7 +297,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
  * properties. The second bucket is for items keyed on other
  * Python objects; like in Python, those are keyed on their
  * __hash__ value.
- * 
+ *
  * This design lets us use *arbitrary JavaScript objects as
  * _stringDict*, making it possible for Python objects to live
  * a dual existence as both Dictionary and Object. An object's
@@ -331,7 +331,7 @@ export class Py_Dict extends Py_Object implements Iterable {
     keys = Object.keys(this._stringDict);
     for (i = 0; i < keys.length; i++) {
       key = keys[i];
-      clone._stringDict[key] = this._stringDict[key];  
+      clone._stringDict[key] = this._stringDict[key];
     }
     return clone;
   }
@@ -386,7 +386,6 @@ export class Py_Dict extends Py_Object implements Iterable {
       if (this._vals[h] !== undefined) {
         delete this._vals[h];
       }
-      this._objectKeys.splice(this._objectKeys.indexOf(key), 1); 
     }
   }
   public iter(): Iterator {
@@ -441,7 +440,7 @@ export class Py_Dict extends Py_Object implements Iterable {
   public __len__(): Py_Int {
     return new Py_Int(this.len());
   }
-  
+
   public __eq__(o: IPy_Object): IPy_Object {
     if (o === this) {
       return True;
@@ -457,7 +456,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
     objects.forEach((obj) => res.add(obj));
     return res;
   }
-  
+
   static fromIterable(x: Iterable) {
     var set = new Py_Set();
     var it = x.iter();
@@ -539,7 +538,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
       if (other.get(myKeys[i]) === undefined) {
         return False;
       }
-    }  
+    }
     // make sure we're not equal
     return (this.len() == (<Py_Set> x).len())? False : True;
   }

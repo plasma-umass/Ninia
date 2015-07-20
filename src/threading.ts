@@ -47,7 +47,7 @@ class Thread {
         while (this.status === enums.ThreadStatus.RUNNING && stack.length > 0) {
             var bytecodeMethod: IPy_FrameObj = stack[stack.length - 1];
             // Execute python bytecode methods
-            bytecodeMethod.exec(this);          
+            bytecodeMethod.exec(this);
 
             // If no method resumes are left, yield to javascript event loop
             if (--methodResumesLeft === 0) {
@@ -63,7 +63,7 @@ class Thread {
                 setImmediate(() => { this.setStatus(enums.ThreadStatus.RUNNABLE); });
             }
         }
-        
+
         if (stack.length === 0) {
             this.setStatus(enums.ThreadStatus.TERMINATED);
         }
@@ -99,10 +99,10 @@ class Thread {
     public framePop(): void {
         this.stack.pop();
     }
-    
+
     public framePush(frame: IPy_FrameObj): void {
         this.stack.push(frame);
-    }   
+    }
 
     public clearTraceback(): void {
         this.traceback = "";
@@ -124,7 +124,7 @@ class Thread {
         this.writeTraceback();
         this.exit();
     }
-    
+
     public getTopOfStack(): IPy_FrameObj {
         return this.stack[this.stack.length - 1];
     }

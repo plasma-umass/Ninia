@@ -40,12 +40,12 @@ function bool(x: IPy_Object): typeof True {
 
 /**
  * Big mapping from opcode enum to function.
- * 
+ *
  * General implementation notes:
  * - Built-in types cannot have their default implementations of opcode functions overwritten.
  *   e.g. dict().__setitem__ = newFunc is ILLEGAL and causes a runtime exception.
  *   Thus, the synchronous case is *first* in all opcodes.
- * 
+ *
  * - When we support classes, we should prevent user classes from inheriting default implementations.
  */
 var optable: { [op: number]: (f: Py_FrameObject, t: Thread)=>void } = {};
@@ -224,7 +224,7 @@ optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject, t: Thread) {
             var lastChar = s.slice(-1);
             f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
             t.setStatus(enums.ThreadStatus.RUNNABLE);
-        });    
+        });
     }
 }
 
@@ -279,7 +279,7 @@ optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject, t: Thread) {
     if (val.__getitem__) {
         for (; i >= 0; i--) {
             f.push(val.__getitem__(new Py_Int(i)));
-        } 
+        }
     } else if (val.$__getitem__) {
         // Pop from stack, and reverse the order of elements, and push back into stack
         // e.g. 1 2 3 -> 3 2 1
@@ -599,7 +599,7 @@ function find_in_prev(f: Py_FrameObject, t: Thread): boolean {
     // return false if no handler found
     return false;
 }
-// Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
+// Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback
 // TODO: Move logic to Thread.throwException
 function fast_block_end(f: Py_FrameObject, t: Thread): void {
     // search in current frame
@@ -633,7 +633,7 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): vo
         var message: string = "";
         message += exc.constructor.name + ": " + <primitives.Py_Str> cause + "\n";
         // check if user defined class
-        val = (<any> builtins)[`$${exc.constructor.name}`]; 
+        val = (<any> builtins)[`$${exc.constructor.name}`];
         if (!val) {
             message = "__main__." + message;
         }

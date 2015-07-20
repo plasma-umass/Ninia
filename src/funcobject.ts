@@ -46,7 +46,7 @@ class Py_FuncObject extends primitives.Py_Object implements IPy_Function {
     getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
     // XXX: Fix.
     hash(): number { return -1; }
-    
+
     /**
      * Folds arguments to the function into a locals dictionary.
      */
@@ -68,7 +68,7 @@ class Py_FuncObject extends primitives.Py_Object implements IPy_Function {
         this.args2locals(args, locals);
         return new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), locals, (this.closure ? this.closure.toArray() : []));
     }
-    
+
     exec(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
         t.framePush(this.makeFrame(caller, args, locals));
     }
