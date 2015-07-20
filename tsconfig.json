@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "removeComments": true,
+    "target": "ES3"
+  },
+  "files": [
+    "src/interpreter.ts",
+    "src/enums.ts",
+    "src/iterator.ts",
+    "src/unmarshal.ts",
+    "src/threading.ts",
+    "src/codeobject.ts",
+    "src/collections.ts",
+    "src/sys.ts",
+    "src/notimplementederror.ts",
+    "src/builtins.ts",
+    "src/nativefuncobject.ts",
+    "src/assert.ts",
+    "src/optable.ts",
+    "src/interfaces.ts",
+    "src/primitives.ts",
+    "src/opcodes.ts",
+    "src/genobject.ts",
+    "src/frameobject.ts",
+    "src/cell.ts",
+    "src/funcobject.ts",
+    "console/runner.ts",
+    "console/test.ts"
+  ]
+}

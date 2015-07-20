@@ -3,7 +3,6 @@ SDIR=src
 TDIR=pytests
 # compilers
 TSC=./node_modules/typescript/bin/tsc
-TSCFLAGS=-t ES3 --sourceMap --module commonjs --noImplicitAny
 PYTHON=python2.7
 PYC=$(PYTHON) -m compileall
 BROWSERIFY=./node_modules/browserify/bin/cmd.js
@@ -33,7 +32,7 @@ coverage: compile $(PYCS) $(TESTOUTS)
 	istanbul cover $(TEST_RUNNER)
 
 compile: $(TSSOURCES) $(TSC) bower_components
-	$(TSC) $(TSCFLAGS) $(TSSOURCES)
+	$(TSC) -p .
 
 lint:
 	$(TSLINT) $(foreach source,$(TSSOURCES), -f $(source))
