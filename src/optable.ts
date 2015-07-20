@@ -418,7 +418,7 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
             var x = builtins.isinstance(t, f, [a, b], null);
             f.push(x);
             if (x == False) {
-                t.throwException(f);
+                t.throwException(a);
             }
             break;
         // case 'exception match':
@@ -517,7 +517,7 @@ function add_exc(f: Py_FrameObject, t: Thread, exc: any, message: string): void 
     exc.$message = new primitives.Py_Str(message);
     t.addToTraceback(exc.$message);
     f.push(exc);
-    t.exc = exc;
+    t.throwException(exc);
 }
 
 // push exceptions on stack
@@ -554,9 +554,7 @@ optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
         case 1:
             exc = f.pop();
         case 0:
-            // todo: re-raising
             do_raise(f, t, cause, exc);
-            t.throwException(f);
             break;
         default:
             throw new Error("bad RAISE_VARARGS oparg")

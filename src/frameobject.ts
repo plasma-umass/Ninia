@@ -149,10 +149,9 @@ class Py_FrameObject implements IPy_FrameObj {
     
     raise_exception_here(t: Thread, message: string, type: string): void {
         var val: IPy_Object = (<any> builtins)[type];
-        t.exc = val;
-        this.push(val);
         t.addToTraceback(message);
-        t.throwException(this);
+        this.push(val);
+        t.throwException(val);
     }
 
     // search for exception handler in current frame
