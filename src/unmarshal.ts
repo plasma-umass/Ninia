@@ -1,27 +1,16 @@
 /// <reference path="../bower_components/DefinitelyTyped/node/node.d.ts" />
 /// <reference path="../bower_components/DefinitelyTyped/decimal.js/decimal.js.d.ts" />
+import {Py_Int, Py_Long, Py_Float, Py_Complex, Py_Str} from './primitives';
+import {IPy_Object} from './interfaces';
+import {Py_Tuple, Py_List} from './collections';
+import Py_CodeObject = require('./codeobject');
+import builtins = require('./builtins');
+import fs = require('fs');
+import Decimal = require('decimal.js');
 
 // An Unmarshaller takes a .pyc file (as a string of bytes, e.g. "\xXX") and
 // converts it into a Python code object. The marshal format is not officially
 // documented, and there may be unnecessary cruft in the unmarshal loop below.
-import Py_CodeObject = require('./codeobject');
-import primitives = require('./primitives');
-import Py_Int = primitives.Py_Int;
-import Py_Long = primitives.Py_Long;
-import Py_Float = primitives.Py_Float;
-import Py_Complex = primitives.Py_Complex;
-import builtins = require('./builtins');
-import fs = require('fs');
-import collections = require('./collections');
-import interfaces = require('./interfaces');
-import Decimal = require('decimal.js');
-import Py_Tuple = collections.Py_Tuple;
-import Py_List = collections.Py_List;
-import Py_Str = primitives.Py_Str;
-import IPy_Object = interfaces.IPy_Object;
-
-// An Unmarshaller takes a .pyc file (as a string of binarys, e.g. "\xXX")
-// and converts into a Python code object.
 class Unmarshaller {
     // How far we are into the buffer
     index: number;

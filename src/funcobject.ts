@@ -7,24 +7,19 @@
 // name: Name of the function
 // dict: __dict__, can be NULL
 
+import {Py_Str, Py_Object} from './primitives';
+import {Py_Tuple, Py_Dict} from './collections';
+import {IPy_Object, IPy_FrameObj, IPy_Function} from './interfaces';
+import {Py_Type} from './enums';
+import {Py_TrampolineFrameObject} from './nativefuncobject';
 import Py_CodeObject = require('./codeobject');
-import interfaces = require('./interfaces');
-import IPy_Object = interfaces.IPy_Object;
-import enums = require('./enums');
-import primitives = require('./primitives');
-import Py_Str = primitives.Py_Str;
-import collections = require('./collections');
-import Py_Tuple = collections.Py_Tuple;
-import IPy_Function = interfaces.IPy_Function;
 import Thread = require('./threading');
-import Py_Dict = collections.Py_Dict;
 import Py_FrameObject = require('./frameobject');
-import nativefuncobject = require('./nativefuncobject');
 
 // Similar to frame objects, Function Objects wrap Python functions. However,
 // these are more the data representation of functions, and are transformed into
 // Frame Objects when the function is called.
-class Py_FuncObject extends primitives.Py_Object implements IPy_Function {
+class Py_FuncObject extends Py_Object implements IPy_Function {
     code: Py_CodeObject;
     globals: Py_Dict;
     defaults: Py_Dict;
@@ -43,7 +38,7 @@ class Py_FuncObject extends primitives.Py_Object implements IPy_Function {
         this.name = name;
         this.closure = closure;
     }
-    getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
+    getType(): Py_Type { return Py_Type.OTHER; }
     // XXX: Fix.
     hash(): number { return -1; }
 
@@ -63,18 +58,18 @@ class Py_FuncObject extends primitives.Py_Object implements IPy_Function {
         }
     }
 
-    makeFrame(caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict): Py_FrameObject {
+    makeFrame(caller: IPy_FrameObj, args: IPy_Object[], locals: Py_Dict): Py_FrameObject {
         this.args2locals(args, locals);
         return new Py_FrameObject(caller, this.code, (caller.back ? caller.globals : caller.locals), locals, (this.closure ? this.closure.toArray() : []));
     }
 
-    exec(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
+    exec(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
         t.framePush(this.makeFrame(caller, args, locals));
     }
 
-    exec_from_native(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict, cb: (rv?: IPy_Object) => void) {
+    exec_from_native(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], locals: Py_Dict, cb: (rv?: IPy_Object) => void) {
         var frame = this.makeFrame(caller, args, locals);
-        t.framePush(new nativefuncobject.Py_TrampolineFrameObject(caller, locals, cb))
+        t.framePush(new Py_TrampolineFrameObject(caller, locals, cb))
         t.framePush(frame);
     }
 }

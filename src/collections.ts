@@ -1,37 +1,27 @@
-import primitives = require('./primitives');
-import iterator = require('./iterator');
-import interfaces = require('./interfaces');
-import enums = require('./enums');
+import {True, False, None, NotImplemented,
+        Py_Int, Py_Long, Py_Object, Py_Slice, Py_Str
+       } from './primitives';
+import {IPy_FrameObj, Iterable, Iterator, IPy_Object} from './interfaces';
+import {Py_Type} from './enums';
+import {Py_SyncNativeFuncObject} from './nativefuncobject';
+import {ListIterator} from './iterator';
 import assert = require('./assert');
 import Thread = require('./threading');
-import nativefuncobject = require('./nativefuncobject');
-import Py_Object = primitives.Py_Object;
-import Py_Int = primitives.Py_Int;
-import Py_Long = primitives.Py_Long;
-import Py_Slice = primitives.Py_Slice;
-import Py_Str = primitives.Py_Str;
-import True = primitives.True;
-import False = primitives.False;
-import Iterable = interfaces.Iterable;
-import Iterator = interfaces.Iterator;
-import IPy_Object = interfaces.IPy_Object;
-import None = primitives.None;
-import NotImplemented = primitives.NotImplemented;
 
 
 export class Py_List extends Py_Object implements Iterable {
   private _list: IPy_Object[];
-  public $append = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $append = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     this.append(args[0]);
-    return primitives.None;
+    return None;
   });
-  public $__getitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $__getitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     return this.__getitem__(args[0]);
   });
-  public $__delitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $__delitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     return this.__delitem__(args[0]);
   });
-  public $__setitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $__setitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     return this.__setitem__(args[0], args[1]);
   });
 
@@ -47,7 +37,7 @@ export class Py_List extends Py_Object implements Iterable {
     }
     return list;
   }
-  public getType(): enums.Py_Type { return enums.Py_Type.LIST; }
+  public getType(): Py_Type { return Py_Type.LIST; }
   public len(): number {
     return this._list.length;
   }
@@ -58,7 +48,7 @@ export class Py_List extends Py_Object implements Iterable {
   }
 
   public iter(): Iterator {
-    return new iterator.ListIterator(this._list);
+    return new ListIterator(this._list);
   }
   public toString(): string {
     if (this._list.length == 0) {
@@ -87,7 +77,7 @@ export class Py_List extends Py_Object implements Iterable {
     return new Py_Int(this.len());
   }
   public __getitem__(key: IPy_Object): IPy_Object {
-    if (key.getType() === enums.Py_Type.SLICE) {
+    if (key.getType() === Py_Type.SLICE) {
       var slice = <Py_Slice> key,
         indices = slice.getIndices(this._list.length),
         start = indices.start,
@@ -107,7 +97,7 @@ export class Py_List extends Py_Object implements Iterable {
   }
 
   public __setitem__(key: IPy_Object, val: IPy_Object): IPy_Object {
-    if (key.getType() === enums.Py_Type.SLICE) {
+    if (key.getType() === Py_Type.SLICE) {
       var slice = <Py_Slice> key,
         step = slice.step === None ? 1 : (<Py_Int | Py_Long> slice.step).toNumber();
       var rlist = <Py_List> Py_List.fromIterable(<Iterable> val);
@@ -140,7 +130,7 @@ export class Py_List extends Py_Object implements Iterable {
 
   public __delitem__(key: IPy_Object): IPy_Object {
     // Delete is the same as splicing out the element and moving everything down
-    if (key.getType() === enums.Py_Type.SLICE){
+    if (key.getType() === Py_Type.SLICE){
       var slice = <Py_Slice> key,
       step = slice.step === None ? 1 : (<Py_Int | Py_Long> slice.step).toNumber();
       if (step === 1){
@@ -189,7 +179,7 @@ export class Py_List extends Py_Object implements Iterable {
 }
 
 function standardizeKey(key: IPy_Object, len: number): number {
-  assert(key.getType() <= enums.Py_Type.LONG, `index only accepts keys of type INT or LONG.`);
+  assert(key.getType() <= Py_Type.LONG, `index only accepts keys of type INT or LONG.`);
   var fixedKey = (<Py_Int | Py_Long> key).toNumber();
   if (fixedKey < 0) fixedKey += len;
   return fixedKey;
@@ -217,7 +207,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
   }
 
   public iter(): Iterator {
-    return new iterator.ListIterator(this._tuple);
+    return new ListIterator(this._tuple);
   }
   public toString(): string {
     if (this._tuple.length == 0) {
@@ -239,7 +229,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
     return this._len;
   }
   public __getitem__(key: IPy_Object): IPy_Object {
-    if (key.getType() === enums.Py_Type.SLICE) {
+    if (key.getType() === Py_Type.SLICE) {
       var slice = <Py_Slice> key,
         indices = slice.getIndices(this._tuple.length),
         start = indices.start,
@@ -333,28 +323,28 @@ export class Py_Dict extends Py_Object implements Iterable {
     }
     return clone;
   }
-  public $get = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $get = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     var res = this.get(args[0]);
     if (res == undefined) {
       if (args.length > 1) {
         return args[1];
       }
-      return primitives.None;
+      return None;
     }
     return res;
   });
-  public $__getitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $__getitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     return this.get(args[0]);
   });
-  public $__setitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $__setitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     this.set(args[0], args[1]);
     return None;
   });
-  public $__delitem__ = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $__delitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     this.del(args[0]);
     return None;
   });
-  public $keys = new nativefuncobject.Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  public $keys = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
     return new Py_List(this.keys());
   });
   public get(key: IPy_Object): IPy_Object {
@@ -388,7 +378,7 @@ export class Py_Dict extends Py_Object implements Iterable {
     }
   }
   public iter(): Iterator {
-    return new iterator.ListIterator(this._objectKeys.concat(
+    return new ListIterator(this._objectKeys.concat(
       Object.keys(this._stringDict).map(
         (key: string) => new Py_Str(key.slice(1))
       )));

@@ -1,14 +1,12 @@
+import {IPy_Object, IPy_FrameObj} from './interfaces';
+import {ThreadStatus} from './enums';
 import os = require('os');
-import interfaces = require('./interfaces');
-import IPy_Object = interfaces.IPy_Object;
 import Py_CodeObject = require('./codeobject');
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
 import Py_FrameObject = require('./frameobject');
-import IPy_FrameObj = interfaces.IPy_FrameObj;
-import enums = require('./enums');
 import Py_Sys = require('./sys');
 
 // How responsive Ninia should aim to be, in milliseconds.
@@ -22,7 +20,7 @@ var maxMethodResumes: number = 10000,
 
 class Thread {
     // Current state of Thread
-    private status: enums.ThreadStatus = enums.ThreadStatus.NEW;
+    private status: ThreadStatus = ThreadStatus.NEW;
     private stack: IPy_FrameObj[] = [];
     public raise_lno: number = 0;
     public traceback: string = "";
@@ -46,7 +44,7 @@ class Thread {
         // If methodResumes not exceeded, execute the Py_FrameObject
         // else, reset the counter, suspend thread and resume thread using setImmediate
         // Use cumulative moving average to calculate to estimate number of methodResumes in one second
-        while (this.status === enums.ThreadStatus.RUNNING && stack.length > 0) {
+        while (this.status === ThreadStatus.RUNNING && stack.length > 0) {
             var bytecodeMethod: IPy_FrameObj = stack[stack.length - 1];
             // Execute python bytecode methods
             bytecodeMethod.exec(this);
@@ -61,40 +59,40 @@ class Thread {
                 maxMethodResumes = Math.floor((estMaxMethodResumes + numSamples * maxMethodResumes) / (numSamples + 1));
                 numSamples++;
                 // Yield.
-                this.setStatus(enums.ThreadStatus.ASYNC_WAITING);
-                setImmediate(() => { this.setStatus(enums.ThreadStatus.RUNNABLE); });
+                this.setStatus(ThreadStatus.ASYNC_WAITING);
+                setImmediate(() => { this.setStatus(ThreadStatus.RUNNABLE); });
             }
         }
 
         if (stack.length === 0) {
-            this.setStatus(enums.ThreadStatus.TERMINATED);
+            this.setStatus(ThreadStatus.TERMINATED);
         }
     }
 
     // Change Thread status
-    public setStatus(status: enums.ThreadStatus): void {
+    public setStatus(status: ThreadStatus): void {
         // Fix for a single thread terminating multiple times in run(), whenever its stack is empty
-        if (this.status === enums.ThreadStatus.TERMINATED && status === enums.ThreadStatus.TERMINATED)
+        if (this.status === ThreadStatus.TERMINATED && status === ThreadStatus.TERMINATED)
         {
             return;
         }
         this.status = status;
         switch (this.status) {
             // If thread is runnable, yield to JS event loop and then change the thread to running
-            case enums.ThreadStatus.RUNNABLE:
-                setImmediate(() => { this.setStatus(enums.ThreadStatus.RUNNING); });
+            case ThreadStatus.RUNNABLE:
+                setImmediate(() => { this.setStatus(ThreadStatus.RUNNING); });
                 break;
-            case enums.ThreadStatus.RUNNING:
+            case ThreadStatus.RUNNING:
                 // I'm scheduled to run!
                 this.run();
                 break;
-            case enums.ThreadStatus.TERMINATED:
+            case ThreadStatus.TERMINATED:
                 this.exit();
                 break;
         }
     }
 
-    public getStatus(): enums.ThreadStatus {
+    public getStatus(): ThreadStatus {
         return this.status;
     }
 
@@ -143,16 +141,16 @@ class Thread {
         length = stack.length;
         if (length > 0) {
             stack[length - 1].resume(rv);
-            this.setStatus(enums.ThreadStatus.RUNNABLE);
+            this.setStatus(ThreadStatus.RUNNABLE);
         } else {
             // Program has ended.
-            this.setStatus(enums.ThreadStatus.TERMINATED);
+            this.setStatus(ThreadStatus.TERMINATED);
         }
     }
 
     // Terminates execution of a Thread by changing its status and then emptying its stack
     public exit(): void {
-        this.status = enums.ThreadStatus.TERMINATED;
+        this.status = ThreadStatus.TERMINATED;
         while(this.stack.length !== 0) {
             this.framePop();
         }

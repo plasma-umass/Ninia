@@ -1,23 +1,22 @@
-import interfaces = require('./interfaces');
+import {IPy_Object, IPy_FrameObj, IPy_Function} from './interfaces';
+import {Py_Dict} from './collections';
+import {Py_Type, ThreadStatus} from './enums';
+import {None} from './primitives';
 import Thread = require('./threading');
-import IPy_Object = interfaces.IPy_Object;
-import collections = require('./collections');
-import enums = require('./enums');
 import assert = require('./assert');
-import primitives = require('./primitives');
 
 /**
  * A Trampoline frame object.
  * "Bounces" the return value through a provided callback.
  */
-export class Py_TrampolineFrameObject implements interfaces.IPy_FrameObj {
+export class Py_TrampolineFrameObject implements IPy_FrameObj {
     private _cb: (rv: IPy_Object) => void;
     private _rv: IPy_Object = null;
-    globals: collections.Py_Dict;
-    locals: collections.Py_Dict;
-    back: interfaces.IPy_FrameObj;
+    globals: Py_Dict;
+    locals: Py_Dict;
+    back: IPy_FrameObj;
     
-    constructor(caller: interfaces.IPy_FrameObj, locals: collections.Py_Dict, cb: (rv: IPy_Object) => void) {
+    constructor(caller: IPy_FrameObj, locals: Py_Dict, cb: (rv: IPy_Object) => void) {
         this._cb = cb;
         this.locals = locals;
         // Copy caller's globals.
@@ -26,9 +25,9 @@ export class Py_TrampolineFrameObject implements interfaces.IPy_FrameObj {
         this.back = caller;
     }
     
-    public getType(): enums.Py_Type {
+    public getType(): Py_Type {
         // XXX
-        return enums.Py_Type.OTHER;
+        return Py_Type.OTHER;
     }
     
     // XXX
@@ -41,7 +40,7 @@ export class Py_TrampolineFrameObject implements interfaces.IPy_FrameObj {
         // Pop myself off of the thread.
         t.framePop();
         // Pause the thread.
-        t.setStatus(enums.ThreadStatus.ASYNC_WAITING);
+        t.setStatus(ThreadStatus.ASYNC_WAITING);
         // Provide the return value to the callback.
         this._cb(this._rv);
     }
@@ -56,17 +55,17 @@ export class Py_TrampolineFrameObject implements interfaces.IPy_FrameObj {
 /**
  * Represents a synchronous "native" function (written in JavaScript).
  */
-export class Py_SyncNativeFuncObject implements interfaces.IPy_Function {
-    private _f: (t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict) => IPy_Object;
+export class Py_SyncNativeFuncObject implements IPy_Function {
+    private _f: (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => IPy_Object;
 
-    constructor(f: (t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict) => IPy_Object) {
+    constructor(f: (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => IPy_Object) {
       this._f = f;
       
     }
     
-    public getType(): enums.Py_Type {
+    public getType(): Py_Type {
         // XXX
-        return enums.Py_Type.OTHER;
+        return Py_Type.OTHER;
     }
     
     // XXX
@@ -74,15 +73,15 @@ export class Py_SyncNativeFuncObject implements interfaces.IPy_Function {
         return -1;
     }
   
-    public exec(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict) {
+    public exec(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) {
         // Need to have a frame on there for asyncReturn to work.
         t.framePush(new Py_TrampolineFrameObject(f, kwargs, () => {}));
         var rv = this._f(t, f, args, kwargs);
         // XXX: Ensure the function returns an object!
-        t.asyncReturn(rv !== undefined ? rv : primitives.None);
+        t.asyncReturn(rv !== undefined ? rv : None);
     }
 
-    public exec_from_native(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv?: IPy_Object) => void) {
+    public exec_from_native(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object) => void) {
         // Bypass the thread entirely.
         cb(this._f(t, f, args, kwargs));
     }
@@ -91,16 +90,16 @@ export class Py_SyncNativeFuncObject implements interfaces.IPy_Function {
 /**
  * Represents an asynchronous "native" function (written in JavaScript).
  */
-export class Py_AsyncNativeFuncObject implements interfaces.IPy_Function {
-    private _f: (t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv: IPy_Object) => void) => void;
+export class Py_AsyncNativeFuncObject implements IPy_Function {
+    private _f: (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => void;
 
-    constructor(f: (t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv: IPy_Object) => void) => void) {
+    constructor(f: (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => void) {
         this._f = f;
     }
     
-    public getType(): enums.Py_Type {
+    public getType(): Py_Type {
         // XXX
-        return enums.Py_Type.OTHER;
+        return Py_Type.OTHER;
     }
     
     // XXX
@@ -108,7 +107,7 @@ export class Py_AsyncNativeFuncObject implements interfaces.IPy_Function {
         return -1;
     }
 
-    public exec(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict) {
+    public exec(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) {
         var myFrame = new Py_TrampolineFrameObject(f, kwargs, () => {});
         t.framePush(myFrame);
         var hasReturned: boolean = false;
@@ -119,11 +118,11 @@ export class Py_AsyncNativeFuncObject implements interfaces.IPy_Function {
         // Ensure the function didn't complete synchronously or simply chain calls to
         // other functions.
         if (!hasReturned && t.getTopOfStack() === myFrame) {
-            t.setStatus(enums.ThreadStatus.ASYNC_WAITING);
+            t.setStatus(ThreadStatus.ASYNC_WAITING);
         }
     }
 
-    public exec_from_native(t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: collections.Py_Dict, cb: (rv?: IPy_Object) => void) {
+    public exec_from_native(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object) => void) {
         // Bypass thread.
         this._f(t, f, args, kwargs, cb);
     }

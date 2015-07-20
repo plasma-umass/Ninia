@@ -1,25 +1,22 @@
 // Python Generator object
-import interfaces = require('./interfaces');
-import IPy_Object = interfaces.IPy_Object;
-import primitives = require('./primitives');
-import Py_Str = primitives.Py_Str;
-import collections = require('./collections');
-import IPy_Function = interfaces.IPy_Function;
+import {IPy_Object, IPy_Function, IPy_FrameObj, Iterator, Iterable
+       } from './interfaces';
+import {None, Py_Str} from './primitives';
+import {Py_Dict} from './collections';
 import Thread = require('./threading');
-import Py_Dict = collections.Py_Dict;
 import Py_FrameObject = require('./frameobject');
 import Py_FuncObject = require('./funcobject');
 
-class Py_GeneratorObject extends Py_FuncObject implements interfaces.Iterator, interfaces.Iterable {
+class Py_GeneratorObject extends Py_FuncObject implements Iterator, Iterable {
     thread: Thread;
     frame: Py_FrameObject;
     xxx: number = 2;
 
-    exec(t: Thread, caller: interfaces.IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
+    exec(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
         this.thread = t;
         this.frame = this.makeFrame(caller, args, locals);
     }
-    public iter(): interfaces.Iterator {
+    public iter(): Iterator {
         return this;
     }
     public next(): IPy_Object {
@@ -37,7 +34,7 @@ class Py_GeneratorObject extends Py_FuncObject implements interfaces.Iterator, i
         prevFrame.lastInst = b[2];
         prevFrame.stack.splice(b[0], prevFrame.stack.length - b[0]);
         prevFrame.returnToThread = true;
-        return primitives.None;
+        return None;
     }
     public toString(): string {
         return `<generator object ${this.name} at ${this.hash()}>`;

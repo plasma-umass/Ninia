@@ -1,8 +1,6 @@
 /// <reference path="../bower_components/DefinitelyTyped/decimal.js/decimal.js.d.ts" />
-import enums = require('./enums');
-import interfaces = require('./interfaces');
-import IPy_Number = interfaces.IPy_Number;
-import IPy_Object = interfaces.IPy_Object;
+import {Py_Type} from './enums';
+import {IPy_Number, IPy_Object, Iterator} from './interfaces';
 import Decimal = require('decimal.js');
 // Use for type information ONLY to avoid circular ref!
 import _collections = require('./collections');
@@ -18,7 +16,7 @@ class SingletonClass implements IPy_Object {
     toString(): string {
         return this.name;
     }
-    getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
+    getType(): Py_Type { return Py_Type.OTHER; }
     // XXX: Should be fixed.
     hash(): number { return -1; }
     __str__(): Py_Str {
@@ -55,7 +53,7 @@ export class Py_Object implements IPy_Object {
     constructor() {
         this._ref = ref++;
     }
-    public getType(): enums.Py_Type { return enums.Py_Type.OTHER; }
+    public getType(): Py_Type { return Py_Type.OTHER; }
     public hash(): number {
         return this._ref;
     }
@@ -69,7 +67,7 @@ export class Py_Object implements IPy_Object {
         return this.__repr__();
     }
     public __contains__(x: IPy_Object): typeof True {
-      var it: interfaces.Iterator;
+      var it: Iterator;
       if ((<any> this).iter) {
         it = (<any> this).iter();
       } else if ((<any> this)['$__iter__']) {
@@ -99,8 +97,8 @@ export class Py_Slice extends Py_Object {
     this.step = step;
   }
 
-  public getType(): enums.Py_Type {
-    return enums.Py_Type.SLICE;
+  public getType(): Py_Type {
+    return Py_Type.SLICE;
   }
 
   public getIndices(length: number) : {start: number; stop: number; step: number; length:number; }{
@@ -307,13 +305,13 @@ function format(mapping: string, conv_flags: string, field_width: string,
   return '';
 }
 
-function widenTo(a: IPy_Number, widerType: enums.Py_Type): IPy_Number {
+function widenTo(a: IPy_Number, widerType: Py_Type): IPy_Number {
   switch (widerType) {
-    case enums.Py_Type.LONG:
+    case Py_Type.LONG:
       return a.asLong();
-    case enums.Py_Type.FLOAT:
+    case Py_Type.FLOAT:
       return a.asFloat();
-    case enums.Py_Type.COMPLEX:
+    case Py_Type.COMPLEX:
       return a.asComplex();
     // Default case should never happen.
   }
@@ -329,7 +327,7 @@ function generateMathOp(name: string): (b: IPy_Number) => IPy_Number | typeof No
         bType = b.getType(),
         aType = a.getType(),
         typeDiff = aType - bType;
-      if (bType > ${enums.Py_Type.COMPLEX}) {
+      if (bType > ${Py_Type.COMPLEX}) {
         // b is not a number.
         return exports.NotImplemented;
       } else if (typeDiff > 0) {
@@ -349,7 +347,7 @@ function generateCmpOp(name: string): (b: IPy_Number) => IPy_Number {
         bType = b.getType(),
         aType = a.getType(),
         typeDiff = aType - bType;
-      if (bType > ${enums.Py_Type.COMPLEX}) {
+      if (bType > ${Py_Type.COMPLEX}) {
         // b is not a number. Thus it is always less than a.
 	      return (new exports.Py_Int(aType)).${name}(new exports.Py_Int(bType));
       } else if (typeDiff > 0) {
@@ -374,7 +372,7 @@ export class Py_Int extends Py_Object implements IPy_Number {
         this.value = val;
     }
 
-    getType(): enums.Py_Type { return enums.Py_Type.INT; }
+    getType(): Py_Type { return Py_Type.INT; }
     asLong(): Py_Long {
       return new Py_Long(new Decimal(this.value));
     }
@@ -529,7 +527,7 @@ export class Py_Long extends Py_Object implements IPy_Number {
         this.value = val;
     }
 
-    getType(): enums.Py_Type { return enums.Py_Type.LONG; }
+    getType(): Py_Type { return Py_Type.LONG; }
     asLong(): Py_Long {
       return this;
     }
@@ -711,7 +709,7 @@ export class Py_Float extends Py_Object implements IPy_Number {
         this.value = val;
     }
 
-    getType(): enums.Py_Type { return enums.Py_Type.FLOAT; }
+    getType(): Py_Type { return Py_Type.FLOAT; }
     asFloat(): Py_Float {
       return this;
     }
@@ -824,7 +822,7 @@ export class Py_Complex extends Py_Object implements IPy_Number {
       this.$imag = imag;
     }
 
-    getType(): enums.Py_Type { return enums.Py_Type.COMPLEX; }
+    getType(): Py_Type { return Py_Type.COMPLEX; }
 
     // fromNumber creates a new complex number from 1 or 2 JS numbers.
     // This is simple since Py_Floats are just wrappers around JS numbers.

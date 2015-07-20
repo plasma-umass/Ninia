@@ -1,15 +1,12 @@
-import interfaces = require('./interfaces');
-import IPy_Object = interfaces.IPy_Object;
+import {IPy_Object, IPy_FrameObj} from './interfaces';
+import {Py_Type} from './enums';
+import {Py_Dict} from './collections';
 import Py_CodeObject = require('./codeobject');
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
 import Thread = require('./threading');
-import enums = require('./enums');
-import collections = require('./collections');
-import Py_Dict = collections.Py_Dict;
-import IPy_FrameObj = interfaces.IPy_FrameObj;
 import assert = require('assert');
 
 // Frame Objects are basically stack frames for functions, except they carry
@@ -78,9 +75,9 @@ class Py_FrameObject implements IPy_FrameObj {
 
     }
     
-    getType(): enums.Py_Type {
+    getType(): Py_Type {
         // XXX
-        return enums.Py_Type.OTHER;
+        return Py_Type.OTHER;
     }
     
     // XXX

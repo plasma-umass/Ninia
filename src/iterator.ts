@@ -1,13 +1,6 @@
-import primitives = require('./primitives');
-import collections = require('./collections');
-import interfaces = require('./interfaces');
-import Iterator = interfaces.Iterator;
-import Py_Int = primitives.Py_Int;
-import Py_Object = primitives.Py_Object;
-import IPy_Object = interfaces.IPy_Object;
-import IPy_FrameObj = interfaces.IPy_FrameObj;
+import {True, False, Py_Int, Py_Object} from './primitives';
+import {Iterator, Iterable, IPy_Object, IPy_FrameObj} from './interfaces';
 import Thread = require('./threading');
-const True = primitives.True, False = primitives.False;
 
 export class ListIterator extends Py_Object implements Iterator {
     private pos: number = 0;
@@ -29,7 +22,7 @@ export class ListIterator extends Py_Object implements Iterator {
     }
 }
 
-export class XRange extends Py_Object implements Iterator, interfaces.Iterable {
+export class XRange extends Py_Object implements Iterator, Iterable {
     private start: number = 0;
     private index: number = 0;
     private stop: number;

@@ -1,34 +1,24 @@
 /// <reference path="../bower_components/DefinitelyTyped/node/node.d.ts" />
+import {True, False, None, Py_Int, Py_Slice, Py_Str} from './primitives';
+import {Iterator, Iterable, IPy_Object, IPy_Function} from './interfaces';
+import {Py_List, Py_Tuple, Py_Set, Py_Dict} from './collections';
+import {ThreadStatus} from './enums';
 import os = require('os');
-import primitives = require('./primitives');
 import Py_FrameObject = require('./frameobject');
-import Py_Int = primitives.Py_Int;
 // XXX: Prevent a circular reference. Use this only for type info.
 import _Py_FuncObject = require('./funcobject');
 import _Py_GeneratorObject = require('./genobject');
 var Py_FuncObject: typeof _Py_FuncObject = null;
 var Py_GeneratorObject: typeof _Py_GeneratorObject = null;
+// XXX: hack around name resoltion in eval'd code
+var hardcoded_Py_Dict = Py_Dict;
+var hardcoded_ThreadStatus = ThreadStatus;
 import opcodes = require('./opcodes');
 import builtins = require('./builtins');
-import collections = require('./collections');
-import interfaces = require('./interfaces');
-import IPy_Object = interfaces.IPy_Object;
-import Py_List = collections.Py_List;
-import Py_Tuple = collections.Py_Tuple;
-import Py_Set = collections.Py_Set;
-import Py_Dict = collections.Py_Dict;
 import Py_CodeObject = require('./codeobject');
-import enums = require('./enums');
-import True = primitives.True;
-import False = primitives.False;
-import Py_Slice = primitives.Py_Slice;
-import Iterator = interfaces.Iterator;
-import Iterable = interfaces.Iterable;
-import None = primitives.None;
 import Py_Cell = require('./cell');
 import Thread = require('./threading');
 import nativefuncobject = require('./nativefuncobject')
-import IPy_Function = interfaces.IPy_Function;
 const NotImplemented = builtins.$NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
@@ -62,7 +52,7 @@ function UNARY${funcName}(f, t) {
         f.push(a.${funcName}());
     } else if (a.$${funcName}) {
         f.returnToThread = true;
-        a.$${funcName}.exec(t, f, [], new Py_Dict());
+        a.$${funcName}.exec(t, f, [], new hardcoded_Py_Dict());
     } else {
         throw new Error("Object lacks a ${funcName} function.");
     }
@@ -136,7 +126,7 @@ function BINARY_${funcName}(f, t) {
         return;
     } else if (a['$__i${funcName}__'] !== undefined) {
         f.returnToThread = true;
-        a['$__i${funcName}__'].exec(t, f, [b], new Py_Dict());
+        a['$__i${funcName}__'].exec(t, f, [b], new hardcoded_Py_Dict());
         return;
     }
     f.pop();
@@ -147,19 +137,19 @@ function BINARY_${funcName}(f, t) {
         return;
     } else if (a['$__${funcName}__']) {
         f.returnToThread = true;
-        a['$__${funcName}__'].exec_from_native(t, f, [b], new Py_Dict(), function(res) {
+        a['$__${funcName}__'].exec_from_native(t, f, [b], new hardcoded_Py_Dict(), function(res) {
             if (res == NotImplemented) {
                 ${reversible ? `
                 if (b['__r${funcName}__']) {
                     f.push(b.__r${funcName}__(a));
-                    t.setStatus(enums.ThreadStatus.RUNNABLE);
+                    t.setStatus(hardcoded_ThreadStatus.RUNNABLE);
                 } else if (b['$__r${funcName}__']) {
-                    b['$__r${funcName}__'].exec_from_native(t, f, [a], new Py_Dict(), function(res) {
+                    b['$__r${funcName}__'].exec_from_native(t, f, [a], new hardcoded_Py_Dict(), function(res) {
                         if (res == NotImplemented) {
                             throw new Error('TypeError: cannot __$r${funcName}__.');
                         }
                         f.push(res);
-                        t.setStatus(enums.ThreadStatus.RUNNABLE);
+                        t.setStatus(hardcoded_ThreadStatus.RUNNABLE);
                     });
                 } else {
                    throw new Error('TypeError: cannot __r${funcName}__.');
@@ -167,7 +157,7 @@ function BINARY_${funcName}(f, t) {
                 ` : `throw new Error('TypeError: cannot __r${funcName}__.');`}
             } else {
                 f.push(res);
-                t.setStatus(enums.ThreadStatus.RUNNABLE);
+                t.setStatus(hardcoded_ThreadStatus.RUNNABLE);
             }
         });
     } else {
@@ -219,12 +209,12 @@ optable[opcodes.PRINT_ITEM] = function(f: Py_FrameObject, t: Thread) {
         f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
     } else if (a.$__str__) {
         f.returnToThread = true;
-        a.$__str__.exec_from_native(t, f, [], new Py_Dict(), (str: primitives.Py_Str) => {
+        a.$__str__.exec_from_native(t, f, [], new Py_Dict(), (str: Py_Str) => {
             var s: string = str.toString();
             process.stdout.write(s);
             var lastChar = s.slice(-1);
             f.shouldWriteSpace = (lastChar != '\t' && lastChar != '\n');
-            t.setStatus(enums.ThreadStatus.RUNNABLE);
+            t.setStatus(ThreadStatus.RUNNABLE);
         });
     }
 }
@@ -291,7 +281,7 @@ optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject, t: Thread) {
                     processNext();
                 });
             } else {
-                t.setStatus(enums.ThreadStatus.RUNNABLE);
+                t.setStatus(ThreadStatus.RUNNABLE);
             }
         }
         f.returnToThread = true;
@@ -443,12 +433,12 @@ function doCmpOp(t: Thread, f: Py_FrameObject, a: IPy_Object, b: IPy_Object, fun
                 return;
             if ((<any> b)[funcB]) {
                 f.push((<(a: IPy_Object) => IPy_Object> (<any> b)[funcB])(a));
-                t.setStatus(enums.ThreadStatus.RUNNABLE);
+                t.setStatus(ThreadStatus.RUNNABLE);
             } else if ((<any> b)[`$${funcB}`]) {
                 var py_fn: IPy_Function = (<any> b)[`$${funcB}`];
                 py_fn.exec_from_native(t, f, [b, a], new Py_Dict(), (res: IPy_Object) => {
                     f.push(res);
-                    t.setStatus(enums.ThreadStatus.RUNNABLE);
+                    t.setStatus(ThreadStatus.RUNNABLE);
                 });
             } else {
                 throw new Error(`Object lacks ${funcB} property.`);
@@ -635,14 +625,14 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): vo
     }
     // First argument exc, second argument cause (passed into exception and used as a message when printing tb)
     if (exc && cause) {
-        var message: string = `${exc.constructor.name}: ${<primitives.Py_Str> cause}${os.EOL}`;
+        var message: string = `${exc.constructor.name}: ${<Py_Str> cause}${os.EOL}`;
         // check if user defined class
         val = (<any> builtins)[`$${exc.constructor.name}`];
         if (!val) {
             message = "__main__." + message;
         }
         // store message
-        exc.$message = new primitives.Py_Str(message);
+        exc.$message = new Py_Str(message);
     }
     if (exc) {
         f.push(exc);
@@ -709,12 +699,12 @@ function call_func(f: Py_FrameObject, t: Thread, has_kw: boolean, has_varargs: b
     initPyFuncObj();
     if (func instanceof Py_GeneratorObject) {
         // This sets up the frame, but doesn't run the code.
-        (<interfaces.IPy_Function> func).exec(t, f, args, kwargs);
+        (<IPy_Function> func).exec(t, f, args, kwargs);
         return f.push(func);
     }
 
     f.returnToThread = true;
-    (<interfaces.IPy_Function> func).exec(t, f, args, kwargs);
+    (<IPy_Function> func).exec(t, f, args, kwargs);
 }
 
 optable[opcodes.CALL_FUNCTION] = function(f: Py_FrameObject, t: Thread) {
@@ -751,7 +741,7 @@ optable[opcodes.MAKE_FUNCTION] = function(f: Py_FrameObject) {
     }
 
     initPyFuncObj();
-    var func: interfaces.IPy_Function;
+    var func: IPy_Function;
     if (code.isGenerator()) {
         func = new Py_GeneratorObject(code, f.globals, defaults, code.name);
     } else {
@@ -792,7 +782,7 @@ optable[opcodes.SLICE_0] = function(f: Py_FrameObject, t: Thread) {
         a.$__len__.exec_from_native(t, f, [], new Py_Dict(), (rv: IPy_Object) => {
             a.$__getitem__.exec_from_native(t, f, [new Py_Slice(new Py_Int(0), rv, None)], new Py_Dict(), (rv: IPy_Object) => {
                 f.push(rv);
-                t.setStatus(enums.ThreadStatus.RUNNABLE);
+                t.setStatus(ThreadStatus.RUNNABLE);
             });
         });
     } else {
@@ -810,7 +800,7 @@ optable[opcodes.SLICE_1] = function(f: Py_FrameObject, t: Thread) {
         a.$__len__.exec_from_native(t, f, [], new Py_Dict(), (rv: IPy_Object) => {
             a.$__getitem__.exec_from_native(t, f, [new Py_Slice(b, rv, None)], new Py_Dict(), (rv: IPy_Object) => {
                 f.push(rv);
-                t.setStatus(enums.ThreadStatus.RUNNABLE);
+                t.setStatus(ThreadStatus.RUNNABLE);
             });
         });
     } else {
@@ -1134,11 +1124,11 @@ optable[opcodes.IMPORT_STAR] = function(f: Py_FrameObject) {
     // pop the just-imported module
     var mod = f.pop();
     // Add names not starting with _ to locals
-    var key: any, py_key: primitives.Py_Str;
+    var key: any, py_key: Py_Str;
     for (var key in mod) {
         if (key.length > 1 && key[0] == '$' && key[1] != '_') {
             // strip off the leading $
-            py_key = new primitives.Py_Str(key.slice(1));
+            py_key = new Py_Str(key.slice(1));
             f.locals.set(py_key, (<any> mod)[key]);
         }
     }
@@ -1176,7 +1166,7 @@ optable[opcodes.BUILD_CLASS] = function(f: Py_FrameObject, t: Thread) {
     /* Creates a new class object. TOS is the methods dictionary, TOS1 the tuple of the names of the base classes, and TOS2 the class name. */
     var methods = <Py_Dict> f.pop(),
       baseClasses = <Py_Tuple> f.pop(),
-      className = <primitives.Py_Str> f.pop();
+      className = <Py_Str> f.pop();
     f.push(builtins.type(t, f, [className, baseClasses, methods], null));
 }
 
@@ -1187,7 +1177,7 @@ optable[opcodes.SETUP_WITH] = function(f: Py_FrameObject, t: Thread) {
     // call the __enter__ method, leaving the result on the stack
     var enter_func = (<any> ctx_man)['$__enter__'];
     f.returnToThread = true;
-    (<interfaces.IPy_Function> enter_func).exec(t, f, [], new Py_Dict());
+    (<IPy_Function> enter_func).exec(t, f, [], new Py_Dict());
     // start a finally block
     setup_block(f, opcodes.SETUP_FINALLY);
 }
@@ -1203,7 +1193,7 @@ optable[opcodes.WITH_CLEANUP] = function(f: Py_FrameObject, t: Thread) {
     // call __exit__ with the appropriate args
     var args = [None, None, None];
     f.returnToThread = true;
-    (<interfaces.IPy_Function> exit_func).exec(t, f, args, kwargs);
+    (<IPy_Function> exit_func).exec(t, f, args, kwargs);
     // TODO: if there was an exception (NYI case for now)
     //  and result === True, 'zap' the exc_info to prevent re-raise.
     var result = f.pop();

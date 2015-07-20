@@ -1,9 +1,9 @@
+import {Py_Dict} from './collections';
+import {ThreadStatus} from './enums';
+import {circularRefHack} from './primitives';
 import Py_FrameObject = require('./frameobject');
 import Py_CodeObject = require('./codeobject');
-import collections = require('./collections');
-import enums = require('./enums');
 import Thread = require('./threading');
-import primitives = require('./primitives');
 import Py_Sys = require('./sys');
 import fs = require('fs');
 
@@ -17,14 +17,14 @@ class Interpreter {
     sys: Py_Sys;
     constructor() {
         // XXX: Hack around circular reference issue.
-        primitives.circularRefHack();
+        circularRefHack();
         this.sys = new Py_Sys('Lib', []);
     }
     
     // Interpret wraps a code object in a frame and executes it.
     // This is the "base frame" and has no pointer to a previous frame.
     interpret(code: Py_CodeObject, debug: boolean, callback: () => void) {
-        var scope = new collections.Py_Dict();
+        var scope = new Py_Dict();
         var f = new Py_FrameObject(null, code, scope, scope, []);
         f.globals.getStringDict()[`$__file__`] = code.filename;
         // Create new Thread, push the Py_FrameObject on it and then run it
@@ -35,7 +35,7 @@ class Interpreter {
             var codefile = data.toString('utf8').split('\n');
             t.codefile = codefile;                  
             // Change Thread status to RUNNABLE
-            t.setStatus(enums.ThreadStatus.RUNNABLE);
+            t.setStatus(ThreadStatus.RUNNABLE);
         });
     }
 }

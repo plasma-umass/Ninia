@@ -1,15 +1,8 @@
-import enums = require('./enums');
-import primitives = require('./primitives');
-import Py_Object = primitives.Py_Object;
-import Py_Int = primitives.Py_Int;
-import Py_Long = primitives.Py_Long;
-import Py_Float = primitives.Py_Float;
-import Py_Complex = primitives.Py_Complex;
-import Py_Str = primitives.Py_Str;
+import {Py_Complex, Py_Float, Py_Int, Py_Long, Py_Object, Py_Str
+       } from './primitives';
+import {Py_Dict, Py_Tuple} from './collections';
+import {Py_Type} from './enums';
 import Thread = require('./threading');
-import collections = require('./collections');
-import Py_Dict = collections.Py_Dict;
-import Py_Tuple = collections.Py_Tuple;
 
 /**
  * Generic stack frame interface.
@@ -50,7 +43,7 @@ export interface IPy_Function extends IPy_Object {
  * Functions not beginning with $ are synchronous, internal versions.
  */
 export interface IPy_Object {
-  getType(): enums.Py_Type;
+  getType(): Py_Type;
   hash(): number;
   asBool?(): boolean;
   

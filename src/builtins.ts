@@ -1,27 +1,16 @@
 /// <reference path="../bower_components/DefinitelyTyped/async/async.d.ts" />
 import iterator = require('./iterator');
-import collections = require('./collections');
-import primitives = require('./primitives');
-import Py_Int = primitives.Py_Int;
-import Py_Complex = primitives.Py_Complex;
-import Py_Float = primitives.Py_Float;
-import Py_Long = primitives.Py_Long;
-import Py_Slice = primitives.Py_Slice;
-import Py_List = collections.Py_List;
-import Py_Dict = collections.Py_Dict;
-import Py_Tuple = collections.Py_Tuple;
-import Py_Set = collections.Py_Set;
-import Py_Str = primitives.Py_Str;
-import Py_Object = primitives.Py_Object;
-import interfaces = require('./interfaces');
-import IPy_Object = interfaces.IPy_Object;
+import {Py_List, Py_Tuple, Py_Dict, Py_Set} from './collections';
+import {Ellipsis, False, None, NotImplemented, Py_Complex, Py_Float,
+        Py_Int, Py_Long, Py_Object, Py_Slice, Py_Str, True
+       } from './primitives';
+import {IPy_FrameObj, IPy_Function, IPy_Number, IPy_Object, Iterable, Iterator
+       } from './interfaces';
+import {Py_TrampolineFrameObject, Py_SyncNativeFuncObject,
+        Py_AsyncNativeFuncObject
+       } from './nativefuncobject';
 import enums = require('./enums');
 import Thread = require('./threading');
-import IPy_FrameObj = interfaces.IPy_FrameObj;
-import IPy_Function = interfaces.IPy_Function;
-import nativefuncobj = require('./nativefuncobject');
-import Py_SyncNativeFuncObject = nativefuncobj.Py_SyncNativeFuncObject;
-import Py_AsyncNativeFuncObject = nativefuncobj.Py_AsyncNativeFuncObject;
 import path = require('path');
 import fs = require('fs');
 import async = require('async');
@@ -61,7 +50,7 @@ function range(t: Thread, f: IPy_FrameObj, args: Py_Int[], kwargs: Py_Dict): Py_
 }
 
 // list constructor
-function list(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict): Py_List {
+function list(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict): Py_List {
     if (kwargs.len() > 0) {
         throw new Error('TypeError: list() takes no keyword arguments')
     }
@@ -91,7 +80,7 @@ function dict(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): 
 }
 
 // tuple constructor
-function tuple(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict): Py_Tuple {
+function tuple(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict): Py_Tuple {
     if (kwargs.len() > 0) {
         throw new Error('TypeError: tuple() takes no keyword arguments')
     }
@@ -109,7 +98,7 @@ function tuple(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: 
 }
 
 // set constructor
-function set(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict): Py_Set {
+function set(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict): Py_Set {
     if (kwargs.len() > 0) {
         throw new Error('TypeError: set() takes no keyword arguments')
     }
@@ -126,11 +115,11 @@ function set(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py
     return Py_Set.fromIterable(x);
 }
 
-function abs(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict): IPy_Object {
+function abs(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict): IPy_Object {
     return args[0].__abs__();
 }
 
-function all(x: interfaces.Iterable): typeof True {
+function all(x: Iterable): typeof True {
   var it = x.iter();
   for (var val = it.next(); val != null; val = it.next()) {
     if (bool(val) === False) {
@@ -140,7 +129,7 @@ function all(x: interfaces.Iterable): typeof True {
   return True;
 }
 
-function any(x: interfaces.Iterable): typeof True {
+function any(x: Iterable): typeof True {
   var it = x.iter();
   for (var val = it.next(); val != null; val = it.next()) {
     if (bool(val) === True) {
@@ -170,7 +159,7 @@ function ord(x: IPy_Object): Py_Int {
   return new Py_Int(x.toString().charCodeAt(0));
 }
 
-function str(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+function str(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
   if (args[0].__str__) {
     cb(args[0].__str__());
   } else {
@@ -179,7 +168,7 @@ function str(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py
   // TODO: Exception condition??
 }
 
-function repr(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+function repr(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
   if (args[0].__repr__) {
     cb(args[0].__repr__());
   } else {
@@ -187,7 +176,7 @@ function repr(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: P
   }
 }
 
-function cmp(t: Thread, f: IPy_FrameObj, args: interfaces.Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+function cmp(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
   var x = args[0];
   if (x.__eq__ && x.__lt__) {
     var y = args[1];
@@ -275,12 +264,12 @@ function int(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): P
 }
 
 // builtin iter()
-function iter(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): interfaces.Iterator {
+function iter(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Iterator {
   if (kwargs.len() > 0) {
     throw new Error('TypeError: iter() takes no keyword arguments');
   }
   if (args.length == 1) {
-    return (<interfaces.Iterable> args[0]).iter();
+    return (<Iterable> args[0]).iter();
   }
   if (args.length == 2) {
     throw new Error('NotImplementedError: iter(a,b) is NYI');
@@ -293,19 +282,19 @@ function sorted(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict)
   if (args.length !== 1) {
     throw new Error('TypeError: sorted() takes 1 positional argument');
   }
-  if (kwargs.get(new Py_Str('cmp')) !== undefined && kwargs.get(new Py_Str('cmp')) !== primitives.None) {
+  if (kwargs.get(new Py_Str('cmp')) !== undefined && kwargs.get(new Py_Str('cmp')) !== None) {
     throw new Error('sorted() with non-None cmp kwarg is NYI');
   }
-  if (kwargs.get(new Py_Str('key')) !== undefined && kwargs.get(new Py_Str('key')) !== primitives.None) {
+  if (kwargs.get(new Py_Str('key')) !== undefined && kwargs.get(new Py_Str('key')) !== None) {
     throw new Error('sorted() with non-None key kwarg is NYI');
   }
-  var it = (<interfaces.Iterable> args[0]).iter();
+  var it = (<Iterable> args[0]).iter();
   var list: IPy_Object[] = [];
   /// XXX: Use appropriate __-prefixed iterator methods.
   for (var val = it.next(); val != null; val = it.next()) {
     list.push(val);
   }
-  list.sort((a: interfaces.Iterable, b: interfaces.Iterable): number => {
+  list.sort((a: Iterable, b: Iterable): number => {
     var rv: IPy_Object;
     // SUPER HACK: Requires that we take synchronous path.
     cmp(t, f, [a, b], kwargs, (_rv) => {
@@ -356,7 +345,7 @@ function setattr(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
   var x = args[2];
   // TODO: use __setattr__ here
   (<any> obj)[`$${attr}`] = x;
-  return primitives.None;
+  return None;
 }
 
 function pyfunc_wrapper_onearg(func: (a: IPy_Object) => IPy_Object, funcname: string) {
@@ -412,7 +401,7 @@ function type(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): 
       }
     }
     
-    cls.prototype['$__call__'] = new Py_AsyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Function[], kwargs: Py_Dict, cb: (rv: interfaces.IPy_Object) => void): void => {
+    cls.prototype['$__call__'] = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Function[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void => {
         // TODO: Normally, you use __new__ to return the object, then __init__ to initialize it.
         var inst = new (<any> cls)(), key: string;
         for (key in inst) {
@@ -444,7 +433,7 @@ function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
   var name = <Py_Str> args[0],
     nameJS = name.toString(),
     globals = <Py_Dict> args[1],
-    toImport =  args[3] === primitives.None ? [] : (<Py_List> args[3]).toArray().map((item: Py_Str) => item.toString()),
+    toImport =  args[3] === None ? [] : (<Py_List> args[3]).toArray().map((item: Py_Str) => item.toString()),
     searchPaths = [path.dirname(globals.get(new Py_Str('__file__')).toString())],
     sys = t.sys;
 
@@ -513,7 +502,7 @@ function registerModule(t: Thread, f: IPy_FrameObj, filename: string, moduleName
     // XXX: Should be made into a proper Py_Object w/ expected methods.
     modObj = <any> newFrame.locals.getStringDict(),
     // Trampoline frame. Input callback called when newFrame returns.
-    trampFrame = new nativefuncobj.Py_TrampolineFrameObject(f, new Py_Dict(), (rv: IPy_Object) => {
+    trampFrame = new Py_TrampolineFrameObject(f, new Py_Dict(), (rv: IPy_Object) => {
       // Register into modules dictionary.
       sys.$modules.set(moduleName, modObj);
       cb(modObj);      
@@ -562,13 +551,13 @@ class BaseException extends Py_Object {
 }
 
 BaseException.prototype.$__mro__ = new Py_Tuple([BaseException.prototype, Py_Object.prototype]);
-BaseException.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+BaseException.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new BaseException(args);
 });
-BaseException.prototype.$__getstate__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+BaseException.prototype.$__getstate__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return this.$args;
 });
-BaseException.prototype.$__setstate__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+BaseException.prototype.$__setstate__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   this.$__dict__ = kwargs;
   return kwargs;
 });
@@ -579,7 +568,7 @@ class Exception extends BaseException {
 }
 
 Exception.prototype.$__mro__ = new Py_Tuple([Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-Exception.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+Exception.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new Exception(args);
 });
 
@@ -589,20 +578,20 @@ class NameError extends Exception {
 }
 
 NameError.prototype.$__mro__ = new Py_Tuple([NameError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-NameError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+NameError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new NameError(args);
 });
 
 // full mapping of builtin names to values.
-var builtins = {
+const builtins = {
     $BaseException : BaseException.prototype,
     $Exception: Exception.prototype,
     $NameError: NameError.prototype,
-    $True: primitives.True,
-    $False: primitives.False,
-    $None: primitives.None,
-    $NotImplemented: primitives.NotImplemented,
-    $Ellipsis: primitives.Ellipsis,
+    $True: True,
+    $False: False,
+    $None: None,
+    $NotImplemented: NotImplemented,
+    $Ellipsis: Ellipsis,
     $object: new Py_SyncNativeFuncObject(object),
     iter: iter,
     $iter: new Py_SyncNativeFuncObject(iter),
@@ -667,7 +656,7 @@ var builtins = {
     __import__: __import__,
     $__import__: new Py_AsyncNativeFuncObject(__import__),
     $__name__: Py_Str.fromJS('__main__'),
-    $__package__: primitives.None
-}, True = primitives.True, False = primitives.False, None = primitives.None;
+    $__package__: None
+};
 
 export = builtins
