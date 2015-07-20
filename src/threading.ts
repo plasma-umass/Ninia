@@ -1,3 +1,4 @@
+import os = require('os');
 import interfaces = require('./interfaces');
 import IPy_Object = interfaces.IPy_Object;
 import Py_CodeObject = require('./codeobject');
@@ -115,7 +116,7 @@ class Thread {
 
     // Writes thread tracebacks to console
     public writeTraceback(): void {
-        this.traceback = "Traceback (most recent call last):\n" + this.traceback;
+        this.traceback = `Traceback (most recent call last):${os.EOL}${this.traceback}`;
         process.stdout.write(this.traceback);
     }
 

@@ -1,4 +1,5 @@
 /// <reference path="../bower_components/DefinitelyTyped/node/node.d.ts" />
+import os = require('os');
 import primitives = require('./primitives');
 import Py_FrameObject = require('./frameobject');
 import Py_Int = primitives.Py_Int;
@@ -324,7 +325,7 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject, t: Thread) {
     var val = f.locals.get(name) || f.globals.get(name) || (<any> builtins)[`$${name.toString()}`];
     // throw NameError
     if (val === undefined) {
-        var message = `NameError: global name '${name}' is not defined\n`;
+        var message = `NameError: global name '${name}' is not defined${os.EOL}`;
         raise_exception_here(f, t, message, "NameError");
         // get NameError type object
         val = builtins['$NameError'];
@@ -338,7 +339,7 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject, t: Thread) {
     var val = f.globals.get(name) || (<any> builtins)[`$${name.toString()}`];
     // throw NameError
     if (val === undefined) {
-        var message = `NameError: global name '${name}' is not defined\n`;
+        var message = `NameError: global name '${name}' is not defined${os.EOL}`;
         raise_exception_here(f, t, message, "NameError");
         // get NameError type object
         val = builtins['$NameError'];
@@ -570,9 +571,9 @@ function frame_add_traceback(f: Py_FrameObject, t: Thread) {
         current_line = t.raise_lno ;
         t.raise_lno = 0;
     }
-    var tback: string = `  File "${f.codeObj.filename.toString()}", line ${current_line}, in ${f.codeObj.name.toString()}\n`;
+    var tback: string = `  File "${f.codeObj.filename.toString()}", line ${current_line}, in ${f.codeObj.name.toString()}${os.EOL}`;
     if (t.codefile.length > 0) {
-        tback += `    ${t.codefile[current_line-1].trim()}\n`;
+        tback += `    ${t.codefile[current_line-1].trim()}${os.EOL}`;
     }
     t.addToTraceback(tback);
 }
@@ -630,8 +631,7 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): vo
     }
     // First argument exc, second argument cause (passed into exception and used as a message when printing tb)
     if (exc && cause) {
-        var message: string = "";
-        message += exc.constructor.name + ": " + <primitives.Py_Str> cause + "\n";
+        var message: string = `${exc.constructor.name}: ${<primitives.Py_Str> cause}${os.EOL}`;
         // check if user defined class
         val = (<any> builtins)[`$${exc.constructor.name}`];
         if (!val) {
@@ -650,7 +650,7 @@ optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
     var i = f.readArg();
     var cause: IPy_Object = null, exc: any = null;
     if (i === 0){
-        t.addToTraceback("TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n");
+        t.addToTraceback(`TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType${os.EOL}`);
     }
     switch (i) {
         case 2:
