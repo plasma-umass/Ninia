@@ -432,8 +432,7 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
 
 function doCmpOp(t: Thread, f: Py_FrameObject, a: IPy_Object, b: IPy_Object, funcA: string, funcB: string) {
     if ((<any> a)[funcA]) {
-        var native_fn: (b: IPy_Object) => IPy_Object = (<any> a)[funcA];
-        f.push(native_fn(b));
+        f.push((<(b: IPy_Object) => IPy_Object> (<any> a)[funcA])(b));
         return
     }
     if ((<any> a)[`$${funcA}`]) {
@@ -443,8 +442,7 @@ function doCmpOp(t: Thread, f: Py_FrameObject, a: IPy_Object, b: IPy_Object, fun
             if (res != NotImplemented || funcB === null)
                 return;
             if ((<any> b)[funcB]) {
-                var native_fn: (a: IPy_Object) => IPy_Object = (<any> b)[funcB];
-                f.push(native_fn(a));
+                f.push((<(a: IPy_Object) => IPy_Object> (<any> b)[funcB])(a));
                 t.setStatus(enums.ThreadStatus.RUNNABLE);
             } else if ((<any> b)[`$${funcB}`]) {
                 var py_fn: IPy_Function = (<any> b)[`$${funcB}`];
