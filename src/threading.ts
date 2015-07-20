@@ -118,12 +118,33 @@ class Thread {
     public writeTraceback(): void {
         this.traceback = "Traceback (most recent call last):\n" + this.traceback;
         process.stdout.write(this.traceback);
+        this.exit();
     }
 
-    // Output the traceback when thread cannot handle an exception, and exit the thread
-    public throwException(): void {
-        this.writeTraceback();
-        this.exit();
+    public throwException(f: Py_FrameObject): void {
+        // Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
+        // search in current frame
+        if (!f.tryCatchException()) {
+            f.frame_add_traceback(this);
+            f.emptyStack();
+            // Search for exception handler in previous frames
+            while (f.back != null) {
+                var chars = f.codeObj.lnotab.toString();
+                // stop frame execution
+                f.returnToThread = true;
+                f = (<Py_FrameObject>f.back);
+                // Add to traceback
+                f.frame_add_traceback(this);
+                // If an exception handler is found in either this frame or previous frames
+                if (f.tryCatchException()) {
+                    return;
+                }
+            }
+            // no exception handler found, write traceback and exit the thread
+            this.writeTraceback();
+        }
+        // save line number on which exception occurred
+        this.raise_lno = (f.codeObj.firstlineno) + f.addr2line();
     }
     
     public getTopOfStack(): IPy_FrameObj {
