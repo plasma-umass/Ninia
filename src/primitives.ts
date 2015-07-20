@@ -37,16 +37,16 @@ class NoneType extends SingletonClass {
     return false;
   }
 }
-export var None = new NoneType();
+export const None = new NoneType();
 
 // Ellipsis is the object corresponding to the ... syntax.
-export var Ellipsis = new SingletonClass("Ellipsis");
+export const Ellipsis = new SingletonClass("Ellipsis");
 
 // Python uses "NotImplemented" to signal that some operation (e.g. addition,
 // less-than) is not supported for a particular set of arguments. Typically the
 // reverse operation is tried (e.g. add => radd). If that also returns
 // NotImplemented, the interpreter throws an error.
-export var NotImplemented = new SingletonClass("NotImplemented");
+export const NotImplemented = new SingletonClass("NotImplemented");
 
 var ref = 1;
 
@@ -155,7 +155,7 @@ export class Py_Slice extends Py_Object {
 
 // Enforces immutable strings, at the cost of having to keep
 // all strings around forever.
-var string_pool: { [s: string]: Py_Str } = {};
+const string_pool: { [s: string]: Py_Str } = {};
 
 export class Py_Str extends Py_Object {
     private _str: string;
@@ -516,11 +516,11 @@ class Py_Boolean extends Py_Int {
 }
 
 // Boolean singletons.
-export var True = new Py_Boolean(true);
-export var False = new Py_Boolean(false);
+export const True = new Py_Boolean(true);
+export const False = new Py_Boolean(false);
 
-var MAX_INT = new Decimal('9007199254740991');
-var MIN_INT = new Decimal('-9007199254740991');
+const MAX_INT = new Decimal('9007199254740991');
+const MIN_INT = new Decimal('-9007199254740991');
 
 export class Py_Long extends Py_Object implements IPy_Number {
     value: decimal.Decimal;

@@ -8,14 +8,14 @@ import domain = require('domain');
 var testOut: string = '';
 var oldStdout = process.stdout.write;
 process.stdout.write = <any> ((data: string) => {testOut += data;});
-var interp = new Interpreter();
+const interp = new Interpreter();
 var numTests = 0;
 var numPassed = 0;
 var testFails: { [testName: string]: number; } = { };
 var expectedOut = "";
 var testName = "";
 // Store test results
-var result: string = ``;
+var result: string = "";
 function realPrint(text: string) {
     oldStdout.apply(process.stdout, [text]);
 }
@@ -44,7 +44,7 @@ function printResults() {
 }
 
 // Add more tests here:
-var testList = [
+const testList = [
     [`\n--- Math tests ---`],
     ["Unary operations test", "pytests/math/unaryOpsTest"],
     ["Binary operations test", "pytests/math/binaryOpsTest"],
@@ -143,7 +143,7 @@ function indiv_test(name: string, file: string, cb: () => void) {
 }
 
 // Setting up for an individual test
-var iteration = function(cur_test: [string], inCb: () => void) {
+function iteration(cur_test: [string], inCb: () => void) {
     var name = cur_test[0];
     if(cur_test.length === 1){
         result += `${name}\n`;

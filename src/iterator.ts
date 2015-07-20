@@ -7,7 +7,7 @@ import Py_Object = primitives.Py_Object;
 import IPy_Object = interfaces.IPy_Object;
 import IPy_FrameObj = interfaces.IPy_FrameObj;
 import Thread = require('./threading');
-var True = primitives.True, False = primitives.False;
+const True = primitives.True, False = primitives.False;
 
 export class ListIterator extends Py_Object implements Iterator {
     private pos: number = 0;

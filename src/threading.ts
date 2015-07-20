@@ -11,11 +11,12 @@ import IPy_FrameObj = interfaces.IPy_FrameObj;
 import enums = require('./enums');
 import Py_Sys = require('./sys');
 
+// How responsive Ninia should aim to be, in milliseconds.
+const responsiveness: number = 1000;
+
 var maxMethodResumes: number = 10000,
     // The number of method resumes until Doppio should yield again.
     methodResumesLeft: number = maxMethodResumes,
-    // How responsive Ninia should aim to be, in milliseconds.
-    responsiveness: number = 1000,
     // Used for the CMA.
     numSamples: number = 1;
 

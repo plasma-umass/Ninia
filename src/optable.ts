@@ -29,7 +29,7 @@ import Py_Cell = require('./cell');
 import Thread = require('./threading');
 import nativefuncobject = require('./nativefuncobject')
 import IPy_Function = interfaces.IPy_Function;
-var NotImplemented = builtins.$NotImplemented;
+const NotImplemented = builtins.$NotImplemented;
 
 // XXX: Copy+paste of builtins.bool.
 function bool(x: IPy_Object): typeof True {
@@ -49,7 +49,7 @@ function bool(x: IPy_Object): typeof True {
  *
  * - When we support classes, we should prevent user classes from inheriting default implementations.
  */
-var optable: { [op: number]: (f: Py_FrameObject, t: Thread)=>void } = {};
+const optable: { [op: number]: (f: Py_FrameObject, t: Thread)=>void } = {};
 
 /**
  * Generates simple unary opcodes.

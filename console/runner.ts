@@ -13,7 +13,7 @@ if (argv._.length != 1 || argv.help) {
   process.exit(1);
 }
 
-var interp = new Interpreter();
-var file: string = argv._[0];
-var u = new Unmarshaller(fs.readFileSync(file));
+const interp = new Interpreter();
+const file: string = argv._[0];
+const u = new Unmarshaller(fs.readFileSync(file));
 interp.interpret(u.value(), argv.debug, function(){});
