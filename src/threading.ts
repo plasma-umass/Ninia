@@ -123,32 +123,19 @@ class Thread {
 
     public throwException(exc: IPy_Object): void {
         // Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
-        // search in current frame
         this.exc = exc;
-        var f: Py_FrameObject = <Py_FrameObject> this.getTopOfStack();
-        if (!f.tryCatchException()) {
-            f.frame_add_traceback(this);
-            f.emptyStack();
-            // Search for exception handler in previous frames
-            var i = this.stack.length - 2;
-            while (i >= 0 ) {
-                var chars = f.codeObj.lnotab.toString();
-                // stop frame execution
-                f.returnToThread = true;
-                f = (<Py_FrameObject>this.stack[i]);
-                // Add to traceback
-                f.frame_add_traceback(this);
-                // If an exception handler is found in either this frame or previous frames
-                if (f.tryCatchException()) {
+        var f: IPy_FrameObj = this.getTopOfStack();
+        if (!f.tryCatchException(this)) {
+            // Find in previous frames
+            for (var i = this.stack.length - 2; i >= 0; i--) {
+                f = this.stack[i];
+                if (f.tryCatchException(this)) {
                     return;
                 }
-                i--;
             }
             // no exception handler found, write traceback and exit the thread
             this.writeTraceback();
         }
-        // save line number on which exception occurred
-        this.raise_lno = (f.codeObj.firstlineno) + f.addr2line();
     }
     
     public getTopOfStack(): IPy_FrameObj {

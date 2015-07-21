@@ -53,6 +53,11 @@ export class Py_TrampolineFrameObject implements interfaces.IPy_FrameObj {
         this._rv = rv;
         this._exc = exc;
     }
+
+    // TODO: Exception handling for trampolie frames
+    tryCatchException(t: Thread): boolean {
+        return false;
+    }
 }
 
 /**

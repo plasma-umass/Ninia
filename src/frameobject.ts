@@ -155,7 +155,8 @@ class Py_FrameObject implements IPy_FrameObj {
     }
 
     // search for exception handler in current frame
-    tryCatchException(): boolean {
+    tryCatchException(t: Thread): boolean {
+        t.raise_lno = (this.codeObj.firstlineno) + this.addr2line();
         while (this.blockStack.length > 0) {
             var b = this.blockStack[this.blockStack.length - 1];
             this.blockStack.pop();
@@ -171,6 +172,10 @@ class Py_FrameObject implements IPy_FrameObj {
                 return true;
             }
         }
+        // Current frame cannot handle exception
+        this.frame_add_traceback(t);
+        this.emptyStack();
+        this.returnToThread = true;
         return false;
     }
 
