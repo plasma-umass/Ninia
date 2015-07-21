@@ -10,8 +10,14 @@ def catching_same():
     except Exception:
         print "Success"
 
-def foo():
+def bar():
     raise Exception
+
+def foo():
+    try:
+        bar()
+    except NameError:
+        print "Failure"
 
 def nested():
     try:

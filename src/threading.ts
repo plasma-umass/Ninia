@@ -124,18 +124,17 @@ class Thread {
     public throwException(exc: IPy_Object): void {
         // Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
         this.exc = exc;
-        var f: IPy_FrameObj = this.getTopOfStack();
-        if (!f.tryCatchException(this)) {
-            // Find in previous frames
-            for (var i = this.stack.length - 2; i >= 0; i--) {
-                f = this.stack[i];
-                if (f.tryCatchException(this)) {
-                    return;
-                }
+        var f: IPy_FrameObj;
+        for (var i = this.stack.length - 1; i >= 0; i--) {
+            f = this.stack[i];
+            if(f.tryCatchException(this, exc)) {
+                return;
             }
-            // no exception handler found, write traceback and exit the thread
-            this.writeTraceback();
+            else {
+                this.framePop();
+            }
         }
+        this.writeTraceback();
     }
     
     public getTopOfStack(): IPy_FrameObj {

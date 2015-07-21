@@ -55,7 +55,7 @@ export class Py_TrampolineFrameObject implements interfaces.IPy_FrameObj {
     }
 
     // TODO: Exception handling for trampolie frames
-    tryCatchException(t: Thread): boolean {
+    tryCatchException(t: Thread, exc: IPy_Object): boolean {
         return false;
     }
 }

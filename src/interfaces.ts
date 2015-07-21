@@ -27,7 +27,7 @@ export interface IPy_FrameObj extends IPy_Object {
    * This method does not re-start execution. exec() should be called sometime after this to resume execution.
    */
   resume(rv: IPy_Object, exc: IPy_Object): void;
-  tryCatchException(t: Thread): boolean;
+  tryCatchException(t: Thread, exc: IPy_Object): boolean;
 }
 
 /**
