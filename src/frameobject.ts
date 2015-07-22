@@ -146,6 +146,8 @@ class Py_FrameObject implements IPy_FrameObj {
     
     raise_exception_here(t: Thread, message: string, type: string): void {
         var val: IPy_Object = (<any> builtins)[type];
+        if (val === undefined)
+            throw new Error(`Unknown exception type: '${type}'`);
         t.addToTraceback(message);
         t.throwException(val);
     }
