@@ -590,6 +590,9 @@ inherit(AttributeError, Exception);
 class TypeError extends Exception {}
 inherit(TypeError, Exception);
 
+class StopIteration extends Exception {}
+inherit(StopIteration, Exception);
+
 // full mapping of builtin names to values.
 const builtins = {
     $BaseException : BaseException.prototype,
@@ -599,6 +602,7 @@ const builtins = {
     $ZeroDivisionError: ZeroDivisionError.prototype,
     $TypeError: TypeError.prototype,
     $AttributeError: AttributeError.prototype,
+    $StopIteration: StopIteration.prototype,
     $True: True,
     $False: False,
     $None: None,
