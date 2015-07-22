@@ -9,6 +9,9 @@ import {IPy_FrameObj, IPy_Function, IPy_Number, IPy_Object, Iterable, Iterator
 import {Py_TrampolineFrameObject, Py_SyncNativeFuncObject,
         Py_AsyncNativeFuncObject
        } from './nativefuncobject';
+import {BaseException, Exception, NameError, ArithmeticError,
+        ZeroDivisionError, TypeError, AttributeError, StopIteration
+       } from './exceptions';
 import enums = require('./enums');
 import Thread = require('./threading');
 import path = require('path');
@@ -532,66 +535,6 @@ function isinstance(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
   }
 }
 
-//Exception classes
-class BaseException extends Py_Object {
-  $__dict__ = new Py_Dict(<any> this);
-  $args: Py_Tuple;
-  $message: Py_Str;
-  $__mro__: Py_Tuple;
-  $__call__: Py_SyncNativeFuncObject;
-  $__getstate__: Py_SyncNativeFuncObject;
-  $__setstate__: Py_SyncNativeFuncObject;
-
-  constructor(args?: IPy_Object[]) {
-    super();
-    if (args) {
-      this.$args = new Py_Tuple(args);
-    }
-  }
-}
-BaseException.prototype.$__mro__ = new Py_Tuple([BaseException.prototype, Py_Object.prototype]);
-BaseException.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  return new BaseException(args);
-});
-BaseException.prototype.$__getstate__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  return this.$args;
-});
-BaseException.prototype.$__setstate__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  this.$__dict__ = kwargs;
-  return kwargs;
-});
-
-// Helper for defining subclasses in python-land
-function inherit(obj: typeof BaseException, superobj: typeof BaseException): void {
-  var super_mro: any[] = superobj.prototype.$__mro__.toArray();
-  var mro: any[] = Array.prototype.concat(obj.prototype, super_mro);
-  obj.prototype.$__mro__ = new Py_Tuple(mro);
-  obj.prototype.$__call__ = new Py_SyncNativeFuncObject(
-    (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-      return new obj(args);
-     });
-}
-
-class Exception extends BaseException {}
-inherit(Exception, BaseException);
-
-class NameError extends Exception {}
-inherit(NameError, Exception);
-
-class ArithmeticError extends Exception {}
-inherit(ArithmeticError, Exception);
-
-class ZeroDivisionError extends Exception {}
-inherit(ZeroDivisionError, ArithmeticError);
-
-class AttributeError extends Exception {}
-inherit(AttributeError, Exception);
-
-class TypeError extends Exception {}
-inherit(TypeError, Exception);
-
-class StopIteration extends Exception {}
-inherit(StopIteration, Exception);
 
 // full mapping of builtin names to values.
 const builtins = {
