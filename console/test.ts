@@ -9,8 +9,9 @@ var testOut: string = '';
 var oldStdout = process.stdout.write;
 process.stdout.write = <any> ((data: string) => {testOut += data;});
 const interp = new Interpreter();
-var numTests = 0;
-var numPassed = 0;
+var numTests = 0,
+    numPassed = 0,
+    numSkipped = 0;
 var testFails: { [testName: string]: number; } = { };
 var expectedOut = "";
 var testName = "";
@@ -29,16 +30,17 @@ function restorePrint(cb: () => void): void {
 
 function printResults() {
     restorePrint(() => {
-       console.log(result);
-       console.log(`\n--- Results ---`);
+        console.log(result);
+        console.log(`\n--- Results ---`);
         for (var tName in testFails) {
-            if (testFails[tName] > 0) {
-                console.log(`${testFails[tName]} test failed in ${tName} tests.`);
-            }
+           if (testFails[tName] > 0) {
+               console.log(`${testFails[tName]} test failed in ${tName} tests.`);
+           }
         }
-        console.log(`Passed ${numPassed}/${numTests} tests.`);
-        if (numPassed != numTests) {
-          process.exit(1);
+        const numFailed = numTests - numPassed - numSkipped;
+        console.log(`PASS: ${numPassed} / SKIP: ${numSkipped} / FAIL: ${numFailed}`);
+        if (numFailed != 0) {
+            process.exit(1);
         }
     });
 }
@@ -105,6 +107,12 @@ const testList = [
     ["Context Manager test", "pytests/contextTest"]
 ];
 
+// Add tests here that you'd like to skip, for some reason.
+const skipTests: {[file: string]: boolean} = {
+    "pytests/comprehensionTest": true,
+    "pytests/functions/generatorTest": true
+};
+
 var d = domain.create();
 var async_cb: () => void = null;
 d.on('error', function(err: any){
@@ -121,8 +129,12 @@ function onFailure() {
 
 // Execute an individual test
 function indiv_test(name: string, file: string, cb: () => void) {
+    numTests++;
+    if (!!(skipTests[file])) {
+        numSkipped++;
+        return cb();
+    }
     result += `Running ${name}... `;
-    numTests += 1;
     var u = new Unmarshaller(fs.readFileSync(file+'.pyc'));
     testOut = '';  // reset the output catcher
     testName = file.split('/')[1];  // grab 'math' from 'pytests/math/int'
