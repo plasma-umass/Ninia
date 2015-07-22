@@ -133,7 +133,7 @@ function BINARY_${funcName}(f, t) {
     ` : ''}
 
     if (a['__${funcName}__']) {
-        f.push(a.__${funcName}__(b));
+        f.push(a.__${funcName}__(t,b));
         return;
     } else if (a['$__${funcName}__']) {
         f.returnToThread = true;
@@ -269,8 +269,8 @@ optable[opcodes.UNPACK_SEQUENCE] = function(f: Py_FrameObject, t: Thread) {
 
     if (val.__getitem__) {
         for (; i >= 0; i--) {
-            f.push(val.__getitem__(new Py_Int(i)));
-        }
+            f.push(val.__getitem__(t, new Py_Int(i)));
+        } 
     } else if (val.$__getitem__) {
         // Pop from stack, and reverse the order of elements, and push back into stack
         // e.g. 1 2 3 -> 3 2 1
@@ -316,9 +316,8 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject, t: Thread) {
     // throw NameError
     if (val === undefined) {
         var message = `NameError: global name '${name}' is not defined${os.EOL}`;
-        raise_exception_here(f, t, message, "NameError");
-        // get NameError type object
-        val = builtins['$NameError'];
+        f.raise_exception_here(t, message, "$NameError");
+        return;
     }
     f.push(val);
 }
@@ -330,9 +329,8 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject, t: Thread) {
     // throw NameError
     if (val === undefined) {
         var message = `NameError: global name '${name}' is not defined${os.EOL}`;
-        raise_exception_here(f, t, message, "NameError");
-        // get NameError type object
-        val = builtins['$NameError'];
+        f.raise_exception_here(t, message, "$NameError");
+        return;
     }
     f.push(val);
 }
@@ -407,10 +405,11 @@ optable[opcodes.COMPARE_OP] = function(f: Py_FrameObject, t: Thread) {
             f.push(a.hash() !== b.hash() ? True : False);
             break;
         case ComparisonOp.EXC_MATCH:
+            a = t.exc;
             var x = builtins.isinstance(t, f, [a, b], null);
             f.push(x);
             if (x == False) {
-                fast_block_end(f,t);
+                t.throwException(a);
             }
             break;
         // case 'exception match':
@@ -508,153 +507,49 @@ optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
     var i = f.readArg();
     f.locals.del(f.codeObj.varnames[i]);
 }
-// Searches for an exception handler inside the current Py_FrameObject
-// Uses that blockstack to move forwards or backwards in code (by changing lastInst)
-// Returns true if found, else returns false
-function find_exception_handler(f: Py_FrameObject) : boolean {
-    while (f.blockStack.length > 0) {
-        var b = f.blockStack[f.blockStack.length - 1];
-        f.blockStack.pop();
-        if (b[3] === opcodes.SETUP_EXCEPT) {
-            setup_block(f, opcodes.EXCEPT_HANDLER);
-            var endPos: number = b[2];
-            f.lastInst = endPos;
-            return true;
-        }
-        if (b[3] === opcodes.SETUP_FINALLY) {
-            var endPos: number = b[2];
-            f.lastInst = endPos;
-            return true;
-        }
-    }
-    return false;
-}
-// Unpack the lnotab to extract instruction/line numbers
-// str contians bytes inside of a string
-function unpack(str: string): [number,number][] {
-    var ln_byte_tuple: [number,number][] = [];
-    for (var i = 0, n = str.length; i < n; i+=2) {
-        var num1: number = str.charCodeAt(i);
-        var num2: number = str.charCodeAt(i+1);
-        ln_byte_tuple.push([num1, num2]);
-    }
-    return ln_byte_tuple;
-}
 
-// Using lnotab, find the linenumber of the current instruction in the .py file
-function addr2line(f: Py_FrameObject): number {
-    var lineno = 0;
-    var addr = 0;
-    var chars = f.codeObj.lnotab.toString();
-    var lnotab = unpack(chars);
-    for (var row of lnotab) {
-        addr += row[0];
-        if (addr > f.lastInst) {
-            break;
-        }
-        lineno += row[1];
-    }
-    return lineno;
-}
-// Add traceback
-function frame_add_traceback(f: Py_FrameObject, t: Thread) {
-    var current_line: number = (f.codeObj.firstlineno) + addr2line(f);
-    // Set whenever an exception handler is found
-    // If exception handler can't handle that exception, the line where exception occurred is added to traceback
-    if (t.raise_lno > 0) {
-        current_line = t.raise_lno ;
-        t.raise_lno = 0;
-    }
-    var tback: string = `  File "${f.codeObj.filename.toString()}", line ${current_line}, in ${f.codeObj.name.toString()}${os.EOL}`;
-    if (t.codefile.length > 0) {
-        tback += `    ${t.codefile[current_line-1].trim()}${os.EOL}`;
-    }
-    t.addToTraceback(tback);
-}
-
-// Search for exception handler in previous frames
-function find_in_prev(f: Py_FrameObject, t: Thread): boolean {
-    frame_add_traceback(f, t);
-    while (f.stack.length > 0) {
-        f.pop();
-    }
-     // Search for exception handler in previous frames
-    while (f.back != null) {
-        var chars = f.codeObj.lnotab.toString();
-        // stop frame execution
-        f.returnToThread = true;
-        f = (<Py_FrameObject>f.back);
-        // Add to traceback
-        frame_add_traceback(f, t);
-        // If an exception handler is found in either this frame or previous frames
-        if (find_exception_handler(f)) {
-            return true;
-        }
-    }
-    // return false if no handler found
-    return false;
-}
-// Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback
-// TODO: Move logic to Thread.throwException
-function fast_block_end(f: Py_FrameObject, t: Thread): void {
-    // search in current frame
-    if (!find_exception_handler(f)) {
-        // Search for exception handler in previous frames
-        if (!find_in_prev(f,t))
-        {
-            // no exception handler found, write traceback and exit the thread
-            t.throwException();
-            return;
-        }
-    }
-    // save line number on which exception occurred
-    t.raise_lno = (f.codeObj.firstlineno) + addr2line(f);
-}
-function raise_exception_here(f: Py_FrameObject, t: Thread, message: string, type: string): void {
-    t.addToTraceback(message);
-    fast_block_end(f,t);
+function add_exc(f: Py_FrameObject, t: Thread, exc: any, message: string): void {
+    exc.$message = new Py_Str(message);
+    t.addToTraceback(exc.$message);
+    f.push(exc);
+    t.throwException(exc);
 }
 
 // push exceptions on stack
 function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): void {
     var val: any = null;
+    var message: string = "";
     // raise with 0 arg is from Exception class
     if (exc === null && cause === null) {
         val = builtins['$Exception'];
-        f.push(val);
+        message += "TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n";
+        add_exc(f, t, val, message);
+        return;
     }
     // First argument exc, second argument cause (passed into exception and used as a message when printing tb)
+    message += exc.constructor.name;
     if (exc && cause) {
-        var message: string = `${exc.constructor.name}: ${<Py_Str> cause}${os.EOL}`;
+        message += ": " + <Py_Str> cause;
         // check if user defined class
-        val = (<any> builtins)[`$${exc.constructor.name}`];
-        if (!val) {
+        val = (<any> builtins)[`$${exc.constructor.name}`]; 
+        if (!val)
             message = "__main__." + message;
-        }
-        // store message
-        exc.$message = new Py_Str(message);
     }
     if (exc) {
-        f.push(exc);
-        t.addToTraceback(exc.$message);
+        add_exc(f, t, exc, message + "\n");
     }
 }
 optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
     t.clearTraceback();
     var i = f.readArg();
     var cause: IPy_Object = null, exc: any = null;
-    if (i === 0){
-        t.addToTraceback(`TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType${os.EOL}`);
-    }
     switch (i) {
         case 2:
             cause = f.pop();
         case 1:
             exc = f.pop();
         case 0:
-            // todo: re-raising
             do_raise(f, t, cause, exc);
-            fast_block_end(f,t);
             break;
         default:
             throw new Error("bad RAISE_VARARGS oparg")
@@ -776,7 +671,7 @@ optable[opcodes.SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var a = f.pop();
     if (a.__getitem__) {
         // Assumption: types with __getitem__ also have __len__.
-        f.push(a.__getitem__(new Py_Slice(new Py_Int(0), a.__len__(), None)));
+        f.push(a.__getitem__(t, new Py_Slice(new Py_Int(0), a.__len__(), None)));
     } else if (a.$__getitem__ && a.$__len__) {
         f.returnToThread = true;
         a.$__len__.exec_from_native(t, f, [], new Py_Dict(), (rv: IPy_Object) => {
@@ -794,7 +689,7 @@ optable[opcodes.SLICE_1] = function(f: Py_FrameObject, t: Thread) {
     var b = f.pop();
     var a = f.pop();
     if (a.__getitem__) {
-        f.push(a.__getitem__(new Py_Slice(b, a.__len__(), None)));
+        f.push(a.__getitem__(t, new Py_Slice(b, a.__len__(), None)));
     } else if (a.$__getitem__ && a.$__len__) {
         f.returnToThread = true;
         a.$__len__.exec_from_native(t, f, [], new Py_Dict(), (rv: IPy_Object) => {
@@ -812,7 +707,7 @@ optable[opcodes.SLICE_2] = function(f: Py_FrameObject, t: Thread) {
     var b = f.pop();
     var a = f.pop();
     if (a.__getitem__) {
-        f.push(a.__getitem__(new Py_Slice(new Py_Int(0), b, None)));
+        f.push(a.__getitem__(t, new Py_Slice(new Py_Int(0), b, None)));
     } else if (a.$__getitem__) {
         f.returnToThread = true;
         a.$__getitem__.exec(t, f, [new Py_Slice(new Py_Int(0), b, None)], new Py_Dict());
@@ -826,7 +721,7 @@ optable[opcodes.SLICE_3] = function(f: Py_FrameObject, t: Thread) {
     var b = f.pop();
     var c = f.pop();
     if (c.__getitem__) {
-        f.push(c.__getitem__(new Py_Slice(b, a, None)));
+        f.push(c.__getitem__(t, new Py_Slice(b, a, None)));
     } else if (c.$__getitem__) {
         f.returnToThread = true;
         c.$__getitem__.exec(t, f, [new Py_Slice(b, a, None)], new Py_Dict());
@@ -839,7 +734,7 @@ optable[opcodes.STORE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        seq.__setitem__(new Py_Slice(None, None, None), value);
+        seq.__setitem__(t, new Py_Slice(None, None, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [new Py_Slice(None, None, None), value], new Py_Dict());
@@ -853,7 +748,7 @@ optable[opcodes.STORE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        seq.__setitem__(new Py_Slice(start, None, None), value);
+        seq.__setitem__(t, new Py_Slice(start, None, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [new Py_Slice(start, None, None), value], new Py_Dict());
@@ -867,7 +762,7 @@ optable[opcodes.STORE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        seq.__setitem__(new Py_Slice(None, end, None), value);
+        seq.__setitem__(t, new Py_Slice(None, end, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [new Py_Slice(None, end, None), value], new Py_Dict());
@@ -882,7 +777,7 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     var value = f.pop();
     if (seq.__setitem__) {
-        seq.__setitem__(new Py_Slice(start, end, None), value);
+        seq.__setitem__(t, new Py_Slice(start, end, None), value);
     } else if (seq.$__setitem__) {
         f.returnToThread = true;
         seq.$__setitem__.exec(t, f, [new Py_Slice(start, end, None), value], new Py_Dict());
@@ -894,7 +789,7 @@ optable[opcodes.STORE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
 optable[opcodes.DELETE_SLICE_0] = function(f: Py_FrameObject, t: Thread) {
     var seq = f.pop();
     if (seq.__delitem__) {
-        seq.__delitem__(new Py_Slice(None, None, None));
+        seq.__delitem__(t, new Py_Slice(None, None, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [new Py_Slice(None, None, None)], new Py_Dict());
@@ -907,7 +802,7 @@ optable[opcodes.DELETE_SLICE_1] = function(f: Py_FrameObject, t: Thread) {
     var start = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        seq.__delitem__(new Py_Slice(start, None, None));
+        seq.__delitem__(t, new Py_Slice(start, None, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [new Py_Slice(start, None, None)], new Py_Dict());
@@ -920,7 +815,7 @@ optable[opcodes.DELETE_SLICE_2] = function(f: Py_FrameObject, t: Thread) {
     var end = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        seq.__delitem__(new Py_Slice(None, end, None));
+        seq.__delitem__(t, new Py_Slice(None, end, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [new Py_Slice(None, end, None)], new Py_Dict());
@@ -934,7 +829,7 @@ optable[opcodes.DELETE_SLICE_3] = function(f: Py_FrameObject, t: Thread) {
     var start = f.pop();
     var seq = f.pop();
     if (seq.__delitem__) {
-        seq.__delitem__(new Py_Slice(start, end, None));
+        seq.__delitem__(t, new Py_Slice(start, end, None));
     } else if (seq.$__delitem__) {
         f.returnToThread = true;
         seq.$__delitem__.exec(t, f, [new Py_Slice(start, end, None)], new Py_Dict());
@@ -950,7 +845,7 @@ optable[opcodes.STORE_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
     var obj = f.pop();
     var value = f.pop();
     if (obj.__setitem__) {
-        obj.__setitem__(key, value);
+        obj.__setitem__(t, key, value);
     } else if (obj.$__setitem__) {
         f.returnToThread = true;
         obj.$__setitem__.exec(t, f, [key, value], new Py_Dict());
@@ -964,7 +859,7 @@ optable[opcodes.DELETE_SUBSCR] = function(f: Py_FrameObject, t: Thread) {
     var key = f.pop();
     var obj = f.pop();
     if (obj.__delitem__) {
-        obj.__delitem__(key);
+        obj.__delitem__(t, key);
     } else if (obj.$__delitem__) {
         f.returnToThread = true;
         obj.$__delitem__.exec(t, f, [key], new Py_Dict());
@@ -1135,12 +1030,13 @@ optable[opcodes.IMPORT_STAR] = function(f: Py_FrameObject) {
 }
 
 // Replaces TOS with getattr(TOS, co_names[namei]).
-optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject) {
+optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject, t: Thread) { 
     var name = f.codeObj.names[f.readArg()].toString(),
         obj = f.pop(),
         val = (<any> obj)[`$${name}`];
     if (val === undefined) {
-        throw new Error(`Invalid attribute: ${name}`);
+        var message = `AttributeError: 'function' object has no attribute '${name}'\n`;
+        f.raise_exception_here(t, message, "$AttributeError");
     } else {
         f.push(val);
     }

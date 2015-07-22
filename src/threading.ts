@@ -27,6 +27,7 @@ class Thread {
     public codefile: string[] = [];
     public cb: () => void;
     public sys: Py_Sys;
+    public exc: IPy_Object;
 
     constructor(sys: Py_Sys, cb : () => void) {
         this.sys = sys;
@@ -117,12 +118,23 @@ class Thread {
     public writeTraceback(): void {
         this.traceback = `Traceback (most recent call last):${os.EOL}${this.traceback}`;
         process.stdout.write(this.traceback);
+        this.exit();
     }
 
-    // Output the traceback when thread cannot handle an exception, and exit the thread
-    public throwException(): void {
+    public throwException(exc: IPy_Object): void {
+        // Whenever an exception occurs, tries to find a handler and if it can't outputs the traceback 
+        this.exc = exc;
+        var f: IPy_FrameObj;
+        for (var i = this.stack.length - 1; i >= 0; i--) {
+            f = this.stack[i];
+            if(f.tryCatchException(this, exc)) {
+                return;
+            }
+            else {
+                this.framePop();
+            }
+        }
         this.writeTraceback();
-        this.exit();
     }
 
     public getTopOfStack(): IPy_FrameObj {
@@ -133,14 +145,14 @@ class Thread {
         return this.stack.length;
     }
 
-    public asyncReturn(rv?: any): void {
+    public asyncReturn(rv?: any, exc?: any): void {
         var stack = this.stack,
           length: number;
         // framePop
         stack.pop();
         length = stack.length;
         if (length > 0) {
-            stack[length - 1].resume(rv);
+            stack[length - 1].resume(rv, exc);
             this.setStatus(ThreadStatus.RUNNABLE);
         } else {
             // Program has ended.
@@ -151,9 +163,7 @@ class Thread {
     // Terminates execution of a Thread by changing its status and then emptying its stack
     public exit(): void {
         this.status = ThreadStatus.TERMINATED;
-        while(this.stack.length !== 0) {
-            this.framePop();
-        }
+        this.stack = [];
         // execute callback
         this.cb();
     }

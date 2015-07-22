@@ -116,7 +116,7 @@ function set(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict): Py_
 }
 
 function abs(t: Thread, f: IPy_FrameObj, args: Iterable[], kwargs: Py_Dict): IPy_Object {
-    return args[0].__abs__();
+    return args[0].__abs__(t);
 }
 
 function all(x: Iterable): typeof True {
@@ -211,7 +211,7 @@ function complex(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict
 }
 
 function divmod(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): IPy_Object {
-  return args[0].__divmod__(args[1]);
+  return args[0].__divmod__(t, args[1]);
 }
 
 function float(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): Py_Float {
@@ -582,11 +582,55 @@ NameError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_F
   return new NameError(args);
 });
 
+class ArithmeticError extends Exception {
+  $__mro__: Py_Tuple;
+  $__call__: Py_SyncNativeFuncObject;
+}
+
+ArithmeticError.prototype.$__mro__ = new Py_Tuple([ArithmeticError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
+ArithmeticError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  return new ArithmeticError(args);
+});
+
+class ZeroDivisionError extends Exception {
+  $__mro__: Py_Tuple;
+  $__call__: Py_SyncNativeFuncObject;
+}
+
+ZeroDivisionError.prototype.$__mro__ = new Py_Tuple([ZeroDivisionError.prototype, ArithmeticError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
+ZeroDivisionError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  return new ZeroDivisionError(args);
+});
+
+class AttributeError extends Exception {
+  $__mro__: Py_Tuple;
+  $__call__: Py_SyncNativeFuncObject;
+}
+
+AttributeError.prototype.$__mro__ = new Py_Tuple([AttributeError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
+AttributeError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  return new AttributeError(args);
+});
+
+class TypeError extends Exception {
+  $__mro__: Py_Tuple;
+  $__call__: Py_SyncNativeFuncObject;
+}
+
+TypeError.prototype.$__mro__ = new Py_Tuple([TypeError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
+TypeError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+  return new TypeError(args);
+});
+
 // full mapping of builtin names to values.
 const builtins = {
     $BaseException : BaseException.prototype,
     $Exception: Exception.prototype,
     $NameError: NameError.prototype,
+    $ArithmeticError: ArithmeticError.prototype,
+    $ZeroDivisionError: ZeroDivisionError.prototype,
+    $TypeError: TypeError.prototype,
+    $AttributeError: AttributeError.prototype,
     $True: True,
     $False: False,
     $None: None,

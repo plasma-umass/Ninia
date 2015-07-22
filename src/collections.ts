@@ -16,13 +16,13 @@ export class Py_List extends Py_Object implements Iterable {
     return None;
   });
   public $__getitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-    return this.__getitem__(args[0]);
+    return this.__getitem__(t, args[0]);
   });
   public $__delitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-    return this.__delitem__(args[0]);
+    return this.__delitem__(t, args[0]);
   });
   public $__setitem__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-    return this.__setitem__(args[0], args[1]);
+    return this.__setitem__(t, args[0], args[1]);
   });
 
   constructor(lst: IPy_Object[]) {
@@ -66,7 +66,7 @@ export class Py_List extends Py_Object implements Iterable {
     return this.len() !== 0;
   }
 
-  public __add__(other: IPy_Object): Py_List {
+  public __add__(t: Thread, other: IPy_Object): Py_List {
     if (other instanceof Py_List) {
       return new Py_List(this._list.concat((<Py_List> other)._list));
     } else {
@@ -76,7 +76,7 @@ export class Py_List extends Py_Object implements Iterable {
   public __len__(): Py_Int {
     return new Py_Int(this.len());
   }
-  public __getitem__(key: IPy_Object): IPy_Object {
+  public __getitem__(t: Thread, key: IPy_Object): IPy_Object {
     if (key.getType() === Py_Type.SLICE) {
       var slice = <Py_Slice> key,
         indices = slice.getIndices(this._list.length),
@@ -96,7 +96,7 @@ export class Py_List extends Py_Object implements Iterable {
     }
   }
 
-  public __setitem__(key: IPy_Object, val: IPy_Object): IPy_Object {
+  public __setitem__(t: Thread, key: IPy_Object, val: IPy_Object): IPy_Object {
     if (key.getType() === Py_Type.SLICE) {
       var slice = <Py_Slice> key,
         step = slice.step === None ? 1 : (<Py_Int | Py_Long> slice.step).toNumber();
@@ -119,7 +119,7 @@ export class Py_List extends Py_Object implements Iterable {
         }
 
         for(var curr = start, i = 0; i < length; curr += step, i += 1){
-          this._list[curr] = rlist.__getitem__(new Py_Int(i));
+          this._list[curr] = rlist.__getitem__(t, new Py_Int(i));
         }
       }
     } else {
@@ -128,7 +128,7 @@ export class Py_List extends Py_Object implements Iterable {
     return None;
   }
 
-  public __delitem__(key: IPy_Object): IPy_Object {
+  public __delitem__(t: Thread, key: IPy_Object): IPy_Object {
     // Delete is the same as splicing out the element and moving everything down
     if (key.getType() === Py_Type.SLICE){
       var slice = <Py_Slice> key,
@@ -228,7 +228,7 @@ export class Py_Tuple extends Py_Object implements Iterable {
   public __len__(): Py_Int {
     return this._len;
   }
-  public __getitem__(key: IPy_Object): IPy_Object {
+  public __getitem__(t: Thread, key: IPy_Object): IPy_Object {
     if (key.getType() === Py_Type.SLICE) {
       var slice = <Py_Slice> key,
         indices = slice.getIndices(this._tuple.length),
@@ -469,7 +469,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
   }
 
   // set intersection
-  public __and__(x: IPy_Object): IPy_Object {
+  public __and__(t: Thread, x: IPy_Object): IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
@@ -484,7 +484,7 @@ export class Py_Set extends Py_Dict implements IPy_Object {
   }
 
   // set difference
-  public __sub__(x: IPy_Object): IPy_Object {
+  public __sub__(t: Thread, x: IPy_Object): IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }
@@ -499,15 +499,15 @@ export class Py_Set extends Py_Dict implements IPy_Object {
   }
 
   // set symmetric difference
-  public __xor__(x: IPy_Object): IPy_Object {
+  public __xor__(t: Thread, x: IPy_Object): IPy_Object {
     // TODO: implement this directly
-    var left = this.__sub__(x);
-    var right = x.__sub__(this);
-    return left.__or__(right);
+    var left = this.__sub__(t, x);
+    var right = x.__sub__(t, this);
+    return left.__or__(t, right);
   }
 
   // set union
-  public __or__(x: IPy_Object): IPy_Object {
+  public __or__(t: Thread, x: IPy_Object): IPy_Object {
     if (!(x instanceof Py_Set)) {
       return NotImplemented;
     }

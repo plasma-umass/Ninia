@@ -8,6 +8,7 @@ import optable = require('./optable');
 import Py_Cell = require('./cell');
 import Thread = require('./threading');
 import assert = require('assert');
+import builtins = require('./builtins');
 
 // Frame Objects are basically stack frames for functions, except they carry
 // extra context (e.g. globals, local scope, etc.). This class is not simplified
@@ -138,6 +139,91 @@ class Py_FrameObject implements IPy_FrameObj {
             }
         }
     }
+
+    emptyStack() {
+        this.stack = [];
+    }
+    
+    raise_exception_here(t: Thread, message: string, type: string): void {
+        var val: IPy_Object = (<any> builtins)[type];
+        t.addToTraceback(message);
+        t.throwException(val);
+    }
+
+    // search for exception handler in current frame
+    tryCatchException(t: Thread, exc: IPy_Object): boolean {
+        // push exception on stack
+        this.push(exc);
+        t.raise_lno = (this.codeObj.firstlineno) + this.addr2line();
+        while (this.blockStack.length > 0) {
+            var b = this.blockStack[this.blockStack.length - 1];
+            this.blockStack.pop();
+            if (b[3] === opcodes.SETUP_EXCEPT) {
+                this.setup_block(opcodes.EXCEPT_HANDLER);
+                var endPos: number = b[2];
+                this.lastInst = endPos;
+                return true;
+            }
+            if (b[3] === opcodes.SETUP_FINALLY) {
+                var endPos: number = b[2];
+                this.lastInst = endPos;
+                return true;
+            }
+        }
+        // Current frame cannot handle exception
+        this.frame_add_traceback(t);
+        this.emptyStack();
+        this.returnToThread = true;
+        return false;
+    }
+
+    unpack(str: string): [number,number][] {
+        var ln_byte_tuple: [number,number][] = [];
+        for (var i = 0, n = str.length; i < n; i+=2) {
+            var num1: number = str.charCodeAt(i);
+            var num2: number = str.charCodeAt(i+1);
+            ln_byte_tuple.push([num1, num2]);
+        }
+        return ln_byte_tuple;
+    }
+
+    addr2line(): number {
+        var lineno = 0;
+        var addr = 0;
+        var chars = this.codeObj.lnotab.toString();
+        var lnotab = this.unpack(chars);
+        for (var i = 0; i < lnotab.length; i++) {
+            addr += lnotab[i][0];
+            if (addr > this.lastInst) {
+                break;
+            }
+            lineno += lnotab[i][1];
+        }
+        return lineno;
+    }
+
+    frame_add_traceback(t: Thread): void {
+        var current_line: number = (this.codeObj.firstlineno) + this.addr2line();
+        // Set whenever an exception handler is found
+        // If exception handler can't handle that exception, the line where exception occurred is added to traceback
+        if (t.raise_lno > 0) {
+            current_line = t.raise_lno ;
+            t.raise_lno = 0;
+        }
+        var tback: string = `  File "${this.codeObj.filename.toString()}", line ${current_line}, in ${this.codeObj.name.toString()}\n`;
+        if (t.codefile.length > 0) {
+            tback += `    ${t.codefile[current_line-1].trim()}\n`;
+        }
+        t.addToTraceback(tback);
+    }
+
+    setup_block(op: number): void {
+        var delta = this.readArg();
+        // push a block to the block stack
+        var stackSize = this.stack.length;
+        var loopPos = this.lastInst;
+        this.blockStack.push([stackSize, loopPos, loopPos+delta, op]);
+    }
     
     resume(rv: IPy_Object): void {
         assert(rv !== undefined && rv !== null, "Must be a Py_Object.");
@@ -160,4 +246,5 @@ class Py_FrameObject implements IPy_FrameObj {
         return cell;
     }
 }
+
 export = Py_FrameObject;

@@ -10,13 +10,14 @@ import assert = require('./assert');
  * "Bounces" the return value through a provided callback.
  */
 export class Py_TrampolineFrameObject implements IPy_FrameObj {
-    private _cb: (rv: IPy_Object) => void;
+    private _cb: (rv: IPy_Object, exc: IPy_Object) => void;
     private _rv: IPy_Object = null;
+    private _exc: IPy_Object = null;
     globals: Py_Dict;
     locals: Py_Dict;
     back: IPy_FrameObj;
     
-    constructor(caller: IPy_FrameObj, locals: Py_Dict, cb: (rv: IPy_Object) => void) {
+    constructor(caller: IPy_FrameObj, locals: Py_Dict, cb: (rv: IPy_Object, exc: IPy_Object) => void) {
         this._cb = cb;
         this.locals = locals;
         // Copy caller's globals.
@@ -42,13 +43,19 @@ export class Py_TrampolineFrameObject implements IPy_FrameObj {
         // Pause the thread.
         t.setStatus(ThreadStatus.ASYNC_WAITING);
         // Provide the return value to the callback.
-        this._cb(this._rv);
+        this._cb(this._rv, this._exc);
     }
     
-    public resume(rv: IPy_Object): void {
+    public resume(rv: IPy_Object, exc: IPy_Object): void {
         // Store the return value. Wait for the thread to
         // exec the frame again before providing to callback.
         this._rv = rv;
+        this._exc = exc;
+    }
+
+    // TODO: Exception handling for trampolie frames
+    tryCatchException(t: Thread, exc: IPy_Object): boolean {
+        return false;
     }
 }
 
@@ -81,7 +88,7 @@ export class Py_SyncNativeFuncObject implements IPy_Function {
         t.asyncReturn(rv !== undefined ? rv : None);
     }
 
-    public exec_from_native(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object) => void) {
+    public exec_from_native(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object, exc?: IPy_Object) => void) {
         // Bypass the thread entirely.
         cb(this._f(t, f, args, kwargs));
     }
@@ -91,9 +98,9 @@ export class Py_SyncNativeFuncObject implements IPy_Function {
  * Represents an asynchronous "native" function (written in JavaScript).
  */
 export class Py_AsyncNativeFuncObject implements IPy_Function {
-    private _f: (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => void;
+    private _f: (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object, exc?: IPy_Object) => void) => void;
 
-    constructor(f: (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => void) {
+    constructor(f: (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object, exc?: IPy_Object) => void) => void) {
         this._f = f;
     }
     
@@ -122,7 +129,7 @@ export class Py_AsyncNativeFuncObject implements IPy_Function {
         }
     }
 
-    public exec_from_native(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object) => void) {
+    public exec_from_native(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv?: IPy_Object, exc?: IPy_Object) => void) {
         // Bypass thread.
         this._f(t, f, args, kwargs, cb);
     }
