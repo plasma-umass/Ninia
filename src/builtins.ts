@@ -549,7 +549,6 @@ class BaseException extends Py_Object {
     }
   }
 }
-
 BaseException.prototype.$__mro__ = new Py_Tuple([BaseException.prototype, Py_Object.prototype]);
 BaseException.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new BaseException(args);
@@ -562,41 +561,34 @@ BaseException.prototype.$__setstate__ = new Py_SyncNativeFuncObject((t: Thread, 
   return kwargs;
 });
 
+// Helper for defining subclasses in python-land
+function inherit(obj: typeof BaseException, superobj: typeof BaseException): void {
+  var super_mro: any[] = superobj.prototype.$__mro__.toArray();
+  var mro: any[] = Array.prototype.concat(obj.prototype, super_mro);
+  obj.prototype.$__mro__ = new Py_Tuple(mro);
+  obj.prototype.$__call__ = new Py_SyncNativeFuncObject(
+    (t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+      return new obj(args);
+     });
+}
+
 class Exception extends BaseException {}
-Exception.prototype.$__mro__ = new Py_Tuple([Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-Exception.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  return new Exception(args);
-});
+inherit(Exception, BaseException);
 
 class NameError extends Exception {}
-NameError.prototype.$__mro__ = new Py_Tuple([NameError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-NameError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  return new NameError(args);
-});
+inherit(NameError, Exception);
 
 class ArithmeticError extends Exception {}
-ArithmeticError.prototype.$__mro__ = new Py_Tuple([ArithmeticError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-ArithmeticError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  return new ArithmeticError(args);
-});
+inherit(ArithmeticError, Exception);
 
 class ZeroDivisionError extends Exception {}
-ZeroDivisionError.prototype.$__mro__ = new Py_Tuple([ZeroDivisionError.prototype, ArithmeticError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-ZeroDivisionError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  return new ZeroDivisionError(args);
-});
+inherit(ZeroDivisionError, ArithmeticError);
 
 class AttributeError extends Exception {}
-AttributeError.prototype.$__mro__ = new Py_Tuple([AttributeError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-AttributeError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  return new AttributeError(args);
-});
+inherit(AttributeError, Exception);
 
 class TypeError extends Exception {}
-TypeError.prototype.$__mro__ = new Py_Tuple([TypeError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-TypeError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
-  return new TypeError(args);
-});
+inherit(TypeError, Exception);
 
 // full mapping of builtin names to values.
 const builtins = {
