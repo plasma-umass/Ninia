@@ -588,7 +588,7 @@ class ArithmeticError extends Exception {
 }
 
 ArithmeticError.prototype.$__mro__ = new Py_Tuple([ArithmeticError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-ArithmeticError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+ArithmeticError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new ArithmeticError(args);
 });
 
@@ -598,7 +598,7 @@ class ZeroDivisionError extends Exception {
 }
 
 ZeroDivisionError.prototype.$__mro__ = new Py_Tuple([ZeroDivisionError.prototype, ArithmeticError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-ZeroDivisionError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+ZeroDivisionError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new ZeroDivisionError(args);
 });
 
@@ -608,7 +608,7 @@ class AttributeError extends Exception {
 }
 
 AttributeError.prototype.$__mro__ = new Py_Tuple([AttributeError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-AttributeError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+AttributeError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new AttributeError(args);
 });
 
@@ -618,7 +618,7 @@ class TypeError extends Exception {
 }
 
 TypeError.prototype.$__mro__ = new Py_Tuple([TypeError.prototype, Exception.prototype, BaseException.prototype, Py_Object.prototype]);
-TypeError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: interfaces.IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+TypeError.prototype.$__call__ = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
   return new TypeError(args);
 });
 
