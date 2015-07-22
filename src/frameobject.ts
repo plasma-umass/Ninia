@@ -150,12 +150,13 @@ class Py_FrameObject implements IPy_FrameObj {
     raise_exception_here(t: Thread, message: string, type: string): void {
         var val: IPy_Object = (<any> builtins)[type];
         t.addToTraceback(message);
-        this.push(val);
         t.throwException(val);
     }
 
     // search for exception handler in current frame
     tryCatchException(t: Thread, exc: IPy_Object): boolean {
+        // push exception on stack
+        this.push(exc);
         t.raise_lno = (this.codeObj.firstlineno) + this.addr2line();
         while (this.blockStack.length > 0) {
             var b = this.blockStack[this.blockStack.length - 1];
@@ -176,10 +177,6 @@ class Py_FrameObject implements IPy_FrameObj {
         this.frame_add_traceback(t);
         this.emptyStack();
         this.returnToThread = true;
-        // push exception on calling frame's stack
-        if (this.back!==null) {
-            (<Py_FrameObject>this.back).push(exc);
-        }
         return false;
     }
 
