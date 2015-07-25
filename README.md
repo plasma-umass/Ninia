@@ -60,4 +60,4 @@ Alternatively, follow the "Running" steps and load one of the
 
 Theodore Sudol and Cibele Freire originally wrote Ninia as a class project for CMPSCI 630, a graduate-level software systems class. The [PLASMA lab](https://plasma.cs.umass.edu/) at UMass is continuing the project to experiment with bringing conventional programming languages to the web on top of JavaScript.
 
-Ninia will reuse the common infrastructure present in [Doppio and DoppioJVM](https://github.com/plasma/umass/doppio) to bring Python to the browser.
+Ninia will reuse the common infrastructure present in [Doppio and DoppioJVM](https://github.com/plasma-umass/doppio) to bring Python to the browser.
