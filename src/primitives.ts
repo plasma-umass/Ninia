@@ -5,7 +5,7 @@ import Decimal = require('decimal.js');
 // Use for type information ONLY to avoid circular ref!
 import _collections = require('./collections');
 var collections: typeof _collections = null;
-import Thread = require('./threading');
+import {Thread} from './threading';
 import Py_FrameObject = require('./frameobject');
 
 export function circularRefHack() {

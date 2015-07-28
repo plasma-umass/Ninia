@@ -3,7 +3,7 @@ import {IPy_Object, IPy_Function, IPy_FrameObj, Iterator, Iterable
        } from './interfaces';
 import {None, Py_Str} from './primitives';
 import {Py_Dict} from './collections';
-import Thread = require('./threading');
+import {Thread} from './threading';
 import Py_FrameObject = require('./frameobject');
 import Py_FuncObject = require('./funcobject');
 

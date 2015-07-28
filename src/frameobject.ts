@@ -6,7 +6,7 @@ import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
 import optable = require('./optable');
 import Py_Cell = require('./cell');
-import Thread = require('./threading');
+import {Thread} from './threading';
 import assert = require('assert');
 import builtins = require('./builtins');
 

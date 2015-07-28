@@ -4,7 +4,7 @@ import {Py_Dict, Py_List} from './collections';
 import {Py_Type} from './enums';
 import {Py_AsyncNativeFuncObject} from './nativefuncobject';
 import fs = require('fs');
-import Thread = require('./threading');
+import {Thread} from './threading';
 
 /**
  * Implements the builtin sys module.

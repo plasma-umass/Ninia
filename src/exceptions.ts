@@ -3,7 +3,7 @@ import {Py_Tuple, Py_Dict} from './collections';
 import {Py_Object, Py_Str} from './primitives';
 import {IPy_FrameObj, IPy_Object} from './interfaces';
 import {Py_SyncNativeFuncObject} from './nativefuncobject';
-import Thread = require('./threading');
+import {Thread} from './threading';
 
 export class BaseException extends Py_Object {
   $__dict__ = new Py_Dict(<any> this);

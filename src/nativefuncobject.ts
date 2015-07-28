@@ -2,7 +2,7 @@ import {IPy_Object, IPy_FrameObj, IPy_Function} from './interfaces';
 import {Py_Dict} from './collections';
 import {Py_Type, ThreadStatus} from './enums';
 import {None} from './primitives';
-import Thread = require('./threading');
+import {Thread} from './threading';
 import assert = require('./assert');
 
 /**

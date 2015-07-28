@@ -6,7 +6,7 @@ import {Py_Type} from './enums';
 import {Py_SyncNativeFuncObject} from './nativefuncobject';
 import {ListIterator} from './iterator';
 import assert = require('./assert');
-import Thread = require('./threading');
+import {Thread} from './threading';
 
 
 export class Py_List extends Py_Object implements Iterable {

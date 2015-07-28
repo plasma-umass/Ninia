@@ -29,6 +29,7 @@
     "src/optable.ts",
     "src/primitives.ts",
     "src/sys.ts",
+    "src/thread.ts",
     "src/threading.ts",
     "src/unmarshal.ts"
   ]
