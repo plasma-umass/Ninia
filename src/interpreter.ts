@@ -6,8 +6,6 @@ import Py_CodeObject = require('./codeobject');
 import {Thread, ThreadPool} from './threading';
 import Py_Sys = require('./sys');
 import fs = require('fs');
-import Py_Thread = require('./thread');
-import assert = require('./assert');
 
 // The Interpreter uses a simple Fetch-Decode-Execute loop to execute Python
 // code. Each program is first unmarshalled into a Py_CodeObject. The
@@ -17,12 +15,10 @@ import assert = require('./assert');
 // "write" method. The interpreter does not maintain its own stack.
 class Interpreter {
     sys: Py_Sys;
-    thread: Py_Thread;
     constructor() {
         // XXX: Hack around circular reference issue.
         circularRefHack();
         this.sys = new Py_Sys('Lib', []);
-        this.thread = new Py_Thread('Lib', []);
     }
     
     // Interpret wraps a code object in a frame and executes it.
@@ -32,8 +28,10 @@ class Interpreter {
         var f = new Py_FrameObject(null, code, scope, scope, []);
         f.globals.getStringDict()[`$__file__`] = code.filename;
         // Create new Thread, push the Py_FrameObject on it and then run it
-        var tpool: ThreadPool = new ThreadPool(this.sys, this.thread, callback);
+        var tpool: ThreadPool = new ThreadPool(this.sys, callback);
         var t: Thread = tpool.newThread();
+        // Main thread
+        t.isMainThread = true;
         t.framePush(f);
         // Read .py file corresponding to .pyc file and save it in t.codefile
         fs.readFile(f.codeObj.filename.toString(), function (err, data) {

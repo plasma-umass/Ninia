@@ -28,17 +28,18 @@ export class Thread {
     public traceback: string = "";
     public codefile: string[] = [];
     public sys: Py_Sys;
-    public thread: Py_Thread;
     public exc: IPy_Object;
     public tpool: ThreadPool;
+    public isMainThread: boolean = false;
+    public id: number = -1;
 
-    constructor(sys: Py_Sys, thread: Py_Thread, tpool: ThreadPool) {
+    constructor(sys: Py_Sys, tpool: ThreadPool, id: number) {
         this.sys = sys;
-        this.thread = thread;
         this.tpool = tpool;
+        this.id = id;
     }
     // Executes bytecode method calls
-    public run(): void {
+    private run(): void {
         var stack = this.stack,
             startTime: number = (new Date()).getTime(),
             endTime: number,
@@ -179,24 +180,29 @@ export class Thread {
     public exit(): void {
         this.status = ThreadStatus.TERMINATED;
         this.stack = [];
-        this.tpool.threadTerminated(this);
+        // If main thread exits, terminate execution of all threads and end program
+        if (this.isMainThread) {
+            this.tpool.terminateAllThreads();
+        }
+        else {
+            this.tpool.threadTerminated(this);
+        }
     }
 }
 
 export class ThreadPool {
     private threads: Thread[] = [];
-    private thread: Py_Thread;
     private sys: Py_Sys;
     private runningThread: Thread = null;
     private runningThreadIndex: number = -1;
+    private id: number = 0;
     /**
     * Called when the ThreadPool becomes empty. This is usually a sign that
     * execution has finished, and the JVM should be terminated.
     */
     private cb: () => void;
-    constructor(sys: Py_Sys, thread: Py_Thread, cb : () => void) {
+    constructor(sys: Py_Sys, cb: () => void) {
         this.sys = sys;
-        this.thread = thread;
         this.cb = cb;
     }
 
@@ -205,17 +211,18 @@ export class ThreadPool {
         return this.threads.slice(0);
     }
 
-    private addThread(thread: Thread): void {
-        if (this.threads.indexOf(thread) === -1) {
-            this.threads.push(thread);
+    private addThread(t: Thread): void {
+        if (this.threads.indexOf(t) === -1) {
+            this.threads.push(t);
         }
     }
 
     // !new thread takes a function always? right?
     public newThread(): Thread {
-        var thread = new Thread(this.sys, this.thread, this);
-        this.addThread(thread);
-        return thread;
+        var t = new Thread(this.sys, this, this.id);
+        this.addThread(t);
+        this.id++;
+        return t;
     }
 
     /**
@@ -223,17 +230,17 @@ export class ThreadPool {
     */
     public scheduleNextThread(): void {
         // Reset stack depth, start at beginning of new JS event.
-        setImmediate(() => {            
-            var i: number, iFixed: number, threads = this.threads, thread: Thread;
+        setImmediate(() => {
+            var i: number, iFixed: number, threads = this.threads, t: Thread;
             for (i = 0; i < threads.length; i++) {
                 // Cycle through the threads, starting at the thread just past the
                 // previously-run thread. (Round Robin scheduling algorithm)
                 iFixed = (this.runningThreadIndex + 1 + i) % threads.length;
-                thread = threads[iFixed];
-                if (thread.getStatus() === ThreadStatus.RUNNABLE) {
-                    this.runningThread = thread;
+                t = threads[iFixed];
+                if (t.getStatus() === ThreadStatus.RUNNABLE) {
+                    this.runningThread = t;
                     this.runningThreadIndex = iFixed;
-                    thread.setStatus(ThreadStatus.RUNNING);
+                    t.setStatus(ThreadStatus.RUNNING);
                     break;
                 }
             }
@@ -244,7 +251,7 @@ export class ThreadPool {
     * Checks if any remaining threads are non-daemonic and could be runnable.
     * If not, we can terminate execution.
     */
-    private anySchedulableThreads(thread: Thread): boolean {
+    private anySchedulableThreads(t: Thread): boolean {
         var i: number, t: Thread, status: ThreadStatus;
         for (i = 0; i < this.threads.length; i++) {
             t = this.threads[i];
@@ -257,23 +264,20 @@ export class ThreadPool {
     }
 
     // Terminate thread and remove it from thread pool
-    public threadTerminated(thread: Thread): void {
-        var idx: number = this.threads.indexOf(thread);
-        assert(idx >= 0, "idx >= 0");
+    public threadTerminated(t: Thread): void {
+        var idx: number = this.threads.indexOf(t);
+        assert(idx >= 0, "Terminated thread not found in thread pool");
         // Remove the specified thread from the threadpool.
         this.threads.splice(idx, 1);
 
         // If this was the running thread, schedule a new one to run.
-        if (this.runningThread === thread) {
+        if (this.runningThread === t) {
             this.runningThread = null;
             // The runningThreadIndex is currently pointing to the *next* thread we
             // should schedule, so take it back by one.
             this.runningThreadIndex = this.runningThreadIndex - 1;
-            if (this.anySchedulableThreads(thread)) {
+            if (this.anySchedulableThreads(t)) {
                 this.scheduleNextThread();
-            } else {
-                // All threads have completed execution
-                this.cb();
             }
         } else {
             // Update the index so it still points to the running thread.
@@ -281,9 +285,15 @@ export class ThreadPool {
         }
     }
 
-    public threadSuspended(thread: Thread): void {
+    public terminateAllThreads(): void {
+        this.threads = [];
+        this.runningThread = null;
+        this.cb();
+    }
+
+    public threadSuspended(t: Thread): void {
         // If this was the running thread, schedule a new one to run.
-        if (thread === this.runningThread) {
+        if (t === this.runningThread) {
             this.runningThread = null;
             this.scheduleNextThread();
         }

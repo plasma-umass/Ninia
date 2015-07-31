@@ -5,6 +5,7 @@ import {Py_Type} from './enums';
 import {Py_AsyncNativeFuncObject} from './nativefuncobject';
 import fs = require('fs');
 import {Thread} from './threading';
+import Py_Thread = require('./thread');
 
 /**
  * Implements the builtin sys module.
@@ -18,7 +19,8 @@ class Py_Sys extends Py_Object implements IPy_Object {
        '$sys': this,
        // XXX: Hack.
        '$__future__': new Py_Object(),
-       '$os': new Py_Object()
+       '$os': new Py_Object(),
+       '$thread': new Py_Thread()
     });
     $executable = None;
     // Optional function, called when the program exits.

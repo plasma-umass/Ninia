@@ -438,14 +438,10 @@ function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
     globals = <Py_Dict> args[1],
     toImport = args[3] === None ? [] : (<Py_List> args[3]).toArray().map((item: Py_Str) => item.toString()),
     searchPaths = [path.dirname(globals.get(new Py_Str('__file__')).toString())],
-    sys = t.sys,
-    thread = t.thread;
+    sys = t.sys;
 
   if (sys.$modules.get(name) !== undefined) {
     return cb(sys.$modules.get(name));
-  }
-  if (thread.$modules.get(name) !== undefined) {
-    return cb(thread.$modules.get(name));
   }
   
   searchPaths = searchPaths.concat(sys.$path.toArray().slice(1).map((str: IPy_Object) => str.toString()));
@@ -503,7 +499,6 @@ function registerModule(t: Thread, f: IPy_FrameObj, filename: string, moduleName
     Py_FrameObject: typeof _Py_FrameObject = require('./frameobject'),
     mod = (new Unmarshaller(data)).value(),
     sys = t.sys,
-    thread = t.thread,
     scope = new Py_Dict(),
     // At the module level, locals === globals.
     newFrame = new Py_FrameObject(f, mod, scope, scope, []),
@@ -513,7 +508,6 @@ function registerModule(t: Thread, f: IPy_FrameObj, filename: string, moduleName
     trampFrame = new Py_TrampolineFrameObject(f, new Py_Dict(), (rv: IPy_Object) => {
       // Register into modules dictionary.
       sys.$modules.set(moduleName, modObj);
-      thread.$modules.set(moduleName, modObj);
       cb(modObj);      
     });
 
