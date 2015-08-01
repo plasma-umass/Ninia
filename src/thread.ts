@@ -58,6 +58,7 @@ export class Py_Lock extends Py_Object {
             var waiter: [Thread, (rv: IPy_Object) => void] = this.waiting_threads[0];
             this.waiting_threads.splice(0, 1);
             var t: Thread = waiter[0], cb: (rv: IPy_Object) => void = waiter[1];
+            this.holder = t;
             // Thread has acquired lock
             cb(True);
         }
