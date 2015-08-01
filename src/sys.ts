@@ -5,7 +5,7 @@ import {Py_Type} from './enums';
 import {Py_AsyncNativeFuncObject} from './nativefuncobject';
 import fs = require('fs');
 import {Thread} from './threading';
-import Py_Thread = require('./thread');
+import {Py_Thread} from './thread';
 
 /**
  * Implements the builtin sys module.

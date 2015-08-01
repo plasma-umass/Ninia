@@ -8,7 +8,7 @@ import optable = require('./optable');
 import Py_Cell = require('./cell');
 import Py_FrameObject = require('./frameobject');
 import Py_Sys = require('./sys');
-import Py_Thread = require('./thread');
+import {Py_Thread, Py_Lock} from './thread';
 import assert = require('./assert');
 
 // How responsive Ninia should aim to be, in milliseconds.
