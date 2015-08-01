@@ -8,7 +8,6 @@ import {Thread, ThreadPool} from './threading';
 /**
  * Implements the python Thread module.
  */
- // TODO: CHANGE ABOVE IMPORTS
 export class Py_Thread extends Py_Object {
     // Start a new thread (All threads stop executing when main thread exits)
     $start_new_thread = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
@@ -31,6 +30,14 @@ export class Py_Thread extends Py_Object {
     $allocate_lock = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
         // console.log("Allocated");
         cb(new Py_Lock());
+    });
+
+    $interrupt_main = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
+        //TODO: Raise KeyboardInterrupt (interrupts main thread if thrown from any other thread)
+    });
+
+    $exit = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
+        t.exit();
     });
 
     public getType() {
