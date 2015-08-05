@@ -218,7 +218,7 @@ export class ThreadPool {
         }
     }
 
-    // !new thread takes a function always? right?
+    // Create a new Thread object and push it on stack
     public newThread(): Thread {
         var t = new Thread(this.sys, this, this.id);
         this.addThread(t);
