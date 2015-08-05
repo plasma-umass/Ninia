@@ -8,8 +8,7 @@ t3 = False
 t4 = False
 
 def incr():
-    x = 0
-    x = x + 1
+    pass
 
 def loop(asdf):
     global t1, t2
@@ -37,13 +36,13 @@ print "T1: Acquired"
 thread.start_new_thread(loop, (1,))
 thread.start_new_thread(loop2, (1,))
 
-while(not (t1 and t3)):
+while not (t1 and t3):
     incr()
 
 print "T1: Releasing"
 a_lock.release()
 
-while(not (t2 and t4)):
+while not (t2 and t4):
     incr()
 
 print "T1: Terminating"

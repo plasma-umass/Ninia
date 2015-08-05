@@ -17,7 +17,7 @@ thread.start_new_thread(func,(5,))
 thread.start_new_thread(func,(6,))
 
 def incr():
-    x = 1
+    pass
 
 while num_threads < 7:
     incr()
