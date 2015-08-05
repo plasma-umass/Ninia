@@ -15,7 +15,7 @@ def cond():
 
 def loop(arg):
     global endMainLoop
-    while(True):
+    while True:
         incr()
         if(cond()):
             print "Finished with loop"
@@ -24,7 +24,7 @@ def loop(arg):
 
 thread.start_new_thread(loop, (1,))
 
-while(True):
+while True:
     if(cond() and endMainLoop):
         print "Exiting main loop"
         break

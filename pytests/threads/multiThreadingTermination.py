@@ -7,7 +7,7 @@ def incr():
     count = count + 1
 
 def loop(arg):
-    while(True):
+    while True:
         incr()
     print "This should not print"
 
