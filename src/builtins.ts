@@ -9,8 +9,8 @@ import {IPy_FrameObj, IPy_Function, IPy_Number, IPy_Object, Iterable, Iterator
 import {Py_TrampolineFrameObject, Py_SyncNativeFuncObject,
         Py_AsyncNativeFuncObject
        } from './nativefuncobject';
-import {BaseException, Exception, NameError, ArithmeticError,
-        ZeroDivisionError, TypeError, AttributeError, StopIteration
+import {BaseException, KeyboardInterrupt, Exception, NameError, ArithmeticError,
+        ZeroDivisionError, TypeError, AttributeError, StopIteration, ThreadError
        } from './exceptions';
 import enums = require('./enums');
 import {Thread} from './threading';
@@ -540,12 +540,14 @@ function isinstance(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
 const builtins = {
     $BaseException : BaseException.prototype,
     $Exception: Exception.prototype,
+    $KeyboardInterrupt: KeyboardInterrupt.prototype,
     $NameError: NameError.prototype,
     $ArithmeticError: ArithmeticError.prototype,
     $ZeroDivisionError: ZeroDivisionError.prototype,
     $TypeError: TypeError.prototype,
     $AttributeError: AttributeError.prototype,
     $StopIteration: StopIteration.prototype,
+    $ThreadError: ThreadError.prototype,
     $True: True,
     $False: False,
     $None: None,

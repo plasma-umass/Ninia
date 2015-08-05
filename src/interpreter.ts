@@ -32,6 +32,7 @@ class Interpreter {
         var t: Thread = tpool.newThread();
         // Main thread
         t.isMainThread = true;
+        tpool.mainThread = t;
         t.framePush(f);
         // Read .py file corresponding to .pyc file and save it in t.codefile
         fs.readFile(f.codeObj.filename.toString(), function (err, data) {

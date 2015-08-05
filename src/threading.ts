@@ -201,6 +201,7 @@ export class ThreadPool {
     * execution has finished, and the JVM should be terminated.
     */
     private cb: () => void;
+    public mainThread: Thread = null;
     constructor(sys: Py_Sys, cb: () => void) {
         this.sys = sys;
         this.cb = cb;

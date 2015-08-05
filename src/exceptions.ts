@@ -47,6 +47,9 @@ function inherit(obj: typeof BaseException, superobj: typeof BaseException): voi
 export class Exception extends BaseException {}
 inherit(Exception, BaseException);
 
+export class KeyboardInterrupt extends BaseException {}
+inherit(KeyboardInterrupt, BaseException);
+
 export class NameError extends Exception {}
 inherit(NameError, Exception);
 
@@ -65,3 +68,5 @@ inherit(TypeError, Exception);
 export class StopIteration extends Exception {}
 inherit(StopIteration, Exception);
 
+export class ThreadError extends Exception {}
+inherit(ThreadError, Exception);

@@ -2,8 +2,9 @@ import {IPy_Object, IPy_FrameObj, IPy_Function} from './interfaces';
 import {True, False, Py_Int, Py_Str, Py_Object, None} from './primitives';
 import {Py_Dict, Py_List} from './collections';
 import {Py_Type, ThreadStatus} from './enums';
-import {Py_AsyncNativeFuncObject} from './nativefuncobject';
+import {Py_SyncNativeFuncObject, Py_AsyncNativeFuncObject} from './nativefuncobject';
 import {Thread, ThreadPool} from './threading';
+import builtins = require('./builtins');
 
 /**
  * Implements the python Thread module.
@@ -22,18 +23,22 @@ export class Py_Thread extends Py_Object {
     });
 
     // Return thread.id
-    $get_ident = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
-        cb(new Py_Int(t.id));
+    $get_ident = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+        return new Py_Int(t.id);
     });
     
     // Return new Py_Lock object
-    $allocate_lock = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
-        // console.log("Allocated");
-        cb(new Py_Lock());
+    $allocate_lock = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+        return new Py_Lock();
     });
 
     $interrupt_main = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
-        //TODO: Raise KeyboardInterrupt (interrupts main thread if thrown from any other thread)
+        // Raise KeyboardInterrupt (interrupts main thread if thrown from any other thread)
+        var t_main: Thread = t.tpool.mainThread;
+        var val: IPy_Object = (<any>builtins)["$KeyboardInterrupt"];
+        t_main.addToTraceback("KeyboardInterrupt");
+        t_main.throwException(val);
+        cb(None);
     });
 
     $exit = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
@@ -69,7 +74,7 @@ export class Py_Lock extends Py_Object {
     // If wait_flag is non-zero or not present, will block thread waiting to acquire lock. Upon acquiring lock, returns true.
     $acquire = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
         var wait_flag: IPy_Object = args.length > 0 ? args[0] : new Py_Str('1');
-        // Return false if wait_flag === 0 and lock cannot be acquired immediately
+        // Return false if wait_flag is 0 and lock cannot be acquired immediately
         if(wait_flag.toString() === '0' && this.holder !== null){
             cb(False);
             return;
@@ -85,16 +90,23 @@ export class Py_Lock extends Py_Object {
     });
 
     // Lock is released by thread and a thread is selected if it is waiting to acquire this lock
-    // TODO: Throw Thread.error if trying to release un-acquired lock
     $release = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
-        this.holder = null;
-        this.release_lock_waiter();
-        cb(None);
+        //Throw Thread.error if trying to release un-acquired lock
+        if (this.holder === null) {
+            var val: IPy_Object = (<any>builtins)["$ThreadError"];
+            t.addToTraceback("thread.error: release unlocked lock");
+            t.throwException(val);
+        }
+        else {
+            this.holder = null;
+            this.release_lock_waiter();
+            cb(None);
+        }        
     });
 
     // return True if lock is acquired, false otherwise
-    $locked = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
-        cb(this.holder !== null ? True : False);
+    $locked = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+        return this.holder !== null ? True : False;
     });
 
     public getType() {
