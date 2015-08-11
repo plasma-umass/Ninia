@@ -1,6 +1,6 @@
 import {True, False, Py_Int, Py_Object} from './primitives';
 import {Iterator, Iterable, IPy_Object, IPy_FrameObj} from './interfaces';
-import Thread = require('./threading');
+import {Thread} from './threading';
 
 export class ListIterator extends Py_Object implements Iterator {
     private pos: number = 0;

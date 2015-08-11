@@ -13,7 +13,7 @@ import {IPy_Object, IPy_FrameObj, IPy_Function} from './interfaces';
 import {Py_Type} from './enums';
 import {Py_TrampolineFrameObject} from './nativefuncobject';
 import Py_CodeObject = require('./codeobject');
-import Thread = require('./threading');
+import {Thread} from './threading';
 import Py_FrameObject = require('./frameobject');
 
 // Similar to frame objects, Function Objects wrap Python functions. However,

@@ -3,7 +3,7 @@ import {ThreadStatus} from './enums';
 import {circularRefHack} from './primitives';
 import Py_FrameObject = require('./frameobject');
 import Py_CodeObject = require('./codeobject');
-import Thread = require('./threading');
+import {Thread, ThreadPool} from './threading';
 import Py_Sys = require('./sys');
 import fs = require('fs');
 
@@ -28,7 +28,11 @@ class Interpreter {
         var f = new Py_FrameObject(null, code, scope, scope, []);
         f.globals.getStringDict()[`$__file__`] = code.filename;
         // Create new Thread, push the Py_FrameObject on it and then run it
-        var t: Thread = new Thread(this.sys, callback);
+        var tpool: ThreadPool = new ThreadPool(this.sys, callback);
+        var t: Thread = tpool.newThread();
+        // Main thread
+        t.isMainThread = true;
+        tpool.mainThread = t;
         t.framePush(f);
         // Read .py file corresponding to .pyc file and save it in t.codefile
         fs.readFile(f.codeObj.filename.toString(), function (err, data) {

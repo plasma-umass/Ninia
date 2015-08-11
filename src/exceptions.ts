@@ -3,7 +3,7 @@ import {Py_Tuple, Py_Dict} from './collections';
 import {Py_Object, Py_Str} from './primitives';
 import {IPy_FrameObj, IPy_Object} from './interfaces';
 import {Py_SyncNativeFuncObject} from './nativefuncobject';
-import Thread = require('./threading');
+import {Thread} from './threading';
 
 export class BaseException extends Py_Object {
   $__dict__ = new Py_Dict(<any> this);
@@ -47,6 +47,9 @@ function inherit(obj: typeof BaseException, superobj: typeof BaseException): voi
 export class Exception extends BaseException {}
 inherit(Exception, BaseException);
 
+export class KeyboardInterrupt extends BaseException {}
+inherit(KeyboardInterrupt, BaseException);
+
 export class NameError extends Exception {}
 inherit(NameError, Exception);
 
@@ -65,3 +68,5 @@ inherit(TypeError, Exception);
 export class StopIteration extends Exception {}
 inherit(StopIteration, Exception);
 
+export class ThreadError extends Exception {}
+inherit(ThreadError, Exception);

@@ -17,7 +17,7 @@ import opcodes = require('./opcodes');
 import builtins = require('./builtins');
 import Py_CodeObject = require('./codeobject');
 import Py_Cell = require('./cell');
-import Thread = require('./threading');
+import {Thread} from './threading';
 import nativefuncobject = require('./nativefuncobject')
 const NotImplemented = builtins.$NotImplemented;
 

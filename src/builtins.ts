@@ -9,11 +9,11 @@ import {IPy_FrameObj, IPy_Function, IPy_Number, IPy_Object, Iterable, Iterator
 import {Py_TrampolineFrameObject, Py_SyncNativeFuncObject,
         Py_AsyncNativeFuncObject
        } from './nativefuncobject';
-import {BaseException, Exception, NameError, ArithmeticError,
-        ZeroDivisionError, TypeError, AttributeError, StopIteration
+import {BaseException, KeyboardInterrupt, Exception, NameError, ArithmeticError,
+        ZeroDivisionError, TypeError, AttributeError, StopIteration, ThreadError
        } from './exceptions';
 import enums = require('./enums');
-import Thread = require('./threading');
+import {Thread} from './threading';
 import path = require('path');
 import fs = require('fs');
 import async = require('async');
@@ -436,7 +436,7 @@ function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
   var name = <Py_Str> args[0],
     nameJS = name.toString(),
     globals = <Py_Dict> args[1],
-    toImport =  args[3] === None ? [] : (<Py_List> args[3]).toArray().map((item: Py_Str) => item.toString()),
+    toImport = args[3] === None ? [] : (<Py_List> args[3]).toArray().map((item: Py_Str) => item.toString()),
     searchPaths = [path.dirname(globals.get(new Py_Str('__file__')).toString())],
     sys = t.sys;
 
@@ -540,12 +540,14 @@ function isinstance(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
 const builtins = {
     $BaseException : BaseException.prototype,
     $Exception: Exception.prototype,
+    $KeyboardInterrupt: KeyboardInterrupt.prototype,
     $NameError: NameError.prototype,
     $ArithmeticError: ArithmeticError.prototype,
     $ZeroDivisionError: ZeroDivisionError.prototype,
     $TypeError: TypeError.prototype,
     $AttributeError: AttributeError.prototype,
     $StopIteration: StopIteration.prototype,
+    $ThreadError: ThreadError.prototype,
     $True: True,
     $False: False,
     $None: None,

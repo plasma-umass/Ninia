@@ -2,7 +2,7 @@ import {Py_Complex, Py_Float, Py_Int, Py_Long, Py_Object, Py_Str
        } from './primitives';
 import {Py_Dict, Py_Tuple} from './collections';
 import {Py_Type} from './enums';
-import Thread = require('./threading');
+import {Thread} from './threading';
 
 /**
  * Generic stack frame interface.
