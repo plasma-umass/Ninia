@@ -25,6 +25,7 @@ class Py_FuncObject extends Py_Object implements IPy_Function {
     defaults: Py_Dict;
     closure: Py_Tuple;
     name: Py_Str;
+    $func_code: Py_CodeObject;
 
     constructor(code: Py_CodeObject,
                 globals: Py_Dict,
@@ -37,6 +38,7 @@ class Py_FuncObject extends Py_Object implements IPy_Function {
         this.defaults = defaults;
         this.name = name;
         this.closure = closure;
+        this.$func_code = code;
     }
     getType(): Py_Type { return Py_Type.OTHER; }
     // XXX: Fix.

@@ -10,7 +10,8 @@ import {Py_TrampolineFrameObject, Py_SyncNativeFuncObject,
         Py_AsyncNativeFuncObject
        } from './nativefuncobject';
 import {BaseException, KeyboardInterrupt, Exception, NameError, ArithmeticError,
-        ZeroDivisionError, TypeError, AttributeError, StopIteration, ThreadError
+        ZeroDivisionError, TypeError, AttributeError, StopIteration, ThreadError,
+        ImportError
        } from './exceptions';
 import enums = require('./enums');
 import {Thread} from './threading';
@@ -432,7 +433,7 @@ function type(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict): 
   }
 }
 
-function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void): void {
+function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object, exc?: IPy_Object) => void): void {
   var name = <Py_Str> args[0],
     nameJS = name.toString(),
     globals = <Py_Dict> args[1],
@@ -484,7 +485,8 @@ function __import__(t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_D
       });
     } else {
       // XXX
-      throw new Error("Module not found: " + name);
+      // "Module not found: " + name
+      cb(null, ImportError.prototype);
     }
   });
 }
@@ -548,6 +550,7 @@ const builtins = {
     $AttributeError: AttributeError.prototype,
     $StopIteration: StopIteration.prototype,
     $ThreadError: ThreadError.prototype,
+    $ImportError: ImportError.prototype,
     $True: True,
     $False: False,
     $None: None,
@@ -598,6 +601,7 @@ const builtins = {
     $hex: new Py_SyncNativeFuncObject(pyfunc_wrapper_onearg(hex, 'hex')),
     int: int,
     $int: new Py_SyncNativeFuncObject(int),
+    $long: new Py_SyncNativeFuncObject(int),
     sorted: sorted,
     $sorted: new Py_SyncNativeFuncObject(sorted),
     hasattr: hasattr,
@@ -617,7 +621,14 @@ const builtins = {
     __import__: __import__,
     $__import__: new Py_AsyncNativeFuncObject(__import__),
     $__name__: Py_Str.fromJS('__main__'),
-    $__package__: None
+    $__package__: None,
+    
+    $buffer: None,
+    $unicode: None,
+    $len: None,
+    $file: None,
+    $slice: None,
+    $Warning: None
 };
 
 export = builtins

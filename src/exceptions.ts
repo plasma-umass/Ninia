@@ -70,3 +70,6 @@ inherit(StopIteration, Exception);
 
 export class ThreadError extends Exception {}
 inherit(ThreadError, Exception);
+
+export class ImportError extends Exception {}
+inherit(ImportError, Exception);

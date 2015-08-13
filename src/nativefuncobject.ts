@@ -4,6 +4,7 @@ import {Py_Type, ThreadStatus} from './enums';
 import {None} from './primitives';
 import {Thread} from './threading';
 import assert = require('./assert');
+import enums = require('./enums');
 
 /**
  * A Trampoline frame object.
@@ -118,9 +119,15 @@ export class Py_AsyncNativeFuncObject implements IPy_Function {
         var myFrame = new Py_TrampolineFrameObject(f, kwargs, () => {});
         t.framePush(myFrame);
         var hasReturned: boolean = false;
-        this._f(t, f, args, kwargs, (rv: IPy_Object) => {
+        this._f(t, f, args, kwargs, (rv: IPy_Object, exc?: IPy_Object) => {
             hasReturned = true;
-            t.asyncReturn(rv);
+            if (exc) {
+                t.framePop();
+                t.setStatus(enums.ThreadStatus.RUNNABLE);
+                t.throwException(exc);
+            } else {
+                t.asyncReturn(rv);
+            }
         });
         // Ensure the function didn't complete synchronously or simply chain calls to
         // other functions.

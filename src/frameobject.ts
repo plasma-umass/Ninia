@@ -213,7 +213,7 @@ class Py_FrameObject implements IPy_FrameObj {
             t.raise_lno = 0;
         }
         var tback: string = `  File "${this.codeObj.filename.toString()}", line ${current_line}, in ${this.codeObj.name.toString()}\n`;
-        if (t.codefile.length > 0) {
+        if (t.codefile.length >= current_line) {
             tback += `    ${t.codefile[current_line-1].trim()}\n`;
         }
         t.addToTraceback(tback);

@@ -1,8 +1,8 @@
 import {IPy_Object, IPy_FrameObj} from './interfaces';
 import {Py_Str, Py_Object, None} from './primitives';
-import {Py_Dict, Py_List} from './collections';
+import {Py_Dict, Py_List, Py_Tuple} from './collections';
 import {Py_Type} from './enums';
-import {Py_AsyncNativeFuncObject} from './nativefuncobject';
+import {Py_AsyncNativeFuncObject, Py_SyncNativeFuncObject} from './nativefuncobject';
 import fs = require('fs');
 import {Thread} from './threading';
 import {Py_Thread} from './thread';
@@ -26,6 +26,7 @@ class Py_Sys extends Py_Object implements IPy_Object {
     // Optional function, called when the program exits.
     $exitfunc = None;
     $argv: Py_List;
+    $warnoptions = new Py_List([]);
     
     constructor(libPath: string, argv: string[]) {
         super();
@@ -41,5 +42,19 @@ class Py_Sys extends Py_Object implements IPy_Object {
     public getType() {
         return Py_Type.OTHER;
     }
+
+    $exc_info = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+        if (t.exc) {
+            // XXX: Incorrect for now.
+            return new Py_Tuple([t.exc, t.exc, None]);
+        } else {
+            return new Py_Tuple([None, None, None])
+        }
+    });
+    
+    $exc_clear = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
+       t.exc = null;
+       return None; 
+    });
 }
 export = Py_Sys;
