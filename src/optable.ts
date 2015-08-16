@@ -235,8 +235,6 @@ optable[opcodes.RETURN_VALUE] = function(f: Py_FrameObject, t: Thread) {
         if (t.loop_exc_block.length > 0) {
             (<Py_FrameObject>f.back).blockStack.push(t.loop_exc_block.pop());
         }
-
-        var x = (<any> builtins)['$StopIteration'];
         f.raise_exception_here(t, "StopIteration", "$StopIteration");
     }
     else {

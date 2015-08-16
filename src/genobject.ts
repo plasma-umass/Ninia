@@ -15,7 +15,10 @@ class Py_GeneratorObject extends Py_FuncObject implements Iterator, Iterable {
     exec(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
         this.thread = t;
         this.frame = this.makeFrame(caller, args, locals);
+        // Mark as the generator frame
+        this.frame.genFrame = true;
     }
+    
     public iter(): Iterator {
         return this;
     }
@@ -23,7 +26,6 @@ class Py_GeneratorObject extends Py_FuncObject implements Iterator, Iterable {
     // TODO: Fix next() for generator objects (currently if $__next__ is present on an iterator, it is called instead)
     public next(): IPy_Object {
         this.thread.framePush(this.frame);
-        this.frame.genFrame = true;
         return None;
     }
 
@@ -31,8 +33,6 @@ class Py_GeneratorObject extends Py_FuncObject implements Iterator, Iterable {
         // Callback is saved and invoked when generator frame encounters YIELD_VALUE
         this.frame.cb = cb;
         this.thread.framePush(this.frame);
-        // Mark as the generator frame
-        this.frame.genFrame = true;
     });
 
     public $next = this.$__next__;
