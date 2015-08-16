@@ -50,6 +50,8 @@ class Py_FrameObject implements IPy_FrameObj {
     env: Py_Cell[];
     // Signifies that the bytecode loop should return to the thread loop.
     returnToThread: boolean;
+    genFrame: boolean = false;
+    cb: (rv: IPy_Object) => void;
 
     constructor(back: IPy_FrameObj,
                 code: Py_CodeObject,
@@ -133,6 +135,11 @@ class Py_FrameObject implements IPy_FrameObj {
                 console.log(`${t.stackDepth()}: ${opcodes[op]}`);
             }
             func(this, t);
+            // Pop the generator frame (whenever a YIELD_VALUE occurs)
+            if(this.returnToThread && this.genFrame){
+                t.framePop();
+                break;
+            }
             if (this.returnToThread) {
                 // End the bytecode loop; return to thread loop.
                 break;
