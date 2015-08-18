@@ -135,11 +135,6 @@ class Py_FrameObject implements IPy_FrameObj {
                 console.log(`${t.stackDepth()}: ${opcodes[op]}`);
             }
             func(this, t);
-            // Pop the generator frame (whenever a YIELD_VALUE occurs)
-            if(this.returnToThread && this.genFrame){
-                t.framePop();
-                break;
-            }
             if (this.returnToThread) {
                 // End the bytecode loop; return to thread loop.
                 break;

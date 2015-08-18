@@ -232,6 +232,7 @@ optable[opcodes.RETURN_VALUE] = function(f: Py_FrameObject, t: Thread) {
         f.genFrame = false;
 
         // If generator was called inside a loop,  
+        // TODO: Find a better way of handling StopIteration exception
         if (t.loop_exc_block.length > 0) {
             (<Py_FrameObject>f.back).blockStack.push(t.loop_exc_block.pop());
         }
@@ -1028,7 +1029,7 @@ optable[opcodes.FOR_ITER] = function(f: Py_FrameObject, t: Thread) {
 optable[opcodes.YIELD_VALUE] = function(f: Py_FrameObject, t: Thread) {
     var res = f.peek();
     // Push on calling frame's stack
-    (<Py_FrameObject>f.back).resume(res);
+    t.asyncReturn(res);
     f.cb(res);
     f.returnToThread = true;
 }
