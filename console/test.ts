@@ -114,8 +114,6 @@ const testList = [
 
 // Add tests here that you'd like to skip, for some reason.
 const skipTests: {[file: string]: boolean} = {
-    "pytests/comprehensionTest": true,
-    "pytests/functions/generatorTest": true
 };
 
 var d = domain.create();

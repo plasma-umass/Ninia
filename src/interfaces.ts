@@ -197,6 +197,7 @@ export interface IPy_Number extends IPy_Object {
 // all iterators must support next()
 export interface Iterator extends IPy_Object {
   next: () => IPy_Object;
+  $__next__?: IPy_Function;
 }
 
 // all iterables must support iter() and __contains__()

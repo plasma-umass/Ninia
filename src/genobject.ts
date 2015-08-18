@@ -6,36 +6,37 @@ import {Py_Dict} from './collections';
 import {Thread} from './threading';
 import Py_FrameObject = require('./frameobject');
 import Py_FuncObject = require('./funcobject');
+import {Py_SyncNativeFuncObject, Py_AsyncNativeFuncObject} from './nativefuncobject';
 
 class Py_GeneratorObject extends Py_FuncObject implements Iterator, Iterable {
     thread: Thread;
     frame: Py_FrameObject;
-    xxx: number = 2;
 
     exec(t: Thread, caller: IPy_FrameObj, args: IPy_Object[], locals: Py_Dict) {
         this.thread = t;
         this.frame = this.makeFrame(caller, args, locals);
+        // Mark as the generator frame
+        this.frame.genFrame = true;
     }
+    
     public iter(): Iterator {
         return this;
     }
+
+    // TODO: Fix next() for generator objects (currently if $__next__ is present on an iterator, it is called instead)
     public next(): IPy_Object {
-        // TODO: run this.frame until a YIELD_VALUE is hit, then return that value
-        // this.thread.framePush(this.frame);
-        if (this.xxx > 0) {
-          this.xxx--;
-          return Py_Str.fromJS('TODO:gen-next');
-        }
-        // TODO: if we're exhausted, raise StopIteration
-        // XXX: there's no way to raise exceptions from native code, yet!
-        //   instead, we'll just replicate a BREAK_LOOP instruction.
-        var prevFrame: Py_FrameObject = <Py_FrameObject> this.frame.back;
-        var b = prevFrame.blockStack.pop();
-        prevFrame.lastInst = b[2];
-        prevFrame.stack.splice(b[0], prevFrame.stack.length - b[0]);
-        prevFrame.returnToThread = true;
+        this.thread.framePush(this.frame);
         return None;
     }
+
+    public $__next__ = new Py_AsyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict, cb: (rv: IPy_Object) => void) => {
+        // Callback is saved and invoked when generator frame encounters YIELD_VALUE
+        this.frame.cb = cb;
+        this.thread.framePush(this.frame);
+    });
+
+    public $next = this.$__next__;
+
     public toString(): string {
         return `<generator object ${this.name} at ${this.hash()}>`;
     }
