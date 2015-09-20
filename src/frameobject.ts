@@ -54,7 +54,6 @@ class Py_FrameObject implements IPy_FrameObj {
     returnToThread: boolean;
     genFrame: boolean = false;
     cb: (rv: IPy_Object) => void;
-    // exc_stuff: Py_Tuple;
 
     constructor(back: IPy_FrameObj,
                 code: Py_CodeObject,
@@ -152,7 +151,6 @@ class Py_FrameObject implements IPy_FrameObj {
     
     raise_exception_here(t: Thread, message: string, type: string): void {
         t.tb.exc_value = message;
-        // t.exc_type = "<type 'exceptions." + type + "'>";
         t.tb.exc_type = type;
         var val = (<any> builtins)['$' + type];
         val.$message = message;

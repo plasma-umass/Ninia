@@ -32,8 +32,6 @@ export class Thread {
     public codefile: string[] = [];
     public sys: Py_Sys;
     public exc: IPy_Object;
-    public exc_type: string = "";
-    public exc_value: string = "";
     public tpool: ThreadPool;
     public isMainThread: boolean = false;
     public id: number = -1;
@@ -128,10 +126,6 @@ export class Thread {
 
     public clearTraceback(): void {
         this.traceback = "";
-    }
-
-    public getTraceback(): string {
-        return this.traceback;
     }
 
     // Maintains thread level tracebacks

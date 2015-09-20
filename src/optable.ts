@@ -524,7 +524,6 @@ optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
 }
 
 function add_exc(f: Py_FrameObject, t: Thread, exc: any, message: string): void {
-    // was empty sting before
     t.tb.exc_value = message;
     exc.$message = new Py_Str(message + os.EOL);
     t.addToTraceback(exc.$message);
@@ -546,7 +545,6 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): vo
     }
     // First argument exc, second argument cause (passed into exception and used as a message when printing tb)
     message += exc.constructor.name;
-    // t.tb.exc_type = "<type 'exceptions." + exc.constructor.name + "'>";
     t.tb.exc_type = exc.constructor.name;
     if (exc && cause) {
         message += ": " + <Py_Str> cause;
