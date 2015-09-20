@@ -132,7 +132,6 @@ class Py_FrameObject implements IPy_FrameObj {
             if (func == undefined) {
                 throw new Error(`Unknown opcode: ${opcodes[op]} (${op})`);
             }
-            // console.log(opcodes[op]);
             if (false) {  // debug
                 console.log(this.stack);
                 console.log(`${t.stackDepth()}: ${opcodes[op]}`);
