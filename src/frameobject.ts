@@ -1,6 +1,7 @@
 import {IPy_Object, IPy_FrameObj} from './interfaces';
 import {Py_Type} from './enums';
-import {Py_Dict} from './collections';
+import {Py_Str, Py_Int} from './primitives';
+import {Py_Dict, Py_Tuple} from './collections';
 import Py_CodeObject = require('./codeobject');
 import Py_FuncObject = require('./funcobject');
 import opcodes = require('./opcodes');
@@ -9,6 +10,7 @@ import Py_Cell = require('./cell');
 import {Thread} from './threading';
 import assert = require('assert');
 import builtins = require('./builtins');
+import os = require('os');
 
 // Frame Objects are basically stack frames for functions, except they carry
 // extra context (e.g. globals, local scope, etc.). This class is not simplified
@@ -52,6 +54,7 @@ class Py_FrameObject implements IPy_FrameObj {
     returnToThread: boolean;
     genFrame: boolean = false;
     cb: (rv: IPy_Object) => void;
+    // exc_stuff: Py_Tuple;
 
     constructor(back: IPy_FrameObj,
                 code: Py_CodeObject,
@@ -130,6 +133,7 @@ class Py_FrameObject implements IPy_FrameObj {
             if (func == undefined) {
                 throw new Error(`Unknown opcode: ${opcodes[op]} (${op})`);
             }
+            // console.log(opcodes[op]);
             if (false) {  // debug
                 console.log(this.stack);
                 console.log(`${t.stackDepth()}: ${opcodes[op]}`);
@@ -147,10 +151,14 @@ class Py_FrameObject implements IPy_FrameObj {
     }
     
     raise_exception_here(t: Thread, message: string, type: string): void {
-        var val: IPy_Object = (<any> builtins)[type];
+        t.tb.exc_value = message;
+        // t.exc_type = "<type 'exceptions." + type + "'>";
+        t.tb.exc_type = type;
+        var val = (<any> builtins)['$' + type];
+        val.$message = message;
         if (val === undefined)
             throw new Error(`Unknown exception type: '${type}'`);
-        t.addToTraceback(message);
+        t.addToTraceback(type + ': ' + message + os.EOL);
         t.throwException(val);
     }
 
@@ -159,6 +167,7 @@ class Py_FrameObject implements IPy_FrameObj {
         // push exception on stack
         this.push(exc);
         t.raise_lno = (this.codeObj.firstlineno) + this.addr2line();
+        this.frame_add_traceback(t);
         while (this.blockStack.length > 0) {
             var b = this.blockStack[this.blockStack.length - 1];
             this.blockStack.pop();
@@ -175,7 +184,6 @@ class Py_FrameObject implements IPy_FrameObj {
             }
         }
         // Current frame cannot handle exception
-        this.frame_add_traceback(t);
         this.emptyStack();
         this.returnToThread = true;
         return false;
@@ -206,7 +214,7 @@ class Py_FrameObject implements IPy_FrameObj {
         return lineno;
     }
 
-    frame_add_traceback(t: Thread): void {
+    get_current_line(t: Thread): number {
         var current_line: number = (this.codeObj.firstlineno) + this.addr2line();
         // Set whenever an exception handler is found
         // If exception handler can't handle that exception, the line where exception occurred is added to traceback
@@ -214,6 +222,23 @@ class Py_FrameObject implements IPy_FrameObj {
             current_line = t.raise_lno ;
             t.raise_lno = 0;
         }
+        return current_line;
+    }
+
+    // Get current frame information, used by some of the python traceback.* functions
+    getStackContents(t: Thread): [string, string, string, string] {
+        var current_line: number = this.get_current_line(t);
+        return [`${t.codefile[current_line - 1].trim() }`, `${this.codeObj.name.toString() }`, `${current_line}`, `${this.codeObj.filename.toString() }`];
+    }
+
+    frame_add_traceback(t: Thread): void {
+        var current_line: number = this.get_current_line(t);
+
+        t.tb.trace.push(`${t.codefile[current_line-1].trim()}`);
+        t.tb.trace.push(`${this.codeObj.name.toString()}`);
+        t.tb.trace.push(`${current_line}`);
+        t.tb.trace.push(`${this.codeObj.filename.toString() }`);
+
         var tback: string = `  File "${this.codeObj.filename.toString()}", line ${current_line}, in ${this.codeObj.name.toString()}\n`;
         if (t.codefile.length >= current_line) {
             tback += `    ${t.codefile[current_line-1].trim()}\n`;

@@ -99,6 +99,8 @@ const testList = [
     ["ArithmeticError Uncaught test", "pytests/uncaught_exceptions/arithmeticError"],
     [`\n--- Thread tests ---`],
     ["Termination test", "pytests/threads/terminationTest"],
+    ["Traceback test", "pytests/threads/tracebackTest"],
+    ["Traceback stack test", "pytests/threads/tracebackStackTest"],
     ["Multi-threading loop test", "pytests/threads/multiThreadingLoop"],
     ["Multi-threading termination test", "pytests/threads/multiThreadingTermination"],
     ["Multi-threading simple lock test", "pytests/threads/multiThreadingLockSimple"],
