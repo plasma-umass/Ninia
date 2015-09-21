@@ -21,6 +21,7 @@ export interface IPy_FrameObj extends IPy_Object {
    */
   resume(rv: IPy_Object, exc: IPy_Object): void;
   tryCatchException(t: Thread, exc: IPy_Object): boolean;
+  getStackContents(t: Thread): [string, string, string, string];
 }
 
 /**

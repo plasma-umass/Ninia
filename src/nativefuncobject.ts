@@ -58,6 +58,10 @@ export class Py_TrampolineFrameObject implements IPy_FrameObj {
     tryCatchException(t: Thread, exc: IPy_Object): boolean {
         return false;
     }
+
+    getStackContents(t: Thread): [string, string, string, string] {
+        return null;
+    }
 }
 
 /**

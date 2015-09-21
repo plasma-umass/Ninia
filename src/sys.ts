@@ -6,6 +6,7 @@ import {Py_AsyncNativeFuncObject, Py_SyncNativeFuncObject} from './nativefuncobj
 import fs = require('fs');
 import {Thread} from './threading';
 import {Py_Thread} from './thread';
+import {Py_Traceback} from './traceback';
 
 /**
  * Implements the builtin sys module.
@@ -20,7 +21,8 @@ class Py_Sys extends Py_Object implements IPy_Object {
        // XXX: Hack.
        '$__future__': new Py_Object(),
        '$os': new Py_Object(),
-       '$thread': new Py_Thread()
+       '$thread': new Py_Thread(),
+       '$traceback': new Py_Traceback()
     });
     $executable = None;
     // Optional function, called when the program exits.
@@ -45,8 +47,7 @@ class Py_Sys extends Py_Object implements IPy_Object {
 
     $exc_info = new Py_SyncNativeFuncObject((t: Thread, f: IPy_FrameObj, args: IPy_Object[], kwargs: Py_Dict) => {
         if (t.exc) {
-            // XXX: Incorrect for now.
-            return new Py_Tuple([t.exc, t.exc, None]);
+            return new Py_Tuple([new Py_Str(t.tb.exc_type),new Py_Str(t.tb.exc_value), t.tb]);
         } else {
             return new Py_Tuple([None, None, None])
         }

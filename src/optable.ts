@@ -236,7 +236,7 @@ optable[opcodes.RETURN_VALUE] = function(f: Py_FrameObject, t: Thread) {
         if (t.loop_exc_block.length > 0) {
             (<Py_FrameObject>f.back).blockStack.push(t.loop_exc_block.pop());
         }
-        f.raise_exception_here(t, "StopIteration", "$StopIteration");
+        f.raise_exception_here(t, "", "StopIteration");
     }
     else {
         t.asyncReturn(f.pop());
@@ -330,8 +330,8 @@ optable[opcodes.LOAD_NAME] = function(f: Py_FrameObject, t: Thread) {
     var val = f.locals.get(name) || f.globals.get(name) || (<any> builtins)[`$${name.toString()}`];
     // throw NameError
     if (val === undefined) {
-        var message = `NameError: global name '${name}' is not defined${os.EOL}`;
-        f.raise_exception_here(t, message, "$NameError");
+        var message = `global name '${name}' is not defined`;
+        f.raise_exception_here(t, message, "NameError");
         return;
     }
     f.push(val);
@@ -343,8 +343,8 @@ optable[opcodes.LOAD_GLOBAL] = function(f: Py_FrameObject, t: Thread) {
     var val = f.globals.get(name) || (<any> builtins)[`$${name.toString()}`];
     // throw NameError
     if (val === undefined) {
-        var message = `NameError: global name '${name}' is not defined${os.EOL}`;
-        f.raise_exception_here(t, message, "$NameError");
+        var message = `global name '${name}' is not defined`;
+        f.raise_exception_here(t, message, "NameError");
         return;
     }
     f.push(val);
@@ -524,7 +524,8 @@ optable[opcodes.DELETE_FAST] = function(f: Py_FrameObject) {
 }
 
 function add_exc(f: Py_FrameObject, t: Thread, exc: any, message: string): void {
-    exc.$message = new Py_Str(message);
+    t.tb.exc_value = message;
+    exc.$message = new Py_Str(message + os.EOL);
     t.addToTraceback(exc.$message);
     f.push(exc);
     t.throwException(exc);
@@ -537,12 +538,14 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): vo
     // raise with 0 arg is from Exception class
     if (exc === null && cause === null) {
         val = builtins['$Exception'];
-        message += "TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType\n";
+        t.tb.exc_type = `<type 'exceptions.Exception'>`;
+        message += "TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType";
         add_exc(f, t, val, message);
         return;
     }
     // First argument exc, second argument cause (passed into exception and used as a message when printing tb)
     message += exc.constructor.name;
+    t.tb.exc_type = exc.constructor.name;
     if (exc && cause) {
         message += ": " + <Py_Str> cause;
         // check if user defined class
@@ -551,7 +554,7 @@ function do_raise(f: Py_FrameObject, t: Thread, cause: IPy_Object, exc: any): vo
             message = "__main__." + message;
     }
     if (exc) {
-        add_exc(f, t, exc, message + "\n");
+        add_exc(f, t, exc, message);
     }
 }
 optable[opcodes.RAISE_VARARGS] = function(f: Py_FrameObject, t:Thread) {
@@ -1072,8 +1075,8 @@ optable[opcodes.LOAD_ATTR] = function(f: Py_FrameObject, t: Thread) {
         obj = f.pop(),
         val = (<any> obj)[`$${name}`];
     if (val === undefined) {
-        var message = `AttributeError: 'function' object has no attribute '${name}'\n`;
-        f.raise_exception_here(t, message, "$AttributeError");
+        var message = `'function' object has no attribute '${name}'\n`;
+        f.raise_exception_here(t, message, "AttributeError");
     } else {
         f.push(val);
     }

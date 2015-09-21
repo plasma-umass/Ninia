@@ -973,6 +973,6 @@ export class Py_Complex extends Py_Object implements IPy_Number {
 
 function throwZeroDivisionError(t: Thread) {
   var f = <Py_FrameObject> t.getTopOfStack();
-  var message = `ZeroDivisionError: integer division or modulo by zero\n`;
-  f.raise_exception_here(t, message, "$ZeroDivisionError");
+  var message = `integer division or modulo by zero`;
+  f.raise_exception_here(t, message, "ZeroDivisionError");
 }
